@@ -1,0 +1,11 @@
+namespace: nws
+
+resources:
+  - api.yaml
+  - api_hpa.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - includeSelectors: true
+    pairs:
+      proj: nws-forecast-summarizer

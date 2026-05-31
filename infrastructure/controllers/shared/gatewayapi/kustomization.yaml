@@ -1,0 +1,5 @@
+namespace: gatewayapi-system
+
+resources:
+  - namespace.yaml
+  - crds.yaml

@@ -1,0 +1,88 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name whisper
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "whisper"
+        k8s.lfp.rocks/version: "latest"
+      annotations:
+        prometheus.io/scrape: "false"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      runtimeClassName: nvidia
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: rhasspy/wyoming-whisper:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --model
+            - tiny-int8
+            - --language
+            - en
+          ports:
+            - name: whisper
+              containerPort: 10300
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "50m"
+              memory: "256Mi"
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whisper
+  labels:
+    app: whisper
+    service: whisper
+spec:
+  ports:
+    - name: whisper
+      port: 10300
+      targetPort: 10300
+  selector:
+    app: whisper
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: whisper-httproute
+  namespace: wyoming
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COMPASS_HAWK}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: whisper
+          port: 10300

@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shallenge-miner-env-configmap
+data:
+  CONFIG_PREFIX: "SM_"
+  SM_LOG_LEVEL: "info"
+  SM_METRICS_ENABLED: "true"
+  SM_METRICS_PORT: "8081"
+  SM_DRAGONFLY_HOST: "dragonfly.dragonfly.svc.cluster.local"
+  SM_DRAGONFLY_PORT: "6379"
+  SM_WRITER_WORKERS: "5"
+  SM_READER_WORKERS: "10"
+  SM_BATCH_SIZE: "1000000"
+  SM_BATCH_DELAY: "5s"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name shallenge-miner
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "shallenge-miner"
+        k8s.lfp.rocks/version: "v1.0.0"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/shallenge-miner:v1.0.0

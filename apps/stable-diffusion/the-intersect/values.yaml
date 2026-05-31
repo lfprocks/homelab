@@ -1,0 +1,30 @@
+replicaCount: 0
+
+image:
+  tag: v1.0.20
+
+runtimeClassName: nvidia
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.lfp.rocks/gpu
+              operator: In
+              values:
+                - enabled
+
+nodeSelector: []
+
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COBRA_ORCHARD}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /

@@ -1,0 +1,12 @@
+namespace: lfpweather
+
+resources:
+  - frontend.yaml
+  - frontend_hpa.yaml
+  - frontend_secret.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - includeSelectors: true
+    pairs:
+      proj: lfpweather-frontend

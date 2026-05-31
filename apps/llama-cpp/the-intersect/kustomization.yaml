@@ -1,0 +1,20 @@
+namespace: llama-cpp
+
+resources:
+  - ../base
+  - secret.yaml
+  - external-httproute.yaml
+  - metrics-proxy.yaml
+
+patchesStrategicMerge:
+  - llama-cpp.yaml
+
+configMapGenerator:
+  - name: llama-chat-template
+    files:
+      - qwen3.5.jinja
+    options:
+      disableNameSuffixHash: true
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization

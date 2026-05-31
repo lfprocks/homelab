@@ -1,0 +1,282 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name media-stack
+  labels:
+    app: *name
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "media-stack"
+    spec:
+      securityContext:
+        fsGroup: 1001
+        sysctls:
+          - name: net.ipv6.conf.all.disable_ipv6
+            value: "1"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      initContainers:
+        - name: gluetun
+          image: ghcr.io/qdm12/gluetun:v3.40.0
+          restartPolicy: Always
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: "private internet access"
+            - name: VPN_TYPE
+              value: "openvpn"
+            - name: SERVER_REGIONS
+              value: "Netherlands"
+            - name: DNS_KEEP_NAMESERVER
+              value: "on"
+            - name: DOT
+              value: "off"
+            - name: FIREWALL_OUTBOUND_SUBNETS
+              value: "10.0.0.0/8"
+            - name: HEALTH_VPN_DURATION_INITIAL
+              value: "30s"
+          envFrom:
+            - secretRef:
+                name: gluetun-vpn-secret
+          ports:
+            - name: deluge-webui
+              containerPort: 8112
+            - name: deluge-daemon
+              containerPort: 58846
+            - name: jackett
+              containerPort: 9117
+            - name: sonarr
+              containerPort: 8989
+            - name: radarr
+              containerPort: 7878
+            - name: flaresolverr
+              containerPort: 8191
+          volumeMounts:
+            - name: gluetun-data
+              mountPath: /gluetun
+          livenessProbe:
+            httpGet:
+              path: /v1/openvpn/status
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /v1/openvpn/status
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "512Mi"
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+      containers:
+        - name: deluge
+          image: linuxserver/deluge:latest
+          env:
+            - name: PUID
+              value: "1001"
+            - name: PGID
+              value: "1001"
+            - name: UMASK
+              value: "000"
+            - name: TZ
+              value: "America/Los_Angeles"
+            - name: DELUGE_LOGLEVEL
+              value: "info"
+          volumeMounts:
+            - name: deluge-data
+              mountPath: /data
+            - name: deluge-config
+              mountPath: /config
+          livenessProbe:
+            tcpSocket:
+              port: 8112
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8112
+            initialDelaySeconds: 120
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "2Gi"
+            requests:
+              cpu: "50m"
+              memory: "256Mi"
+        - name: jackett
+          image: binhex/arch-jackett:latest
+          env:
+            - name: PUID
+              value: "1001"
+            - name: PGID
+              value: "1001"
+            - name: UMASK
+              value: "000"
+          volumeMounts:
+            - name: jackett-data
+              mountPath: /data
+            - name: jackett-config
+              mountPath: /config
+          livenessProbe:
+            tcpSocket:
+              port: 9117
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 9117
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "20m"
+              memory: "128Mi"
+        - name: sonarr
+          image: binhex/arch-sonarr:latest
+          env:
+            - name: PUID
+              value: "1001"
+            - name: PGID
+              value: "1001"
+            - name: UMASK
+              value: "000"
+          volumeMounts:
+            - name: sonarr-media
+              mountPath: /media
+            - name: deluge-data
+              mountPath: /data
+            - name: sonarr-config
+              mountPath: /config
+          livenessProbe:
+            tcpSocket:
+              port: 8989
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8989
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "20m"
+              memory: "128Mi"
+        - name: radarr
+          image: binhex/arch-radarr:latest
+          env:
+            - name: PUID
+              value: "1001"
+            - name: PGID
+              value: "1001"
+            - name: UMASK
+              value: "000"
+          volumeMounts:
+            - name: radarr-media
+              mountPath: /media
+            - name: deluge-data
+              mountPath: /data
+            - name: radarr-config
+              mountPath: /config
+          livenessProbe:
+            tcpSocket:
+              port: 7878
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 7878
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "20m"
+              memory: "128Mi"
+        - name: flaresolverr
+          image: ghcr.io/flaresolverr/flaresolverr:latest
+          env:
+            - name: LOG_LEVEL
+              value: "info"
+            - name: TZ
+              value: "America/Los_Angeles"
+            - name: HEADLESS
+              value: "true"
+          livenessProbe:
+            tcpSocket:
+              port: 8191
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8191
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "20m"
+              memory: "128Mi"
+      volumes:
+        - name: gluetun-data
+          emptyDir: {}
+        - name: deluge-data
+          persistentVolumeClaim:
+            claimName: arch-delugevpn-data-pvc
+        - name: deluge-config
+          persistentVolumeClaim:
+            claimName: arch-delugevpn-config-pvc
+        - name: jackett-data
+          persistentVolumeClaim:
+            claimName: arch-jackett-data-pvc
+        - name: jackett-config
+          persistentVolumeClaim:
+            claimName: arch-jackett-config-pvc
+        - name: sonarr-config
+          persistentVolumeClaim:
+            claimName: arch-sonarr-config-pvc
+        - name: sonarr-media
+          persistentVolumeClaim:
+            claimName: arch-sonarr-media-pvc
+        - name: radarr-config
+          persistentVolumeClaim:
+            claimName: arch-radarr-config-pvc
+        - name: radarr-media
+          persistentVolumeClaim:
+            claimName: arch-radarr-media-pvc

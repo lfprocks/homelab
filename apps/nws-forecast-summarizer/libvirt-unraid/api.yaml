@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nws-forecast-summarizer-env-configmap
+data:
+  LOG_LEVEL: debug
+  API_HOST: 0.0.0.0
+  API_PORT: "8080"
+  METRICS_HOST: 0.0.0.0
+  METRICS_PORT: "8081"
+  OLLAMA_HOST: http://ollama.ollama.svc.cluster.local
+  OLLAMA_PORT: "80"
+  OLLAMA_MODEL: llama3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name nws-forecast-summarizer
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "nws-forecast-summarizer"
+        k8s.lfp.rocks/version: "v1.0.0"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/nws-forecast-summarizer:v1.0.1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nws-forecast-summarizer
+  labels:
+    app: nws-forecast-summarizer
+    service: nws-forecast-summarizer
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: nws-forecast-summarizer
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nws-forecast-summarizer-httproute
+  namespace: nws
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: istio-ingress
+  hostnames: ["${SUB_NORTHERN_HARVEST}.${DOMAIN_COMMON_GLASS}"]
+  rules:
+    - backendRefs:
+        - name: nws-forecast-summarizer
+          port: 80

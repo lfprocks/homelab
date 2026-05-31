@@ -1,0 +1,15 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: paperless-ngx-httproute
+  namespace: paperless-ngx
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_PRAIRIE_ABLE}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - backendRefs:
+        - name: paperless-ngx
+          port: 8000

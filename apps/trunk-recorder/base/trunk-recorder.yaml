@@ -1,0 +1,74 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trunk-recorder-env-configmap
+data:
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trunk-recorder-smb-pvc
+spec:
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name trunk-recorder
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      containers:
+        - name: *name
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: trunk-recorder-env-configmap
+            - secretRef:
+                name: trunk-recorder-secret
+
+          ports:
+            - name: metrics
+              containerPort: 8081
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthcheck
+          #     port: metrics
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 3
+          # readinessProbe:
+          #   httpGet:
+          #     path: /metrics
+          #     port: metrics
+          #   periodSeconds: 5
+          volumeMounts:
+            - name: etc-config
+              mountPath: /etc/trunk-recorder
+              readOnly: true
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "1500m"
+              memory: "512Mi"
+      volumes:
+        - name: etc-config
+          secret:
+            secretName: trunk-recorder-etc-secret

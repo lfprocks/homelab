@@ -1,0 +1,19 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: glance
+  namespace: glance
+spec:
+  chart:
+    spec:
+      chart: glance
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 0.1.0
+  valuesFrom:
+    - kind: ConfigMap
+      name: glance-values
+  interval: 1m0s

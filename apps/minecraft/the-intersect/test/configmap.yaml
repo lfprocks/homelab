@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minecraft-test-config
+  namespace: minecraft
+data:
+  EULA: "TRUE"
+  TYPE: "PAPER"
+  VERSION: "1.21.9"
+  PAPER_BUILD: "53"
+  DIFFICULTY: "normal"
+  MAX_PLAYERS: "20"
+  MEMORY: "2G"
+  MOTD: |-
+    §l§6Welcome to §b§lTest Server§r
+    §7Running §a%TYPE%§7 on Kubernetes
+  OPS: |-
+    nwradio

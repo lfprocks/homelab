@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lfpweather
+
+resources:
+  - ../base/
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: lfpweather-api
+
+patches:
+  - path: api.yaml
+  - path: api_hpa.yaml
+  - path: api_secret.yaml

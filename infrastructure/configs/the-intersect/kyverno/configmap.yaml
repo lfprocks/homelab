@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: namespace-filters
+  namespace: kyverno
+data:
+  exclude: |-
+    namespaces:
+      - bitnami
+      - cert-manager
+      - default
+      - dragonfly
+      - dragonfly-operator-system
+      - flux-system
+      - gatewayapi-system
+      - grafana
+      - invidious
+      - cilium-ingress
+      - jellyfin
+      - keda
+      - kube-node-lease
+      - kube-public
+      - kube-system
+      - kubelet-serving-cert-approver
+      - kyverno
+      - ntfy
+      - paperless-ngx
+      - pgadmin
+      - storage
+      - wastebin
+      - wyze
+      - cnpg-system

@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name flippydrive-server
+  namespace: flippydrive
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "flippydrive"
+        k8s.lfp.rocks/version: "v1.4.6"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: offbroadway/flippydrive-server:v1.4.6
+          ports:
+            - containerPort: 7031
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: flippydrive-data-volume
+      volumes:
+        - name: flippydrive-data-volume
+          persistentVolumeClaim:
+            claimName: flippydrive-data-pvc

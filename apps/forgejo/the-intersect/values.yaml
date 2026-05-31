@@ -1,0 +1,151 @@
+global:
+  storageClass: "ceph-block"
+
+## @param replicaCount number of replicas for the deployment
+replicaCount: 1
+
+service:
+  ssh:
+    type: LoadBalancer
+    port: 22
+    # Share the external-gateway-https IP (${EXTERNAL_GATEWAY_HTTPS_IP}). 22 (ssh) and 443
+    # (https) don't conflict, so Cilium LB IPAM can co-locate them. The
+    # gateway Service lives in cilium-ingress, so cross-namespace sharing
+    # must be permitted on both Services with a matching sharing-key.
+    annotations:
+      lbipam.cilium.io/ips: "${EXTERNAL_GATEWAY_HTTPS_IP}"
+      lbipam.cilium.io/sharing-key: "ext-shared-01"
+      lbipam.cilium.io/sharing-cross-namespace: "cilium-ingress"
+
+# Enables Gateway API HTTPRoute as a replacement for traditional Ingress resources
+## @section Gateway-API HTTPRoute
+## @param httpRoute.enabled Enables Gateway API HTTPRoute as a replacement for traditional Ingress resources
+## @param httpRoute.annotations Annotations to add to the HTTPRoute resource
+## @param httpRoute.parentRefs List of parentRefs for the HTTPRoute, typically referencing the Gateway(name, namespace)
+## @param httpRoute.hostnames Hostnames this HTTPRoute applies to
+## @param httpRoute.matches.path.type Type of path match (e.g., PathPrefix or Exact or RegularExpression)
+## @param httpRoute.matches.path.value Path value for matching incoming requests
+## @param httpRoute.matches.timeouts Object containing timeouts.
+## @param httpRoute.filters Filters to apply on HTTP requests, such as header rewrites or request redirects
+httpRoute:
+  enabled: true
+  annotations: {}
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames:
+    - ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
+  matches:
+    path:
+      type: PathPrefix
+      value: "/"
+    timeouts: {}
+  filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+          - name: X-Forwarded-Proto
+            value: https
+## @section deployment
+#
+## @param resources Kubernetes resources
+resources:
+  limits:
+    cpu: 800m
+    memory: 768Mi
+  requests:
+    cpu: 25m
+    memory: 256Mi
+
+## @section Persistence
+#
+## @param persistence.enabled Enable persistent storage
+## @param persistence.create Whether to create the persistentVolumeClaim for shared storage
+## @param persistence.mount Whether the persistentVolumeClaim should be mounted (even if not created)
+## @param persistence.claimName Use an existing claim to store repository information
+## @param persistence.size Size for persistence to store repo information
+## @param persistence.accessModes AccessMode for persistence
+## @param persistence.labels Labels for the persistence volume claim to be created
+## @param persistence.annotations.helm.sh/resource-policy Resource policy for the persistence volume claim
+## @param persistence.storageClass Name of the storage class to use
+## @param persistence.subPath Subdirectory of the volume to mount at
+## @param persistence.volumeName Name of persistent volume in PVC
+persistence:
+  enabled: true
+  storageClass: ceph-block
+
+# Configure commit/action signing prerequisites
+## @section Signing
+#
+## @param signing.enabled Enable commit/action signing
+## @param signing.gpgHome GPG home directory
+## @param signing.privateKey Inline private GPG key for signed internal Git activity
+## @param signing.existingSecret Use an existing secret to store the value of `signing.privateKey`
+signing:
+  enabled: false
+  gpgHome: /data/git/.gnupg
+  privateKey: ""
+  # privateKey: |-
+  #   -----BEGIN PGP PRIVATE KEY BLOCK-----
+  #   ...
+  #   -----END PGP PRIVATE KEY BLOCK-----
+  existingSecret: ""
+
+## @section Gitea
+#
+gitea:
+  admin:
+    username: intersect-admin
+    # password is provided via the SOPS-encrypted forgejo-values-secret (valuesFrom).
+    email: "admin@${DOMAIN_CORONET_SUMMIT}"
+    passwordMode: keepUpdated
+
+  ## @param gitea.podAnnotations Annotations for the Forgejo pod
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "6060"
+    prometheus.istio.io/merge-metrics: "false"
+
+  ## @param gitea.ssh.logLevel Configure OpenSSH's log level. Only available for root-based Forgejo image.
+  ssh:
+    logLevel: "INFO"
+
+  additionalConfigFromEnvs:
+    - name: FORGEJO__database__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-postgres-app
+          key: password
+
+  config:
+    APP_NAME: "Intersect Computer Git"
+    server:
+      DOMAIN: ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
+      ROOT_URL: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
+      HTTP_PORT: 3000
+      SSH_DOMAIN: ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
+      SSH_PORT: 22 # advertised in clone URLs
+      SSH_LISTEN_PORT: 2222 # rootless image sshd listens here
+    database:
+      DB_TYPE: postgres
+      HOST: forgejo-postgres-rw.forgejo.svc.cluster.local:5432
+      NAME: forgejo
+      USER: forgejo
+      SCHEMA: public
+      SSL_MODE: disable
+    cache:
+      ADAPTER: redis
+      HOST: redis://forgejo-dragonfly.forgejo.svc.cluster.local:6379/0
+    session:
+      PROVIDER: redis
+      PROVIDER_CONFIG: redis://forgejo-dragonfly.forgejo.svc.cluster.local:6379/1
+    queue:
+      TYPE: redis
+      CONN_STR: redis://forgejo-dragonfly.forgejo.svc.cluster.local:6379/2
+
+valkey-cluster:
+  enabled: false
+
+postgresql-ha:
+  enabled: false

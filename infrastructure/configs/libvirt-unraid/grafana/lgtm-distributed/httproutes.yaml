@@ -1,0 +1,30 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana-httproute
+  namespace: grafana
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: istio-ingress
+  hostnames: ["${SUB_SENIOR_ABLE}.${DOMAIN_COMMON_GLASS}"]
+  rules:
+    - backendRefs:
+        - name: lgtm-distributed-grafana
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mimir-httproute
+  namespace: grafana
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: istio-ingress
+  hostnames: ["${SUB_PRAIRIE_BEACON}.${DOMAIN_COMMON_GLASS}"]
+  rules:
+    - backendRefs:
+        - name: lgtm-distributed-mimir-nginx
+          port: 80

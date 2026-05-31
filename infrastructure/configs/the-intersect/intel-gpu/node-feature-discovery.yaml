@@ -1,0 +1,26 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: node-feature-discovery
+  namespace: intel
+spec:
+  chart:
+    spec:
+      chart: node-feature-discovery
+      sourceRef:
+        kind: HelmRepository
+        name: node-feature-discovery
+        namespace: intel
+      version: 0.17.3
+  interval: 1m0s
+  values:
+    worker:
+      config:
+        sources:
+          custom:
+            - name: hackrf
+              matchOn:
+                - usbId:
+                    vendor: ["1d50"]
+                    device: ["6089"]

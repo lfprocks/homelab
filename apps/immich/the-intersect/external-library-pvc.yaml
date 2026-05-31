@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: external-library-pv
+  namespace: immich
+spec:
+  capacity:
+    storage: 2Ti
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-immich-external-library-share
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/lightroom"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: external-library-pvc
+  namespace: immich
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: external-library-pv

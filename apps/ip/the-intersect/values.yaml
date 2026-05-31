@@ -1,0 +1,43 @@
+image:
+  tag: v1.0.2
+
+service:
+  type: ClusterIP
+  port: 8080
+  # externalTrafficPolicy: Local
+
+podLabels:
+  k8s.lfp.rocks/service: ip
+  k8s.lfp.rocks/version: 1.0.2
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "8081"
+  prometheus.istio.io/merge-metrics: "false"
+
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COPPER_SABER}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+resources:
+  limits:
+    cpu: 256m
+    memory: 128Mi
+  requests:
+    cpu: 256m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80

@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adsbx-live-notifier-env-configmap
+data:
+  LOG_LEVEL: info
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+  TRACING_ENABLED: "false"
+  TRACING_SERVICE: adsbx-live-notifier
+  TRACING_VERSION: v1.0.0
+
+  # ADSBX_HOST is provided via the SOPS-encrypted api_secret (envFrom), not this ConfigMap.
+  ADSBX_POLL_INTERVAL: 1s
+  ADSBX_JSON_ENABLED: "true"
+  ADSBX_SBS_ENABLED: "true"
+
+  WATCHLIST_PATH: /etc/adsbx/watchlist.json
+  WATCHLIST_COOLDOWN: 10m
+  PULSAR_URL: http://pnp-writer.pnp.svc.cluster.local
+  PULSAR_PRIORITY: "0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name adsbx-live-notifier
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "adsbx-live-notifier"
+        k8s.lfp.rocks/version: "v1.0.0"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/adsbx-live-notifier:v1.0.0

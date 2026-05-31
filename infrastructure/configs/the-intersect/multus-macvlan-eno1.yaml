@@ -1,0 +1,22 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-eno1
+  namespace: kube-system
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "eno1",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "${MACVLAN_SUBNET}",
+        "rangeStart": "${MACVLAN_RANGE_START}",
+        "rangeEnd": "${MACVLAN_RANGE_END}",
+        "routes": [
+          { "dst": "10.0.0.0/22", "gw": "${MACVLAN_GATEWAY}" }
+        ]
+      }
+    }

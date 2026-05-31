@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: naas-api
+  namespace: naas-api
+  labels:
+    app: naas-api
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: naas-api
+  template:
+    metadata:
+      labels:
+        app: naas-api
+        k8s.lfp.rocks/service: naas-api
+        k8s.lfp.rocks/version: v0.1.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      # Schedule only on the node where the Infinite Noise TRNG is plugged in.
+      # Verified against the dongle's USB descriptors:
+      #   bDeviceClass=0x00, Interface 0: class=0xff (vendor-specific)
+      #   idVendor=0x0403 (FTDI), idProduct=0x6015 (FT240X)
+      # NFD's usb feature reads bInterfaceClass for the label.
+      nodeSelector:
+        feature.node.kubernetes.io/usb-ff_0403_6015.present: "true"
+      containers:
+        - name: naas-api
+          image: ghcr.io/alpineworks/naas-api:v0.1.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: naas-api-env
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          # Privileged + runAsUser:0 is required for libftdi to access /dev/bus/usb.
+          # The image's default user (naas, uid 10001) lacks effective capabilities
+          # even under privileged, so we override at the pod level.
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: dev-bus-usb
+              mountPath: /dev/bus/usb
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: dev-bus-usb
+          hostPath:
+            path: /dev/bus/usb

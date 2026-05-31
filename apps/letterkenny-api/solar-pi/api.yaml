@@ -1,0 +1,60 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: letterkenny-api-env-configmap
+data:
+  LKAPI_TITLE: "Letterkenny API"
+  LKAPI_TEMPLATES_HOME: "/templates/home.gotmpl"
+  LKAPI_PRODUCTIONURL: "http://localhost:8080"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name letterkenny-api
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "letterkenny-api"
+        k8s.lfp.rocks/version: "v1.0.3"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/letterkennyapi:v1.0.3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: letterkenny-api
+  labels:
+    app: letterkenny-api
+    service: letterkenny-api
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: letterkenny-api
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: letterkenny-api-httproute
+  namespace: letterkenny
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: istio-ingress
+  hostnames: ["${SUB_COMMANDO_GLASS}.${DOMAIN_FORWARD_HAWK}"]
+  rules:
+    - backendRefs:
+        - name: letterkenny-api
+          port: 80

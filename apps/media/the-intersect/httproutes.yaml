@@ -1,0 +1,75 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: deluge-httproute
+  namespace: media
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_BURNING_RANGER}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: media-deluge
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jackett-httproute
+  namespace: media
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COMMON_LANTERN}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: media-jackett
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sonarr-httproute
+  namespace: media
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_RUGGED_JOINT}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: media-sonarr
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: radarr-httproute
+  namespace: media
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COMMON_ACRE}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: media-radarr
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: flaresolverr-httproute
+  namespace: media
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_CONSTANT_MARINER}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: media-flaresolverr
+          port: 80

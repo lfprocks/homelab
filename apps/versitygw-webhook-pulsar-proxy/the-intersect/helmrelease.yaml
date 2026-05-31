@@ -1,0 +1,19 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: versitygw-webhook-pulsar-proxy
+  namespace: versity
+spec:
+  chart:
+    spec:
+      chart: versitygw-webhook-pulsar-proxy
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 0.1.1
+  valuesFrom:
+    - kind: ConfigMap
+      name: versitygw-webhook-pulsar-proxy-values
+  interval: 1m0s

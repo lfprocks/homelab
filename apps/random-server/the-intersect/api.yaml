@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: random-server-env-configmap
+data:
+  LOG_LEVEL: "info"
+  RANDOM_ERROR_RATE: "0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name random-server
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "random-server"
+        k8s.lfp.rocks/version: "v1.0.1-rc01"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/random-server:v1.0.1-rc01
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: random-server
+  labels:
+    app: random-server
+    service: random-server
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: random-server
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: random-server-httproute
+  namespace: random-server
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_RUGGED_BALL}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - backendRefs:
+        - name: random-server
+          port: 80

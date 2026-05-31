@@ -1,0 +1,16 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: lfpweather-frontend-scaledobject
+spec:
+  scaleTargetRef:
+    name: lfpweather-frontend
+  minReplicaCount: 2
+  maxReplicaCount: 4
+  triggers:
+    - type: cpu
+      metricType: Utilization # Allowed types are 'Utilization' or 'AverageValue'
+      metadata:
+        value: "50"
+        containerName: "lfpweather-frontend"

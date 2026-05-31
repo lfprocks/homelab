@@ -1,0 +1,30 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: katalog-httproute
+  namespace: katalog
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_RIVET_LANTERN}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: katalog-frontend
+          port: 3000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: katalog-backend-httproute
+  namespace: katalog
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_CONSTANT_HAWK}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: katalog-backend
+          port: 8080

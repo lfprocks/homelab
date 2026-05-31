@@ -1,0 +1,52 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+spec:
+  rules:
+    - name: check-k8s-lfp-rocks-service-label
+      context:
+        - name: namespacefilters
+          configMap:
+            name: namespace-filters
+            namespace: kyverno
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      preconditions:
+        all:
+          - key: "{{ request.namespace }}"
+            operator: AnyNotIn
+            value: "{{ namespacefilters.data.exclude | parse_yaml(@).namespaces }}"
+      validate:
+        failureAction: Audit
+        message: "label 'k8s.lfp.rocks/service' is required"
+        pattern:
+          metadata:
+            labels:
+              k8s.lfp.rocks/service: "?*"
+    - name: check-k8s-lfp-rocks-version-label
+      context:
+        - name: namespacefilters
+          configMap:
+            name: namespace-filters
+            namespace: kyverno
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      preconditions:
+        all:
+          - key: "{{ request.namespace }}"
+            operator: AnyNotIn
+            value: "{{ namespacefilters.data.exclude | parse_yaml(@).namespaces }}"
+      validate:
+        failureAction: Audit
+        message: "label 'k8s.lfp.rocks/version' is required"
+        pattern:
+          metadata:
+            labels:
+              k8s.lfp.rocks/version: "?*"

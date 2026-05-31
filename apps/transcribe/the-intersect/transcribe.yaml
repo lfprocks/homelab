@@ -1,0 +1,118 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transcribe-env-configmap
+data:
+  LOG_LEVEL: "info"
+
+  PULSAR_URL: pulsar://pulsar-proxy.pulsar.svc.cluster.local:6650
+
+  S3_BUCKET: trunk-recorder
+  S3_ENDPOINT: http://versitygw.versity.svc.cluster.local
+  S3_TIMEOUT: "30s"
+
+  ASR_ENDPOINT: http://asr.asr.svc.cluster.local/api/v1/transcribe
+
+  # OpenAI-compatible chat completions (llama-cpp in this cluster). OPENAI_API_KEY
+  # lives in the secret since llama-cpp is launched with --api-key-file.
+  OPENAI_BASE_URL: "http://llama-cpp.llama-cpp.svc.cluster.local"
+  # Keep this matching what apps/llama-cpp/the-intersect/llama-cpp.yaml's -hf flag loads —
+  # with a single loaded model the server returns it regardless of what's requested, so
+  # this is mostly cosmetic, but keeping it accurate makes logs honest.
+  OPENAI_MODEL: "unsloth/gemma-4-E4B-it-GGUF:UD-Q8_K_XL"
+  # Bumped from 30s — the cluster Qwen/Gemma builds need 30–60s on a cold first call.
+  # WORKER_TIMEOUT below MUST stay >= this value or the worker context cancels the LLM
+  # request before llama-cpp can answer.
+  OPENAI_TIMEOUT: "120s"
+  # Set to "true" if you ever load a Qwen3-family thinking model AND want the
+  # chain-of-thought back. Default false suppresses <think>...</think> via
+  # chat_template_kwargs; templates that don't recognize it (Gemma, Mistral) ignore.
+  # OPENAI_ENABLE_THINKING: "false"
+
+  DRAGONFLY_ADDRESS: "dragonfly.dragonfly.svc.cluster.local:6379"
+
+  DISPLAY_TIMEZONE: "America/Los_Angeles"
+
+  # Now in the secret
+  # SLACK_CHANNEL_ID: "C0928RMN030"
+  # SLACK_CHANNEL_ID: "C08QFKL0B7S"
+
+  # Comma-separated Slack user IDs (UXXXXXX) permitted to press the Cancel / Extend /
+  # Switch TAC buttons. Empty list = nobody (safe default; controller still runs but is
+  # inert). Set to "*" to allow ANY channel member; the controller logs a security-relevant
+  # WARN at startup when this is in effect.
+  SLACK_ALLOWED_USER_IDS: "*"
+
+  # Whether the auto-close "channel closed" message broadcasts to the parent channel as
+  # well as the rescue thread. Default thread-only.
+  # SLACK_CHANNEL_CLOSED_BROADCAST_ENABLED: "false"
+
+  # Now in secret
+  # "Submit Feedback" button on closed alerts. Set FEEDBACK_FORM_URL to enable; FIELDS
+  # is a JSON map of logical names → Google Form entry IDs (tac_channel, closed_at,
+  # dispatch_transcript, headline, situation_summary).
+  # FEEDBACK_FORM_URL: ""
+  # FEEDBACK_FORM_FIELDS: '{}'
+
+  # Confidential call-types list. The encrypted ciphertext is mounted from the
+  # transcribe-calltypes Secret (resources/ in kustomization.yaml) and CALL_TYPES_KEY
+  # (the 32-byte hex AES key) is in the SOPS-encrypted transcribe-secret.
+  CALL_TYPES_PATH: "/config/call_types.enc"
+
+  TACTICAL_CHANNEL_ACTIVATION_DURATION: "30m"
+  # TAC_SWEEPER_INTERVAL: "5s"
+  # DEDUP_TTL: "1h"
+
+  # Pulsar DLQ policy (defaults shown). Set PULSAR_DLQ_TOPIC="" to fall back to infinite
+  # redelivery if you haven't provisioned the DLQ topic yet.
+  # PULSAR_MAX_DELIVERIES: "5"
+  # PULSAR_NACK_REDELIVERY_DELAY: "30s"
+
+  WORKER_COUNT: "2"
+  # Must be >= OPENAI_TIMEOUT or the worker cancels the LLM round-trip.
+  WORKER_TIMEOUT: "180s"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name transcribe
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+      labels:
+        k8s.lfp.rocks/service: "transcribe"
+        k8s.lfp.rocks/version: "v1.1.2"
+    spec:
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: k8s.lfp.rocks/gpu
+      #               operator: NotIn
+      #               values:
+      #                 - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/searchandrescuegg/transcribe:v1.1.2
+          volumeMounts:
+            - name: calltypes
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: calltypes
+          secret:
+            secretName: transcribe-calltypes
+            defaultMode: 0400

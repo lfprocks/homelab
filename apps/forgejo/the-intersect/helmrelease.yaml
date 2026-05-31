@@ -1,0 +1,17 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: forgejo
+  namespace: forgejo
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: forgejo
+    namespace: forgejo
+  valuesFrom:
+    - kind: ConfigMap
+      name: forgejo-values
+    - kind: Secret
+      name: forgejo-values-secret
+  interval: 1m0s

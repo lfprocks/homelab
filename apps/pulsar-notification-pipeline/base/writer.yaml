@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pnp-writer-env-configmap
+data:
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name pnp-writer
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      containers:
+        - name: *name
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: pnp-writer-env-configmap
+          ports:
+            - name: api
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "20m"
+              memory: "64Mi"
+          volumeMounts:
+            - name: pnp-writer-secrets
+              mountPath: /run/secrets
+              readOnly: true
+      volumes:
+        - name: pnp-writer-secrets
+          secret:
+            secretName: pnp-writer-secrets
+            items:
+              - key: tokens
+                path: writer-tokens/tokens
+              - key: v1.pub.pem
+                path: pulsar-keys/v1.pub.pem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pnp-writer
+  labels:
+    app: pnp-writer
+    service: pnp-writer
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: pnp-writer
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pnp-writer-httproute

@@ -1,0 +1,36 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: nvdp
+  namespace: nvidia
+spec:
+  interval: 1m0s
+  url: https://nvidia.github.io/k8s-device-plugin
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: nvidia-ng
+  namespace: nvidia
+spec:
+  interval: 1m0s
+  url: https://helm.ngc.nvidia.com/nvidia
+# ---
+# apiVersion: source.toolkit.fluxcd.io/v1beta2
+# kind: HelmRepository
+# metadata:
+#   name: dcgm-exporter
+#   namespace: nvidia
+# spec:
+#   interval: 1m0s
+#   url: https://nvidia.github.io/dcgm-exporter/helm-charts
+# ---
+# apiVersion: source.toolkit.fluxcd.io/v1beta2
+# kind: HelmRepository
+# metadata:
+#   name: utkuozdemir
+#   namespace: nvidia
+# spec:
+#   interval: 1m0s
+#   url: https://utkuozdemir.org/helm-charts

@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: install-cni-plugins
+  namespace: kube-system
+  labels:
+    tier: node
+    app: cni-plugins
+spec:
+  selector:
+    matchLabels:
+      name: cni-plugins
+  template:
+    metadata:
+      labels:
+        name: cni-plugins
+        tier: node
+        app: cni-plugins
+    spec:
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      initContainers:
+        - name: install-cni-plugins
+          image: busybox:1.37
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -ex
+              echo "Downloading CNI plugins..."
+              cd /tmp
+              wget -O cni-plugins.tgz https://github.com/containernetworking/plugins/releases/download/v1.6.2/cni-plugins-linux-amd64-v1.6.2.tgz
+              echo "Extracting CNI plugins..."
+              mkdir -p /host/opt/cni/bin
+              tar -xzf cni-plugins.tgz -C /host/opt/cni/bin
+              echo "CNI plugins installed successfully"
+              echo "Checking for macvlan:"
+              ls -la /host/opt/cni/bin/macvlan || echo "macvlan not found!"
+              sleep 5
+          volumeMounts:
+            - name: cni-bin
+              mountPath: /host/opt/cni/bin
+          securityContext:
+            privileged: true
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "10Mi"
+            limits:
+              cpu: "10m"
+              memory: "10Mi"
+      volumes:
+        - name: cni-bin
+          hostPath:
+            path: /opt/cni/bin
+            type: DirectoryOrCreate

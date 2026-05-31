@@ -1,0 +1,119 @@
+name: invidious
+
+image:
+  repository: quay.io/invidious/invidious
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Setting replicaCount higher than 1 may cause PostgreSQL database deadlocks.
+# This happens when multiple Invidious processes simultaneously attempt to refresh channel subscriptions for users.
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 16
+  targetCPUUtilizationPercentage: 50
+
+service:
+  type: ClusterIP
+  port: 3000
+  # loadBalancerIP:
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  {}
+  # requests:
+  #   cpu: 100m
+  #   memory: 64Mi
+  # limits:
+  #   cpu: 800m
+  #   memory: 512Mi
+
+deploymentLabels: {}
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Reference: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+postgresql:
+  enabled: true
+  image:
+    tag: 16
+  auth:
+    username: kemal
+    password: kemal
+    database: invidious
+  primary:
+    persistence:
+      enabled: true
+      storageClass: "smb-client"
+      accessModes:
+        - ReadWriteMany
+      size: 8Gi
+    initdb:
+      username: kemal
+      password: kemal
+      scriptsConfigMap: invidious-postgresql-init
+
+# Reference: https://github.com/iv-org/invidious/blob/master/config/config.example.yml
+config:
+  db:
+    user: kemal
+    password: kemal
+    host: ""
+    port: 5432
+    dbname: invidious
+  port: 3000
+  domain: ""
+  https_only: false
+  channel_threads: 1
+  full_refresh: false
+  feed_threads: 1
+  hmac_key: c0825ea7c172f4d20de7c0fcda06fee52f0209ed
+  registration_enabled: false
+  admins: ["michael"]
+
+sighelper:
+  enabled: true
+  resources: {}
+  service:
+    port: 12999
+  image:
+    repository: quay.io/invidious/inv-sig-helper
+    tag: latest
+    pullPolicy: Always

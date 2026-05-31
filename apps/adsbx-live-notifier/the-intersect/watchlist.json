@@ -1,0 +1,32 @@
+{
+  "aircraft": [
+    {
+      "tail": "N407KS",
+      "description": "KCSO Guardian 1 (Old)"
+    },
+    {
+      "tail": "N422CT",
+      "description": "KCSO Guardian 1"
+    },
+    {
+      "tail": "N790RJ",
+      "description": "KCSO Guardian 2"
+    },
+    {
+      "tail": "CFXOO",
+      "description": "Linus Tech Tips / Influence Air"
+    },
+    {
+      "tail": "C-FXOO",
+      "description": "Linus Tech Tips / Influence Air"
+    },
+    {
+      "tail": "C03E37",
+      "description": "Linus Tech Tips / Influence Air"
+    },
+    {
+      "tail": "N954AL",
+      "description": "Airlift Northwest"
+    }
+  ]
+}

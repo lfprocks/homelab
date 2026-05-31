@@ -1,0 +1,11 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: postgresql
+  namespace: bitnami
+spec:
+  interval: 5m0s
+  url: oci://registry-1.docker.io/bitnamicharts/postgresql
+  ref:
+    tag: "16.4.5"

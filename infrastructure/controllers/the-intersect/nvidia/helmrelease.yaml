@@ -1,0 +1,78 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: nvidia-device-plugin
+  namespace: nvidia
+spec:
+  chart:
+    spec:
+      chart: nvidia-device-plugin
+      sourceRef:
+        kind: HelmRepository
+        name: nvdp
+      version: 0.17.2
+  interval: 1m0s
+  values:
+    runtimeClassName: nvidia
+# ---
+# apiVersion: helm.toolkit.fluxcd.io/v2beta2
+# kind: HelmRelease
+# metadata:
+#   name: dcgm-exporter
+#   namespace: nvidia
+# spec:
+#   chart:
+#     spec:
+#       chart: dcgm-exporter
+#       sourceRef:
+#         kind: HelmRepository
+#         name: dcgm-exporter
+#       version: 4.2.0
+#   interval: 1m0s
+#   values:
+#     podAnnotations:
+#       prometheus.io/scrape: "true"
+#       prometheus.io/port: "9400"
+#     serviceMonitor:
+#       enabled: false
+#       spec:
+#     affinity:
+#       nodeAffinity:
+#         requiredDuringSchedulingIgnoredDuringExecution:
+#           nodeSelectorTerms:
+#             - matchExpressions:
+#                 - key: k8s.lfp.rocks/gpu
+#                   operator: In
+#                   values:
+#                     - enabled
+#
+# https://github.com/siderolabs/extensions/issues/385#issuecomment-2200584893
+# ---
+# apiVersion: helm.toolkit.fluxcd.io/v2beta2
+# kind: HelmRelease
+# metadata:
+#   name: nvidia-gpu-exporter
+#   namespace: nvidia
+# spec:
+#   chart:
+#     spec:
+#       chart: nvidia-gpu-exporter
+#       sourceRef:
+#         kind: HelmRepository
+#         name: utkuozdemir
+#       version: 1.0.0
+#   interval: 1m0s
+#   values:
+#     podAnnotations:
+#       prometheus.io/scrape: "true"
+#       prometheus.io/port: "9835"
+#     affinity:
+#       nodeAffinity:
+#         requiredDuringSchedulingIgnoredDuringExecution:
+#           nodeSelectorTerms:
+#             - matchExpressions:
+#                 - key: k8s.lfp.rocks/gpu
+#                   operator: In
+#                   values:
+#                     - enabled

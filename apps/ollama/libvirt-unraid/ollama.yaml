@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name ollama
+  labels:
+    app: *name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "ollama"
+        k8s.lfp.rocks/version: "0.1.43"
+    spec:
+      containers:
+        - name: *name
+          image: ollama/ollama:0.1.43
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  ["/bin/sh", "-c", "ollama pull llama3; ollama run llama3"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  labels:
+    app: ollama
+    service: ollama
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 11434
+  selector:
+    app: ollama
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ollama-httproute
+  namespace: ollama
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: istio-ingress
+  hostnames: ["${SUB_GIANT_SHIELD}.${DOMAIN_COMMON_GLASS}"]
+  rules:
+    - backendRefs:
+        - name: ollama
+          port: 80

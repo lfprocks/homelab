@@ -1,0 +1,105 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name asr
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8000"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      # Suppress Kubernetes' legacy "service link" env injection. Without
+      # this, every Service in the asr namespace gets a `<NAME>_PORT=
+      # tcp://...` env var on this pod — and the asr Service collides
+      # with the app's ASR_PORT setting (pydantic tries to parse the
+      # injected URL as an int and crashes at startup).
+      enableServiceLinks: false
+      runtimeClassName: nvidia
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            # Default to Parakeet-only to stay within the existing
+            # memory budget. Override in an overlay to
+            # "parakeet-tdt-0.6b-v3,seamless-m4t-v2" once the host has
+            # the headroom for both (~ +4 GB GPU VRAM, +4 GB host RSS).
+            - name: ASR_ENABLED_MODELS
+              value: "parakeet-tdt-0.6b-v3"
+            # Pin to a specific GPU on multi-GPU GPU nodes. worker-04
+            # is the only GPU node and shares with llama-cpp (Qwen
+            # 3.5-27B Q4 + 49K ctx, ~10 GB across both GPUs). The
+            # parakeet 0.6B model needs ~3-5 GB working memory at
+            # load. We pin to GPU 0 because llama-cpp's KV cache grows
+            # asymmetrically and GPU 0 tends to have more headroom; if
+            # this OOMs again, flip to "1" or revisit the llama-cpp
+            # context-size budget.
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            # Use expandable segments to reduce CUDA-side memory
+            # fragmentation. Helps parakeet fit when free VRAM is
+            # close to its working-set requirement.
+            - name: PYTORCH_CUDA_ALLOC_CONF
+              value: "expandable_segments:True"
+            # Push OpenTelemetry traces to the cluster's Alloy DaemonSet,
+            # which forwards to Tempo. Standard OTel env var; the asr
+            # tracing layer is a no-op when this is unset.
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://alloy.grafana.svc.cluster.local:4318"
+            - name: OTEL_SERVICE_NAME
+              value: "asr"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: 8000
+            initialDelaySeconds: 60   # cold-start budget per Constitution VI
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            limits:
+              memory: "6Gi"
+            requests:
+              cpu: "250m"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asr
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: asr-httproute

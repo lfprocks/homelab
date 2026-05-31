@@ -1,0 +1,11 @@
+namespace: llama-cpp
+
+resources:
+  - llama-cpp.yaml
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - includeSelectors: true
+    pairs:
+      proj: llama-cpp

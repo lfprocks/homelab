@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: versity
+resources:
+  - helmrelease.yaml
+  - values-secret.sops.yaml
+configMapGenerator:
+  - name: versitygw-values
+    files:
+      - values.yaml=values.yaml
+configurations:
+  - kustomizeconfig.yaml

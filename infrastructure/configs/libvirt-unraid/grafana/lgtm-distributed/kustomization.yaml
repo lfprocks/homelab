@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - helmrelease.yaml
+  - httproutes.yaml
+  - grafana-buckets-secret.enc.yaml
+configMapGenerator:
+  - name: lgtm-distributed-values
+    files:
+      - values.yaml=values.yaml
+configurations:
+  - kustomizeconfig.yaml

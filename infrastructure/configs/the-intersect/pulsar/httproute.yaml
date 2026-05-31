@@ -1,0 +1,30 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pulsar-proxy-httproute
+  namespace: pulsar
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COPPER_FALCON}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: pulsar-proxy
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pulsar-bin-proxy-httproute
+  namespace: pulsar
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_NORTHERN_JOINT}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: pulsar-proxy
+          port: 6650

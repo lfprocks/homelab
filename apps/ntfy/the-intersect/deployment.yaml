@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy-deployment
+  labels:
+    app: ntfy-deployment
+spec:
+  revisionHistoryLimit: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntfy-pod
+  template:
+    metadata:
+      labels:
+        app: ntfy-pod
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: ntfy
+          image: binwiederhier/ntfy:v1.28.0 # set deployed version
+          args: ["serve"]
+          env: #example of adjustments made in environmental variables
+            - name: TZ # set timezone
+              value: XXXXXXX
+            - name: NTFY_DEBUG # enable/disable debug
+              value: "false"
+            - name: NTFY_LOG_LEVEL # adjust log level
+              value: INFO
+            - name: NTFY_BASE_URL # add base url
+              value: https://${SUB_COMBAT_CALL}.${DOMAIN_CORONET_SUMMIT}
+          ports:
+            - containerPort: 80
+              name: http-ntfy
+          resources:
+            limits:
+              memory: 300Mi
+              cpu: 200m
+            requests:
+              cpu: 20m
+              memory: 150Mi
+          volumeMounts:
+            - mountPath: /etc/ntfy/server.yml
+              subPath: server.yml
+              name: config-volume # generated vie configMapGenerator from kustomization file
+            - mountPath: /var/cache/ntfy
+              name: cache-volume #cache volume mounted to persistent volume
+      volumes:
+        - name: config-volume
+          configMap: # uses configmap generator to parse server.yml to configmap
+            name: server-config
+        - name: cache-volume
+          persistentVolumeClaim: # stores /cache/ntfy in defined pv
+            claimName: ntfy-pvc

@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pnp
+
+resources:
+  - ../base/
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: pulsar-notification-pipeline
+patches:
+  - path: writer.yaml
+  - path: writer_secret.yaml
+  - path: deliverer.yaml
+  - path: deliverer_secret.yaml

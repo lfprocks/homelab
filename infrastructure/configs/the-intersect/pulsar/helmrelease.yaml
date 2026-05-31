@@ -1,0 +1,117 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: pulsar
+  namespace: pulsar
+spec:
+  chart:
+    spec:
+      chart: pulsar
+      sourceRef:
+        kind: HelmRepository
+        name: apachepulsar
+        namespace: pulsar
+      version: "4.2.0"
+  interval: 1m0s
+  values:
+    volumes:
+      persistence: true
+
+    components:
+      zookeeper: true
+      oxia: false
+
+    # # Reduce Oxia resource consumption
+    # oxia:
+    #   coordinator:
+    #     cpuLimit: 128m
+    #     memoryLimit: 128Mi
+    #     podMonitor:
+    #       enabled: false
+    #   server:
+    #     replicas: 1
+    #     cpuLimit: 0.5
+    #     memoryLimit: 512Mi
+    #     dbCacheSizeMb: 128
+    #     storageSize: 2Gi
+    #     podMonitor:
+    #       enabled: false
+
+    # Reduce other component resources
+    bookkeeper:
+      replicaCount: 2
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 0.1
+      configData:
+        PULSAR_MEM: >
+          -Xms256m
+          -Xmx256m
+          -XX:MaxDirectMemorySize=256m
+      podMonitor:
+        enabled: false
+
+    broker:
+      replicaCount: 1
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 0.1
+      configData:
+        # autoSkipNonRecoverableData: "true"
+        PULSAR_MEM: >
+          -Xms256m -Xmx256m -XX:MaxDirectMemorySize=256m
+      podMonitor:
+        enabled: false
+
+    autorecovery:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 0.025
+      podMonitor:
+        enabled: false
+
+    proxy:
+      replicaCount: 1
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 0.05
+      configData:
+        PULSAR_MEM: >
+          -Xms128m -Xmx128m -XX:MaxDirectMemorySize=128m
+      podMonitor:
+        enabled: false
+
+    toolset:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 0.05
+      configData:
+        PULSAR_MEM: >
+          -Xms128M
+          -Xmx128M
+          -XX:MaxDirectMemorySize=128M
+
+    victoria-metrics-k8s-stack:
+      enabled: false
+      victoria-metrics-operator:
+        enabled: false
+      vmsingle:
+        enabled: false
+      vmagent:
+        enabled: false
+      kube-state-metrics:
+        enabled: false
+      prometheus-node-exporter:
+        enabled: false
+      grafana:
+        enabled: false
+
+    zookeeper:
+      podMonitor:
+        enabled: false

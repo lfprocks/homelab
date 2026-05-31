@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: adsbx
+
+resources:
+  - ../base/
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: adsbx-live-notifier
+patches:
+  - path: api.yaml
+  - path: api_secret.yaml
+configMapGenerator:
+  - name: adsbx-live-notifier-watchlist
+    files:
+      - watchlist.json

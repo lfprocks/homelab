@@ -1,0 +1,21 @@
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  labels:
+    app.kubernetes.io/name: immich-dragonfly
+    app.kubernetes.io/instance: immich-dragonfly
+    app.kubernetes.io/part-of: dragonfly-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: dragonfly-operator
+  name: immich-dragonfly
+spec:
+  replicas: 2
+  args:
+    - "--default_lua_flags=allow-undeclared-keys" # you definitely shouldn't do this normally, locks on every call
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 600m
+      memory: 750Mi

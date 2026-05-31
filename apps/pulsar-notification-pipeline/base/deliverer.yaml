@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pnp-deliverer-env-configmap
+data:
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name pnp-deliverer
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      containers:
+        - name: *name
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: pnp-deliverer-env-configmap
+            - secretRef:
+                name: pnp-deliverer-env-secret
+          ports:
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "20m"
+              memory: "64Mi"
+          volumeMounts:
+            - name: pnp-deliverer-keys
+              mountPath: /run/secrets/pulsar-keys
+              readOnly: true
+      volumes:
+        - name: pnp-deliverer-keys
+          secret:
+            secretName: pnp-deliverer-keys
+            items:
+              - key: v1.priv.pem
+                path: v1.priv.pem

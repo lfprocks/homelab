@@ -1,0 +1,94 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lfpweather-forecast-inference-api-env-configmap
+data:
+  LOG_LEVEL: "error"
+
+  AUTHENTICATION_ENABLED: "true"
+
+  DRAGONFLY_HOST: "dragonfly.dragonfly.svc.cluster.local"
+
+  NWS_CLIENT_TIMEOUT: "30s"
+
+  CACHE_RESULTS_DURATION: "3h"
+
+  # LLM provider configuration
+  LLM_PROVIDER: "openai"
+  # OPENAI_API_KEY is set in .env file
+  OPENAI_MODEL: "unsloth/Qwen3.5-27B-GGUF:Q4_0"
+  OPENAI_NO_THINK: "true"
+  # OPENAI_BASE_URL: "" # Optional: for OpenAI-compatible APIs
+
+  LLM_HANDLER_TIMEOUT: "120s"
+  WORKER_TIMEOUT: "300s"
+  # metrics
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+
+  # tracing
+  TRACING_ENABLED: "false"
+  TRACING_SAMPLERATE: "1.0"
+  TRACING_SERVICE: "lfpweather-api"
+  TRACING_VERSION: "1.1.0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lfpweather-forecast-inference-api
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "lfpweather-forecast-inference-api"
+        k8s.lfp.rocks/version: "v1.1.1"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/lfpweather-forecast-inference-api:v1.1.1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lfpweather-forecast-inference-api
+  labels:
+    app: lfpweather-forecast-inference-api
+    service: lfpweather-forecast-inference-api
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: lfpweather-forecast-inference-api
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lfpweather-forecast-inference-api-httproute
+  namespace: lfpweather
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_COMBAT_PILGRIM}.${DOMAIN_COMMON_STAR}"]
+  rules:
+    - backendRefs:
+        - name: lfpweather-forecast-inference-api
+          port: 80

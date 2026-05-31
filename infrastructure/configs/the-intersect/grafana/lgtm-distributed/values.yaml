@@ -1,0 +1,690 @@
+---
+grafana:
+  # -- Deploy Grafana if enabled. See [upstream readme](https://github.com/grafana/helm-charts/tree/main/charts/grafana#configuration) for full values reference.
+  enabled: true
+
+  image:
+    tag: 12.1.0
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 150Mi
+    limits:
+      cpu: 256m
+      memory: 512Mi
+
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: smb-client
+
+  # env:
+  #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
+  #     value: "true"
+
+  plugins:
+    - https://grafana.com/api/plugins/operato-windrose-panel/versions/1.2.0/download;operato-windrose-panel
+
+  grafana.ini:
+    feature_toggles:
+      provisioning: true
+      kubernetesDashboards: true
+    server:
+      root_url: https://${SUB_SENIOR_ABLE}.${DOMAIN_CORONET_SUMMIT}
+
+  # -- Grafana data sources config. Connects to all three by default
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      # -- Datasources linked to the Grafana instance. Override if you disable any components.
+      datasources:
+        # https://grafana.com/docs/grafana/latest/datasources/loki/#provision-the-loki-data-source
+        - name: Loki
+          uid: loki
+          type: loki
+          url: http://{{ .Release.Name }}-loki-gateway
+          isDefault: false
+        # https://grafana.com/docs/grafana/latest/datasources/prometheus/#provision-the-data-source
+        - name: Mimir
+          uid: prom
+          type: prometheus
+          url: http://{{ .Release.Name }}-mimir-nginx/prometheus
+          isDefault: true
+        # https://grafana.com/docs/grafana/latest/datasources/tempo/configure-tempo-data-source/#provision-the-data-source
+        - name: Tempo
+          uid: tempo
+          type: tempo
+          url: http://{{ .Release.Name }}-tempo-query-frontend:3100
+          isDefault: false
+          jsonData:
+            tracesToLogsV2:
+              datasourceUid: loki
+            lokiSearch:
+              datasourceUid: loki
+            tracesToMetrics:
+              datasourceUid: prom
+            serviceMap:
+              datasourceUid: prom
+
+loki:
+  # -- Deploy Loki if enabled. See [upstream readme](https://github.com/grafana/helm-charts/tree/main/charts/loki-distributed#values) for full values reference.
+  enabled: true
+
+  distributor:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 30m
+        memory: 100Mi
+      limits:
+        cpu: 200m
+        memory: 150Mi
+
+  gateway:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 20Mi
+      limits:
+        cpu: 50m
+        memory: 50Mi
+
+  loki:
+    # auth_enabled: false
+    schemaConfig:
+      configs:
+        - from: "2024-04-01"
+          index:
+            period: 24h
+            prefix: loki_index_
+          object_store: gcs
+          schema: v13
+          store: tsdb
+    storageConfig:
+      boltdb_shipper:
+        shared_store: gcs
+        active_index_directory: /var/loki/index
+        cache_location: /var/loki/cache
+        cache_ttl: 1h
+      tsdb_shipper:
+        active_index_directory: /var/loki/tsdb-index
+        cache_location: /var/loki/tsdb-cache
+      gcs:
+        bucket_name: lfpr-p-gcsb-usw1-loki-chunks-l2lw-134f300
+    structuredConfig:
+      auth_enabled: false
+      ruler:
+        alertmanager_url: http://localhost
+        enable_api: true
+        storage:
+          type: gcs
+          gcs:
+            bucket_name: lfpr-p-gcsb-usw1-loki-ruler-l2lw-1db580e
+
+  ingester:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 20m
+        memory: 400Mi
+      limits:
+        cpu: 200m
+        memory: 600Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  compactor:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  queryFrontend:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 40Mi
+      limits:
+        cpu: 50m
+        memory: 80Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  ruler:
+    enabled: true
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 60Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  querier:
+    enabled: true
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 150Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  minio:
+    enabled: false
+
+# -- Mimir chart values. Resources are set to a minimum by default.
+mimir:
+  # -- Deploy Mimir if enabled. See [upstream values.yaml](https://github.com/grafana/mimir/blob/main/operations/helm/charts/mimir-distributed/values.yaml) for full values reference.
+  enabled: true
+
+  mimir:
+    structuredConfig:
+      blocks_storage:
+        backend: gcs
+        storage_prefix: blocks
+        gcs:
+          bucket_name: lfpr-p-gcsb-usw1-mimir-blocks-9mk8-0274f6f
+      alertmanager_storage:
+        backend: gcs
+        gcs:
+          bucket_name: lfpr-p-gcsb-usw1-mimir-alertmanager-0k3e-0000795
+      ruler_storage:
+        backend: gcs
+        gcs:
+          bucket_name: lfpr-p-gcsb-usw1-mimir-ruler-l2lw-d0af208
+      limits:
+        # Delete from storage metrics data older than 30d.
+        compactor_blocks_retention_period: 30d
+        max_global_series_per_user: 500000
+
+  alertmanager:
+    persistentVolume:
+      storageClass: smb-client
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 200Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  compactor:
+    persistentVolume:
+      storageClass: smb-client
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 15m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 500Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  distributor:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 80m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  ingester:
+    persistentVolume:
+      storageClass: ceph-block
+      size: 10Gi
+    replicas: 4
+    zoneAwareReplication:
+      enabled: false
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 60m
+        memory: 600Mi
+      limits:
+        cpu: 300m
+        memory: 800Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  overrides_exporter:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 20Mi
+      limits:
+        cpu: 20m
+        memory: 50Mi
+  querier:
+    replicas: 1
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 120Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  query_frontend:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 40Mi
+      limits:
+        cpu: 50m
+        memory: 80Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  query_scheduler:
+    replicas: 1
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 30Mi
+      limits:
+        cpu: 50m
+        memory: 60Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  ruler:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        cpu: 50m
+        memory: 100Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  store_gateway:
+    persistentVolume:
+      storageClass: smb-client
+    zoneAwareReplication:
+      enabled: false
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+  minio:
+    enabled: false
+  rollout_operator:
+    resources:
+      requests:
+        cpu: 2m
+        memory: 25Mi
+      limits:
+        cpu: 20m
+        memory: 50Mi
+
+tempo:
+  # -- Deploy Tempo if enabled.  See [upstream readme](https://github.com/grafana/helm-charts/blob/main/charts/tempo-distributed/README.md#values) for full values reference.
+  enabled: true
+
+  minio:
+    enabled: false
+
+  # Enable OTLP receivers on the distributor. Without this the
+  # distributor's `receivers:` block is null and the service only exposes
+  # the internal HTTP (3100) and gRPC (9095) ports — no OTLP intake.
+  # With this set, the chart adds 4317 (gRPC) and 4318 (HTTP) to the
+  # distributor service so cluster apps (and Alloy) can push spans.
+  traces:
+    otlp:
+      grpc:
+        enabled: true
+      http:
+        enabled: true
+
+  ingester:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 60Mi
+      limits:
+        cpu: 50m
+        memory: 100Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  compactor:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 60Mi
+      limits:
+        cpu: 50m
+        memory: 100Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  distributor:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 50Mi
+      limits:
+        cpu: 50m
+        memory: 100Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  querier:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 80Mi
+      limits:
+        cpu: 50m
+        memory: 150Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  queryFrontend:
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "3100"
+      prometheus.io/scrape: "true"
+      prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 70Mi
+      limits:
+        cpu: 50m
+        memory: 120Mi
+    extraVolumes:
+      - name: lgtm-distributed-service-account-secret
+        secret:
+          secretName: lgtm-distributed-service-account-secret
+    extraVolumeMounts:
+      - name: lgtm-distributed-service-account-secret
+        mountPath: /etc/service-account
+        readOnly: true
+    extraEnv:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+
+  storage:
+    trace:
+      backend: gcs
+      gcs:
+        bucket_name: lfpr-p-gcsb-usw1-tempo-storage-l2lw-acccd18
+
+grafana-oncall:
+  # -- Deploy Grafana OnCall if enabled. See [upstream values.yaml](https://github.com/grafana/oncall/blob/dev/helm/oncall/values.yaml) for full values reference.
+  enabled: false

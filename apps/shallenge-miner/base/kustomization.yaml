@@ -1,0 +1,11 @@
+namespace: shallenge
+
+resources:
+  - api.yaml
+  - api_secret.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - includeSelectors: true
+    pairs:
+      proj: shallenge-miner

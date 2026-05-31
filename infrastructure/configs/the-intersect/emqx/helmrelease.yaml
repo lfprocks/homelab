@@ -1,0 +1,42 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: emqx
+  namespace: emqx
+spec:
+  chart:
+    spec:
+      chart: emqx
+      sourceRef:
+        kind: HelmRepository
+        name: emqx-operator
+        namespace: emqx
+      version: "5.8.7"
+  interval: 1m0s
+  valuesFrom:
+    - kind: Secret
+      name: emqx-values-secret
+  values:
+    # Replica configuration
+    replicaCount: 3
+
+    # Resource configuration
+    resources:
+      limits:
+        memory: "1Gi"
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+
+    # Persistence configuration (using default size)
+    persistence:
+      enabled: true
+      storageClass: "ceph-block"
+      size: 20Mi
+
+    # EMQX configuration (corrected structure)
+    emqxConfig:
+      EMQX_DASHBOARD__DEFAULT_USERNAME: admin
+      # EMQX_DASHBOARD__DEFAULT_PASSWORD provided via emqx-values-secret (valuesFrom)
+      EMQX_LOADED_PLUGINS: "emqx_recon,emqx_retainer,emqx_management,emqx_dashboard"

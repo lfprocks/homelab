@@ -1,0 +1,67 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: libvirt-unraid-apps-ollama
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  dependsOn:
+    - name: libvirt-unraid-infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: apps/ollama/libvirt-unraid
+  prune: true
+  wait: true
+  timeout: 5m0s
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: libvirt-unraid-apps-nws-forecast-summarizer
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  dependsOn:
+    - name: libvirt-unraid-infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: apps/nws-forecast-summarizer/libvirt-unraid
+  prune: true
+  wait: true
+  timeout: 5m0s
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: libvirt-unraid-apps-shallenge-miner
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  dependsOn:
+    - name: libvirt-unraid-infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: apps/shallenge-miner/libvirt-unraid
+  prune: true
+  wait: true
+  timeout: 5m0s
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-vars

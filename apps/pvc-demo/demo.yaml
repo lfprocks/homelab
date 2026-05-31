@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-demo-deployment
+  namespace: default
+  labels:
+    app: nfs-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-demo
+  template:
+    metadata:
+      labels:
+        app: nfs-demo
+    spec:
+      containers:
+        - name: nfs-demo-container
+          image: ghcr.io/michaelpeterswa/konnect
+          command: ["sh", "-c", "while true; do sleep 3600; done"]
+          volumeMounts:
+            - name: nfs-demo-volume
+              mountPath: /usr/share/demo
+      volumes:
+        - name: nfs-demo-volume
+          persistentVolumeClaim:
+            claimName: nfs-demo-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-demo-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: nfs-client

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minecraft-test
+  labels:
+    app: minecraft-test
+spec:
+  replicas: 0
+  serviceName: minecraft-test
+  selector:
+    matchLabels:
+      app: minecraft-test
+  template:
+    metadata:
+      labels:
+        app: minecraft-test
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      initContainers:
+        - name: download-bluemap
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /data/plugins
+              curl -L -o /data/plugins/bluemap-5.12-paper.jar https://github.com/BlueMap-Minecraft/BlueMap/releases/download/v5.12/bluemap-5.12-paper.jar
+          volumeMounts:
+            - mountPath: /data
+              name: data
+      containers:
+        - name: minecraft
+          image: itzg/minecraft-server:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: minecraft-test-config
+          ports:
+            - containerPort: 25565
+              name: minecraft
+              protocol: TCP
+            - containerPort: 8100
+              name: bluemap
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: data
+          readinessProbe:
+            exec:
+              command:
+                - mc-monitor
+                - status
+                - --host
+                - localhost
+                - --port
+                - "25565"
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 18
+          resources:
+            limits:
+              memory: 3Gi
+              cpu: 2000m
+            requests:
+              cpu: 250m
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minecraft-test-pvc

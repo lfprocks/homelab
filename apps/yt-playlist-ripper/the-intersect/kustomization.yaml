@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: yt-playlist-ripper
+
+resources:
+  - ../base/
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: yt-playlist-ripper
+
+patches:
+  - path: ripper.yaml
+  - path: ripper_secret.yaml
+  - path: persistentvolume.yaml

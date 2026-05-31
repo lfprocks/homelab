@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: govee2mqtt
+
+resources:
+  - ../base/
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: govee2mqtt
+patches:
+  - path: configmap.yaml
+  - path: secret.yaml
+  - path: deployment.yaml

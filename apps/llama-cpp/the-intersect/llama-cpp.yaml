@@ -1,0 +1,145 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name llama-cpp
+  labels:
+    app: *name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+      labels:
+        k8s.lfp.rocks/service: "llama-cpp"
+        k8s.lfp.rocks/version: "server-cuda"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/ggml-org/llama.cpp:server-cuda12-b9010
+          env:
+            - name: LLAMA_ARG_ENDPOINT_METRICS
+              value: "1"
+          args:
+            - "-hf"
+            # - "ggml-org/gpt-oss-20b-GGUF"
+            # - "huihui-ai/Huihui-gpt-oss-20b-BF16-abliterated:Q4_K_M"
+            # - "bartowski/google_gemma-3n-E4B-it-GGUF:Q4_K_M"
+            # - "ggml-org/gemma-3-12b-it-GGUF:Q8_0"
+            # - "Qwen/Qwen2.5-Coder-14B-Instruct-GGUF:Q4_K_M"
+            # - "Qwen/Qwen2.5-Coder-14B-Instruct-GGUF:Q8_0"
+            # - "unsloth/Qwen3.5-27B-GGUF:Q4_0"
+            - "unsloth/gemma-4-E4B-it-GGUF:UD-Q8_K_XL"
+            - "--ctx-size"
+            - "32768"
+            - "--jinja"
+            - "-ngl"
+            - "99"
+            - "-fa"
+            - "on"
+            - "-ctk"
+            - "q8_0"
+            - "-ctv"
+            - "q8_0"
+            - "--temp"
+            - "1.0"
+            - "--top-p"
+            - "0.95"
+            - "--top-k"
+            - "64"
+            - "--api-key-file"
+            - "/etc/llama-keys/api-keys"
+            - "--no-webui"
+          resources:
+            limits:
+              memory: "8Gi"
+            requests:
+              cpu: "250m"
+              memory: "3Gi"
+          volumeMounts:
+            - name: models-cache
+              mountPath: /models
+            - name: api-keys
+              mountPath: /etc/llama-keys
+              readOnly: true
+        - name: metrics-proxy
+          image: caddy:2-alpine
+          command:
+            - sh
+            - -c
+            - |
+              export LLAMA_API_KEY="$(head -n1 /etc/llama-keys/api-keys)"
+              exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+          ports:
+            - name: metrics
+              containerPort: 9090
+          volumeMounts:
+            - name: api-keys
+              mountPath: /etc/llama-keys
+              readOnly: true
+            - name: metrics-proxy-config
+              mountPath: /etc/caddy
+              readOnly: true
+          resources:
+            limits:
+              memory: "64Mi"
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+      volumes:
+        - name: models-cache
+          persistentVolumeClaim:
+            claimName: llama-cpp-models
+        - name: api-keys
+          secret:
+            secretName: llama-cpp-api-keys
+        - name: metrics-proxy-config
+          configMap:
+            name: llama-cpp-metrics-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-cpp
+  labels:
+    app: llama-cpp
+    service: llama-cpp
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: llama-cpp
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llama-cpp-models
+spec:
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ceph-block
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: llama-cpp-httproute
+  namespace: llama-cpp
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_OPEN_ABLE}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: llama-cpp
+          port: 80

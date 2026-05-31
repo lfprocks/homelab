@@ -1,0 +1,11 @@
+namespace: trunk-recorder
+
+resources:
+  - trunk-recorder.yaml
+  - trunk-recorder-secret.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - includeSelectors: true
+    pairs:
+      proj: trunk-recorder

@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wastebin-pv
+  namespace: wastebin
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wastebin-pvc
+  namespace: wastebin

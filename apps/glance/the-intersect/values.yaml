@@ -1,0 +1,89 @@
+replicaCount: 1
+
+podAnnotations:
+  reloader.stakater.com/auto: "true"
+
+config: |
+  server:
+    port: 80
+  theme:
+    background-color: 186 21 20
+    contrast-multiplier: 1.2
+    primary-color: 97 13 80
+  pages:
+    - name: Home
+      head-widgets:
+        - type: markets
+          hide-header: true
+          markets:
+            - symbol: MU
+              name: Micron Technology, Inc.
+            - symbol: NVDA
+              name: NVIDIA Corporation
+            - symbol: AMD
+              name: Advanced Micro Devices, Inc.
+            - symbol: SPY
+              name: S&P 500 ETF Trust
+            - symbol: QQQ
+              name: Invesco QQQ Trust
+            - symbol: MSFT
+              name: Microsoft Corporation
+            - symbol: AAPL
+              name: Apple Inc.
+            - symbol: GOOGL
+              name: Alphabet Inc. Class A
+            - symbol: AMZN
+              name: Amazon.com, Inc.
+            - symbol: META
+              name: Meta Platforms, Inc.
+      columns:
+        - size: small
+          widgets:
+            - type: calendar
+              first-day-of-week: monday
+
+            - type: weather
+              location: Seattle, United States
+              units: imperial
+              hour-format: 24h
+
+        - size: full
+          widgets:
+            - type: hacker-news
+            - type: videos
+              channels:
+                - UCR-DXc1voovS8nhAvccRZhg # Jeff Geerling
+                - UCj1VqrHhDte54oLgPG4xpuQ # Stuff Made Here
+                - UCy0tKL1T7wFoYcxCe0xjN6Q # Technology Connections
+                - UC6107grRI4m0o2-emgoDnAA # Smarter Every Day
+                - UCCWeRTgd79JL0ilH0ZywSJA # AlphaPhoenix
+                - UCqGONXW1ORgz5Y4qK-0JdkQ # Joe Grand
+                - UCMOqf8ab-42UUQIdVoKwjlQ # Practical Engineering
+                - UC3VDCeZYZH7mCihtMVHqppw # Matt Brown
+                - UCvFApMFo_AafXbHRyEJefjA # Extractions&Ire
+                - UC1D3yD4wlPMico0dss264XA # NileBlue
+                - UCq2rNse2XX4Rjzmldv9GqrQ # RCTestflight
+                - UCivi_f1nniBzEOfKhRoN12Q # Grind Hard Plumbing Co.
+
+service:
+  type: ClusterIP
+  port: 80
+
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_CORONET_ORCHARD}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

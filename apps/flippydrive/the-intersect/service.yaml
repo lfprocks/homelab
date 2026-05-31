@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flippydrive-server
+  namespace: flippydrive
+  labels:
+    app: flippydrive-server
+    service: flippydrive
+spec:
+  ports:
+    - name: tcp
+      port: 7031
+      targetPort: 7031
+      protocol: TCP
+  selector:
+    app: flippydrive-server

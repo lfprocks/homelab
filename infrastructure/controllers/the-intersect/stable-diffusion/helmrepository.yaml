@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: amithkk-sd
+  namespace: stablediffusion
+spec:
+  interval: 1m0s
+  url: https://amithkk.github.io/stable-diffusion-k8s

@@ -1,0 +1,19 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: stable-diffusion
+  namespace: stablediffusion
+spec:
+  chart:
+    spec:
+      chart: stable-diffusion
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 1.0.13
+  valuesFrom:
+    - kind: ConfigMap
+      name: stable-diffusion-values
+  interval: 1m0s

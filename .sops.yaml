@@ -1,0 +1,6 @@
+age:
+  - keyfile: age.agekey
+
+creation_rules:
+  - encrypted_regex: "^(data|stringData)$"
+    age: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas

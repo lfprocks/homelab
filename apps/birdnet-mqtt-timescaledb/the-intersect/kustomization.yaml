@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: birdnet
+
+resources:
+  - ../base/
+  - mqtt_secret.sops.yaml
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: birdnet-mqtt-timescaledb
+patches:
+  - path: api.yaml
+  - path: api_secret.yaml

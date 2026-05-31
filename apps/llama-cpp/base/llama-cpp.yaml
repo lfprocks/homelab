@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name llama-cpp
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+      annotations:
+        prometheus.io/scrape: "false"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      runtimeClassName: nvidia
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/ggml-org/llama.cpp:server-cuda
+          command: ["/app/llama-server"]
+          args:
+            - "-hf"
+            - "ggml-org/gpt-oss-20b-GGUF"
+            - "--ctx-size"
+            - "32768"
+            - "--jinja"
+            - "-ub"
+            - "4096"
+            - "-b"
+            - "4096"
+            - "-ngl"
+            - "99"
+            - "-fa"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 8080
+          resources:
+            limits:
+              memory: "8Gi"
+            requests:
+              cpu: "250m"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-cpp
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llama-cpp-models
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: llama-cpp-httproute

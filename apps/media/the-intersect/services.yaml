@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-deluge
+spec:
+  ports:
+    - name: webui
+      port: 80
+      targetPort: 8112
+    - name: daemon
+      port: 58846
+      targetPort: 58846
+  selector:
+    app: media-stack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-jackett
+spec:
+  ports:
+    - name: webui
+      port: 80
+      targetPort: 9117
+  selector:
+    app: media-stack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-sonarr
+spec:
+  ports:
+    - name: webui
+      port: 80
+      targetPort: 8989
+  selector:
+    app: media-stack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-radarr
+spec:
+  ports:
+    - name: webui
+      port: 80
+      targetPort: 7878
+  selector:
+    app: media-stack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-flaresolverr
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8191
+  selector:
+    app: media-stack

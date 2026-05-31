@@ -1,0 +1,76 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: flux-suspension-exporter
+  namespace: flux-suspension-exporter
+spec:
+  chart:
+    spec:
+      chart: flux-suspension-exporter
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 0.1.1
+  interval: 1m0s
+  values:
+    image:
+      repository: ghcr.io/alpineworks/flux-suspension-exporter
+      pullPolicy: IfNotPresent
+      tag: ""
+
+    imagePullSecrets: []
+    nameOverride: ""
+    fullnameOverride: ""
+
+    environmentVariables:
+      LOG_LEVEL: "error"
+
+    serviceAccount:
+      create: true
+      automount: true
+      annotations: {}
+      name: ""
+
+    podAnnotations:
+      {
+        prometheus.io/scrape: "true",
+        prometheus.io/path: /metrics,
+        prometheus.io/port: "8081",
+        prometheus.istio.io/merge-metrics: "false",
+      }
+    podLabels:
+      {
+        k8s.lfp.rocks/service: "flux-suspension-exporter",
+        k8s.lfp.rocks/version: "v1.0.0",
+      }
+
+    podSecurityContext: {}
+
+    securityContext: {}
+
+    service:
+      type: ClusterIP
+      port: 8081
+
+    resources: {}
+
+    livenessProbe:
+      httpGet:
+        path: /healthcheck
+        port: http
+    readinessProbe:
+      httpGet:
+        path: /healthcheck
+        port: http
+
+    volumes: []
+
+    volumeMounts: []
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}

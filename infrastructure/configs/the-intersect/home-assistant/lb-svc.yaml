@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: home-assistant-lb
+  namespace: home-assistant
+  labels:
+    app.kubernetes.io/instance: home-assistant
+    app.kubernetes.io/name: home-assistant
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/instance: home-assistant
+    app.kubernetes.io/name: home-assistant
+  ports:
+    - name: http
+      port: 8123
+      protocol: TCP
+      targetPort: http
+    - name: homekit
+      port: 21064
+      protocol: TCP
+      targetPort: 21064
+  sessionAffinity: None

@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zwavejs-ui
+  namespace: zwavejs-ui
+  labels:
+    app: zwavejs-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zwavejs-ui
+  template:
+    metadata:
+      labels:
+        app: zwavejs-ui
+    spec:
+      nodeSelector:
+        # Only schedule on nodes that have the Z-Wave device
+        feature.node.kubernetes.io/usb-ef_303a_4001.present: "true"
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: k8s.lfp.rocks/gpu
+      #           operator: DoesNotExist
+      containers:
+        - name: zwavejs-ui
+          image: zwavejs/zwave-js-ui:latest
+          ports:
+            - containerPort: 8091
+              name: zwavejs
+              protocol: TCP
+            - containerPort: 3000
+              name: websocket
+              protocol: TCP
+          env:
+            - name: ZWAVEJS_EXTERNAL_CONFIG
+              value: "/usr/src/app/store/.config-db"
+          volumeMounts:
+            - name: store-data
+              mountPath: /usr/src/app/store
+            - name: zwave-device
+              mountPath: /dev/zwave
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+      volumes:
+        - name: store-data
+          persistentVolumeClaim:
+            claimName: zwavejs-ui-store
+        - name: zwave-device
+          hostPath:
+            path: /dev/serial/by-id/usb-Nabu_Casa_ZWA-2_1020BA7104B8-if00
+            type: CharDevice

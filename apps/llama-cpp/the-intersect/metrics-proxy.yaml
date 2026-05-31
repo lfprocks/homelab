@@ -1,0 +1,24 @@
+---
+# Caddy sidecar (see Deployment in llama-cpp.yaml) exposes /metrics on :9090
+# by injecting the API key from the secret as a Bearer token; llama.cpp
+# itself gates /metrics behind --api-key-file which alloy can't satisfy.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llama-cpp-metrics-proxy
+data:
+  Caddyfile: |
+    {
+      auto_https off
+      admin off
+    }
+    :9090 {
+      handle /metrics {
+        reverse_proxy localhost:8080 {
+          header_up Authorization "Bearer {env.LLAMA_API_KEY}"
+        }
+      }
+      handle {
+        respond 404
+      }
+    }

@@ -1,0 +1,21 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: versitygw
+  namespace: versity
+spec:
+  chart:
+    spec:
+      chart: versitygw
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 0.1.2
+  valuesFrom:
+    - kind: ConfigMap
+      name: versitygw-values
+    - kind: Secret
+      name: versitygw-values-secret
+  interval: 1m0s

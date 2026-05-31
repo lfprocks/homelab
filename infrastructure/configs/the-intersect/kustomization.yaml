@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - certmanager/
+  - csi-driver-smb/
+  - csi-driver-nfs/
+  - pgadmin/
+  - dragonfly/
+  - grafana/
+  - flux-suspension-exporter/
+  - kyverno/
+  # - intel-gpu/
+  - openwebui/
+  - pulsar/
+  # - akri/
+  - node-feature-discovery/
+  - rookceph/
+  - home-assistant/
+  - emqx/
+  - kube-state-metrics/
+  - cilium.yaml
+  - gateways.yaml
+  - hubble-httproute.yaml
+  - local-path-provisioner.yaml
+  - multuscni.yaml
+  - cni-plugins.yaml
+  - multus-macvlan-eno1.yaml
+  - multus-macvlan-enp5s0.yaml

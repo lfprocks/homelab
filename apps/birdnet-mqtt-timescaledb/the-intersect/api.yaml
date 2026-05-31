@@ -1,0 +1,39 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: birdnet-mqtt-timescaledb-env-configmap
+data:
+  # MQTT_ADDRESS is provided via the SOPS-encrypted mqtt-secret (envFrom), not this ConfigMap.
+  LOG_LEVEL: debug
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name birdnet-mqtt-timescaledb
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "birdnet-mqtt-timescaledb"
+        k8s.lfp.rocks/version: "v1.0.3"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/birdnet-mqtt-timescaledb:v1.0.3

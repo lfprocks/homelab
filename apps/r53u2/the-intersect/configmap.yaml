@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r53u2-env-configmap
+data:
+  LOG_LEVEL: "error"
+  CRON_SCHEDULE: "* * * * *"
+  # DOMAINS is provided via the SOPS-encrypted secret (envFrom), not this ConfigMap.

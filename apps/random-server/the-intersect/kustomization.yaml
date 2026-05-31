@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: random-server
+
+resources:
+  - ../base/
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: random-server
+patches:
+  - path: api.yaml
+  - path: api_hpa.yaml

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ntfy-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: smb-client # adjust storage if needed
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lfpweather-api-env-configmap
+data:
+  LOG_LEVEL: "error"
+
+  AUTHENTICATION_ENABLED: "true"
+
+  DRAGONFLY_HOST: "dragonfly.dragonfly.svc.cluster.local"
+
+  # metrics
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+
+  # tracing
+  TRACING_ENABLED: "false"
+  TRACING_SAMPLERATE: "1.0"
+  TRACING_SERVICE: "lfpweather-api"
+  TRACING_VERSION: "1.1.0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lfpweather-api
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "lfpweather-api"
+        k8s.lfp.rocks/version: "v1.1.1"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/lfpweather-api:v1.1.1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lfpweather-api
+  labels:
+    app: lfpweather-api
+    service: lfpweather-api
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: lfpweather-api
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lfpweather-api-httproute
+  namespace: lfpweather
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_BURNING_TIDE}.${DOMAIN_COMMON_STAR}"]
+  rules:
+    - backendRefs:
+        - name: lfpweather-api
+          port: 80

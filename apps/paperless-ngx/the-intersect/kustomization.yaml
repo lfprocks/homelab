@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: paperless-ngx
+resources:
+  - helmrelease.yaml
+  - httproute.yaml
+  - values-secret.sops.yaml
+configMapGenerator:
+  - name: paperless-ngx-values
+    files:
+      - values.yaml=values.yaml
+configurations:
+  - kustomizeconfig.yaml

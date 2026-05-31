@@ -1,0 +1,26 @@
+image:
+  tag: "v1.0.2"
+
+environmentVariables:
+  PULSAR_URL: pulsar://pulsar-proxy.pulsar.svc.cluster.local:6650
+  SERVER_PORT: "80"
+  LOG_LEVEL: "debug"
+
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_SILVER_LANTERN}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+resources:
+  limits:
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi

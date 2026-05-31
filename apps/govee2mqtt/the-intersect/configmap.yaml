@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: govee2mqtt-config
+  namespace: govee2mqtt
+data:
+  # MQTT Connection Configuration
+  GOVEE_MQTT_HOST: "emqx.emqx.svc.cluster.local" # MQTT broker hostname (e.g., emqx.emqx.svc.cluster.local)
+  GOVEE_MQTT_PORT: "1883"
+
+  # Application Settings
+  GOVEE_TEMPERATURE_SCALE: "F" # Temperature unit: C (Celsius) or F (Fahrenheit)
+  TZ: "America/Los_Angeles" # Timezone for log timestamps
+
+  # Debug/Logging Settings
+  RUST_LOG_STYLE: "always" # Colorized output
+  RUST_LOG: "info" # Log level: trace, debug, info, warn, error

@@ -1,0 +1,66 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: smb-client
+provisioner: smb.csi.k8s.io
+parameters:
+  # On Windows, "*.default.svc.cluster.local" could not be recognized by csi-proxy
+  source: //${OLYMPIC_NAS_HOST}/kubernetes
+  # if csi.storage.k8s.io/provisioner-secret is provided, will create a sub directory
+  # with PV name under source
+  csi.storage.k8s.io/provisioner-secret-name: smb-credentials
+  csi.storage.k8s.io/provisioner-secret-namespace: storage
+  csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+  csi.storage.k8s.io/node-stage-secret-namespace: storage
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - vers=3.0
+  - dir_mode=0700
+  - file_mode=0700
+  - uid=1001
+  - gid=1001
+  # - noperm
+  - nobrl
+  - mfsymlinks
+  - cache=strict
+  - noserverino # required to prevent data corruption
+
+  # Extended Attributes (xattr) support?
+  - user_xattr
+  - forceuid
+  - forcegid
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: smb-client-postgres
+provisioner: smb.csi.k8s.io
+parameters:
+  # On Windows, "*.default.svc.cluster.local" could not be recognized by csi-proxy
+  source: //${OLYMPIC_NAS_HOST}/postgres-kubernetes
+  # if csi.storage.k8s.io/provisioner-secret is provided, will create a sub directory
+  # with PV name under source
+  csi.storage.k8s.io/provisioner-secret-name: smb-credentials
+  csi.storage.k8s.io/provisioner-secret-namespace: storage
+  csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+  csi.storage.k8s.io/node-stage-secret-namespace: storage
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - vers=3.0
+  - dir_mode=0700
+  - file_mode=0700
+  - uid=26
+  - gid=26
+  # - noperm
+  - nobrl
+  - mfsymlinks
+  - cache=strict
+  - noserverino # required to prevent data corruption
+
+  # Extended Attributes (xattr) support?
+  - user_xattr
+  - forceuid
+  - forcegid

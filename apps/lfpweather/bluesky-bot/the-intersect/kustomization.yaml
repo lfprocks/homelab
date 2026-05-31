@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lfpweather
+
+resources:
+  - ../base/
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: lfpweather-bluesky-bot
+
+patches:
+  - path: bot.yaml
+  - path: bot_secret.yaml

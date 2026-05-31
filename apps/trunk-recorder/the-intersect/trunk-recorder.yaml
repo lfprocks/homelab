@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trunk-recorder-env-configmap
+data:
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trunk-recorder-smb-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: smb-client
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name trunk-recorder
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  strategy:
+    type: Recreate # kills old pod before starting new one
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "trunk-recorder"
+        k8s.lfp.rocks/version: "v1.0.0"
+    spec:
+      nodeSelector:
+        feature.node.kubernetes.io/usb-ff_1d50_6089.present: "true"
+      containers:
+        - name: *name
+          command: ["trunk-recorder"]
+          args: ["--config=/etc/trunk-recorder/config.json"]
+          image: ghcr.io/alpineworks/trunk-recorder-prometheus-aws:v1.0.2
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dev-bus-usb
+              mountPath: /dev/bus/usb
+            - name: etc-config
+              mountPath: /etc/trunk-recorder
+              readOnly: true
+        - name: cleanup
+          image: alpine:latest
+          command: ["/bin/sh"]
+          args: ["-c", "while true; do find /app/psernlfp -type f -delete 2>/dev/null || true; sleep 600; done"]
+      volumes:
+        - name: dev-bus-usb
+          hostPath:
+            path: /dev/bus/usb
+        - name: etc-config
+          secret:
+            secretName: trunk-recorder-etc-secret
+            defaultMode: 0755

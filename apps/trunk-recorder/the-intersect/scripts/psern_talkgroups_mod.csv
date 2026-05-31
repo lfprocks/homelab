@@ -1,0 +1,368 @@
+Decimal,Hex,Alpha Tag,Mode,Description,Tag,Category
+101,065,SFD ATG,T,Seattle Fire (Fire-Tac) - Announcement Talkgroup,Fire-Tac,Seattle Fire
+103,067,SFD 1,T,Seattle Fire (Fire-Tac) - Full Response (Structure Fires),Fire-Tac,Seattle Fire
+105,069,SFD 2,T,Seattle Fire (Fire-Tac) - Fire Alarms/Incidents,Fire-Tac,Seattle Fire
+107,06b,SFD 3 ,T,Seattle Fire (Fire-Tac) - Rescue Responses,Fire-Tac,Seattle Fire
+109,06d,SFD 4,T,Seattle Fire (Fire Dispatch) - Fire Dispatch 4 (Seattle Fire),Fire Dispatch,Seattle Fire
+111,06f,SFD Disp Alt,T,Seattle Fire (Fire Dispatch) - SFD Alternate Dispatch (Trucks to FAC),Fire Dispatch,Seattle Fire
+113,071,SFD 6 ,T,Seattle Fire (Fire-Tac) - Aid/Medic Responses Primary,Fire-Tac,Seattle Fire
+115,073,SFD Cmnd 11,T,Seattle Fire (Fire-Talk) - Ch 11 Fire Command Support,Fire-Talk,Seattle Fire
+117,075,SFD Cmnd 12,T,Seattle Fire (Fire-Tac) - Ch 12 Fire Command Support,Fire-Tac,Seattle Fire
+119,077,SFD MyDy Tac,T,Seattle Fire (Fire-Tac) - Fire Mayday Tactical,Fire-Tac,Seattle Fire
+121,079,SFD RIT,T,Seattle Fire (Fire-Tac) - Fire Rapid Intervention Team,Fire-Tac,Seattle Fire
+123,07b,SFD AMB,T,Seattle Fire (Fire-Tac) - Seattle Fire AMB,Fire-Tac,Seattle Fire
+125,07d,SFD Medic 1,T,Seattle Fire (Fire-Tac) - Medic One Doctor,Fire-Tac,Seattle Fire
+127,07f,SFD Trma Doc,T,Seattle Fire (EMS-Tac) - Trauma Doctor,EMS-Tac,Seattle Fire
+131,083,SFD 7,T,Seattle Fire (Fire-Tac) - EMS Secondary,Fire-Tac,Seattle Fire
+133,085,SFD Emerg,T,Seattle Fire (Fire-Tac) - Fire Emergency,Fire-Tac,Seattle Fire
+137,089,SFD FAC,T,Seattle Fire (Fire-Talk) - Fire Alarm Center Administration,Fire-Talk,Seattle Fire
+139,08b,SFD AIR,T,Seattle Fire (EMS-Tac) - Airlift Northwest,EMS-Tac,Seattle Fire
+141,08d,SFD RMC/EOC,T,Seattle Fire (Emergency Ops) - EOC / Fire Coordination,Emergency Ops,Seattle Fire
+143,08f,SFD Bat 2,T,Seattle Fire (Fire-Talk) - Battalion 2,Fire-Talk,Seattle Fire
+145,091,SFD Bat 3,T,Seattle Fire (Fire-Talk) - Battalion 3,Fire-Talk,Seattle Fire
+147,093,SFD Bat 4,T,Seattle Fire (Fire-Talk) - Battalion 4,Fire-Talk,Seattle Fire
+149,095,SFD Bat 5,T,Seattle Fire (Fire-Talk) - Battalion 5,Fire-Talk,Seattle Fire
+151,097,SFD Bat 6,T,Seattle Fire (Fire-Talk) - Battalion 6,Fire-Talk,Seattle Fire
+153,099,SFD Bat 7,T,Seattle Fire (Fire-Talk) - Battalion 7,Fire-Talk,Seattle Fire
+155,09b,SFD Ops,T,Seattle Fire (Fire-Tac) - Operations,Fire-Tac,Seattle Fire
+157,09d,SFD Cmd 13,T,Seattle Fire (Fire-Talk) - Ch 13 Command Support,Fire-Talk,Seattle Fire
+175,0af,SFD Memorial Ops,T,Seattle Fire (EMS-Tac) - Memorial Stadium EMS Operations,EMS-Tac,Seattle Fire
+177,0b1,SFD T-Mobile Ops,T,Seattle Fire (Fire-Tac) - T-Mobile Stadium Operations,Fire-Tac,Seattle Fire
+179,0b3,SFD Lumen,T,Seattle Fire (Fire-Tac) - Lumen Field Fire Control,Fire-Tac,Seattle Fire
+181,0b5,SFD Climate,D,Seattle Fire (EMS-Tac) - Climate Pledge Arena EMS Operations,EMS-Tac,Seattle Fire
+183,0b7,SFD T-Mobile EMS,T,Seattle Fire (EMS-Tac) - T-Mobile Stadium EMS Operations,EMS-Tac,Seattle Fire
+185,0b9,SFD Fireguard,T,Seattle Fire (Fire-Tac) - Fireguard,Fire-Tac,Seattle Fire
+187,0bb,SFD Trn 1,T,Seattle Fire (Fire-Talk) - Training 1,Fire-Talk,Seattle Fire
+189,0bd,SFD FMO,T,Seattle Fire (Fire-Talk) - Fire Marshall Office,Fire-Talk,Seattle Fire
+191,0bf,SFD Serv,T,Seattle Fire (Fire-Talk) - Fire Services,Fire-Talk,Seattle Fire
+193,0c1,SFD Event 14,T,Seattle Fire (Fire-Talk) - Event 14,Fire-Talk,Seattle Fire
+195,0c3,SFD Event 15,T,Seattle Fire (Fire-Talk) - Event 15,Fire-Talk,Seattle Fire
+197,0c5,SDF FF EMERG,T,Seattle Fire (Fire-Tac) - Ch 14 Fire Fighter Emergency Activation,Fire-Tac,Seattle Fire
+201,0c9,SPD ATG,T,Seattle Police (Law Tac) - Announcements,Law Tac,Seattle Police
+203,0cb,SPD Disp. West,T,Seattle Police (Law Dispatch) - Dispatch West,Law Dispatch,Seattle Police
+205,0cd,SPD Disp. North,T,Seattle Police (Law Dispatch) - Dispatch North,Law Dispatch,Seattle Police
+207,0cf,SPD Disp South,T,Seattle Police (Law Dispatch) - Dispatch South,Law Dispatch,Seattle Police
+209,0d1,SPD Disp East,T,Seattle Police (Law Dispatch) - Dispatch East,Law Dispatch,Seattle Police
+213,0d5,SPD DATA,T,Seattle Police (Law Tac) - Wants & Warrants,Law Tac,Seattle Police
+215,0d7,SPD Tac 1,T,Seattle Police (Law Tac) - Tactical 1,Law Tac,Seattle Police
+217,0d9,SPD Tac 2,T,Seattle Police (Law Tac) - Tactical 2,Law Tac,Seattle Police
+219,0db,SPD Tac 3,T,Seattle Police (Law Tac) - Tactical 3,Law Tac,Seattle Police
+221,0dd,SPD Tac 4,T,Seattle Police (Law Tac) - Tactical 4,Law Tac,Seattle Police
+223,0df,SPD Event 1,T,Seattle Police (Law Talk) - Event 1,Law Talk,Seattle Police
+225,0e1,SPD Emerg,T,Seattle Police (Law Tac) - Emergency Button Talk Group,Law Tac,Seattle Police
+227,0e3,SPD Tac E,T,Seattle Police (Law Tac) - Tactical East,Law Tac,Seattle Police
+229,0e5,SPD Tac S,T,Seattle Police (Law Tac) - Tactical South,Law Tac,Seattle Police
+231,0e7,SPD Tac N,T,Seattle Police (Law Tac) - Tactical North,Law Tac,Seattle Police
+233,0e9,SPD Tac W,T,Seattle Police (Law Tac) - Tactical West,Law Tac,Seattle Police
+235,0eb,SPD INV TAC1,T,Seattle Police (Law Tac) - Investigative Tactical 1,Law Tac,Seattle Police
+237,0ed,SPD INV TAC2,T,Seattle Police (Law Tac) - Investigative Tactical 2,Law Tac,Seattle Police
+239,0ef,SPD CTR 1,T,Seattle Police (Law Talk) - Center 1,Law Talk,Seattle Police
+241,0f1,SPD CRT 2,T,Seattle Police (Law Talk) - Center 2,Law Talk,Seattle Police
+243,0f3,SPD Cmnd 1,T,Seattle Police (Law Talk) - Command 1,Law Talk,Seattle Police
+245,0f5,SPD Cmnd 2,T,Seattle Police (Law Talk) - Command 2,Law Talk,Seattle Police
+247,0f7,SPD Cmnd 3,T,Seattle Police (Law Talk) - Command 3,Law Talk,Seattle Police
+249,0f9,SPD Cmnd 4,T,Seattle Police (Law Talk) - Command 4,Law Talk,Seattle Police
+251,0fb,SPD Cmnd 5,T,Seattle Police (Law Talk) - Command 5,Law Talk,Seattle Police
+253,0fd,SPD Harbor,T,Seattle Police (Law Tac) - Harbor Patrol,Law Tac,Seattle Police
+255,0ff,SPD ITS,T,Seattle Police (Law Tac) - Information Technology Support,Law Tac,Seattle Police
+257,101,SPD Narc 2,T,Seattle Police (Law Tac) - Narcotics 2,Law Tac,Seattle Police
+259,103,SPD Narc 3,T,Seattle Police (Law Tac) - Narcotics 3,Law Tac,Seattle Police
+261,105,SPD NTF,T,Seattle Police (Law Talk) - Narcotics Task Force,Law Talk,Seattle Police
+263,107,SPD VICE 1,T,Seattle Police (Law Talk) - Vice 1,Law Talk,Seattle Police
+265,109,SPD VICE 2,T,Seattle Police (Law Talk) - Vice 2,Law Talk,Seattle Police
+267,10b,SPD CIS 1,T,Seattle Police (Law Talk) - Criminal Investigation Services 1,Law Talk,Seattle Police
+269,10d,SPD CIS 2,T,Seattle Police (Law Talk) - Criminal Investigation Services 2,Law Talk,Seattle Police
+271,10f,SPD EM RESP1,T,Seattle Police (Law Talk) - Emergency Response Team 1,Law Talk,Seattle Police
+273,111,SPD EM RESP2,T,Seattle Police (Law Talk) - Emergency Response Team 2,Law Talk,Seattle Police
+275,113,SPD HOS N1,T,Seattle Police (Law Tac) - Hostage Negotiator 1,Law Tac,Seattle Police
+277,115,SPD HOS N2,T,Seattle Police (Law Tac) - Hostage Negotiator 2,Law Tac,Seattle Police
+279,117,SPD INTERNAL,T,Seattle Police (Law Tac) - Internal Investigation,Law Tac,Seattle Police
+281,119,SPD Trng 1,T,Seattle Police (Law Tac) - Training 1,Law Tac,Seattle Police
+283,11b,SPD Trng 2,T,Seattle Police (Law Tac) - Training 2,Law Tac,Seattle Police
+285,11d,SPD Trng 3,T,Seattle Police (Law Tac) - Training 3,Law Tac,Seattle Police
+287,11f,SPD Trng 4,T,Seattle Police (Law Tac) - Training 4,Law Tac,Seattle Police
+289,121,SPD Trng 5,T,Seattle Police (Law Tac) - Training 5,Law Tac,Seattle Police
+291,123,SPD Trng 6,T,Seattle Police (Law Tac) - Training 6,Law Tac,Seattle Police
+299,12b,SPD Cmnd 6,T,Seattle Police (Law Talk) - Command 6,Law Talk,Seattle Police
+303,12f,SEA CEN 1,T,Seattle (Business) - Seattle Center Channel 1,Business,Seattle
+305,131,SEA CEN 2,T,Seattle (Business) - Seattle Center Channel 2,Business,Seattle
+307,133,SEA CEN 3,T,Seattle (Business) - Seattle Center Channel 3,Business,Seattle
+309,135,SEA CEN 4,T,Seattle (Business) - Seattle Center Channel 4,Business,Seattle
+311,137,SEA CEN 5,T,Seattle (Business) - Seattle Center Channel 5,Business,Seattle
+313,139,SEA CEN 6,T,Seattle (Business) - Seattle Center Channel 6,Business,Seattle
+349,15d,Court Sec,T,Seattle Police (Law Tac) - Municipal Court Security ,Law Tac,Seattle Police
+399,18f,Pub Utilities,T,Seattle (Public Works) - Public Utilities,Public Works,Seattle
+403,193,Watershed,T,Seattle (Public Works) - Watershed,Public Works,Seattle
+405,195,Water Sewer,T,Seattle (Public Works) - Water & Sewer,Public Works,Seattle
+409,199,Water 4,T,Seattle (Public Works) - Water 4,Public Works,Seattle
+443,1bb,Water Sewer,D,Seattle (Public Works) - Water Sewer,Public Works,Seattle
+445,1bd,DOT Dispatch,D,Seattle (Transportation) - Department of Transportation Dispatch,Transportation,Seattle
+449,1c1,Eng and Sanit,T,Seattle (Public Works) - Engineering - Sanitation,Public Works,Seattle
+545,221,Sea Schl NW,T,Seattle Public Schools (Schools) - Schools NW,Schools,Seattle Public Schools
+547,223,Sea Schl Sec,T,Seattle Public Schools (Security) - Schools Security,Security,Seattle Public Schools
+549,225,Sea Schl N,T,Seattle Public Schools (Schools) - Schools N,Schools,Seattle Public Schools
+551,227,Sea Schl S,T,Seattle Public Schools (Schools) - Schools S,Schools,Seattle Public Schools
+553,229,Sea Schl SW,T,Seattle Public Schools (Schools) - Schools SW,Schools,Seattle Public Schools
+577,241,Univ WA PD1,T,University Of Washington (Law Dispatch) - Police 1,Law Dispatch,University Of Washington
+579,243,Univ WA PD tac,T,University Of Washington (Law Tac) - Police Tactical,Law Tac,University Of Washington
+581,245,UW PD Admin,T,University Of Washington (Law Talk) - Administration,Law Talk,University Of Washington
+1039,40f,Shor DPW,T,Shoreline (Public Works) - Public Works,Public Works,Shoreline
+1079,437,Shor City,T,Shoreline (Interop) - Shoreline City,Interop,Shoreline
+1111,457,Bell SchComn,T,Bellevue (Schools) - School - Common,Schools,Bellevue
+1113,459,BotPd Invest,T,Bothell (Law Talk) - Police - Investigations,Law Talk,Bothell
+1115,45b,BotPd Rec,T,Bothell (Law Talk) - Police - Records,Law Talk,Bothell
+1121,461,Red Bld Insp,T,Redmond (Public Works) - Public Works - Building Inspectors,Public Works,Redmond
+1135,46f,RedDPWDrain1,T,Redmond (Public Works) - Public Works - Drains 1,Public Works,Redmond
+1143,477,RedDPWDrain2,T,Redmond (Public Works) - Public Works - Drains 2,Public Works,Redmond
+1149,47d,Red PD Tac 2,T,Redmond (Law Tac) - Police Tactical 2,Law Tac,Redmond
+1151,47f,Red PD Tac 1,T,Redmond (Law Tac) - Police Tactical 1,Law Tac,Redmond
+1153,481,Red PD Admin,T,Redmond (Law Talk) - Police Administration,Law Talk,Redmond
+1155,483,Red PD Inv,T,Redmond (Law Tac) - Police Investigations,Law Tac,Redmond
+1157,485,Red PD Traff,T,Redmond (Law Tac) - Police - Traffic,Law Tac,Redmond
+1159,487,Red PD Disp,T,Redmond (Law Dispatch) - Police Dispatch,Law Dispatch,Redmond
+1161,489,Red FD Com,T,Redmond (Fire-Talk) - Fire Communications,Fire-Talk,Redmond
+1163,48b,Red FD Prev,T,Redmond (Fire-Talk) - Fire - Prevention,Fire-Talk,Redmond
+1171,493,MI F Admin,T,Mercer Island (Fire-Talk) - Fire Administration,Fire-Talk,Mercer Island
+1183,49f,NC Pol 3,T,"NORCOM (Law Dispatch) - Police 3 (Mercer Island - Ida, Normandy Park - Nora, Bothell - Paul, Lake Forest Park - Lincoln",Law Dispatch,NORCOM
+1187,4a3,LFPPD Tac,T,Lake Forest Park (Law Tac) - Police Tactical,Law Tac,Lake Forest Park
+1207,4b7,NC CC 3,T,NORCOM (Law Talk) - Police Car to Car 3 (Future),Law Talk,NORCOM
+1209,4b9,NC Tac 3,T,NORCOM (Law Tac) - Police Tactical 3,Law Tac,NORCOM
+1213,4bd,NC CC 2,T,NORCOM (Law Talk) - Police Car to Car 2 (Kirkland / Mercer Island),Law Talk,NORCOM
+1215,4bf,NC Tac 2,T,NORCOM (Law Tac) - Police Tactical 2,Law Tac,NORCOM
+1217,4c1,NC Pol 2,T,NORCOM (Law Dispatch) - Police 2 (Kirkland),Law Dispatch,NORCOM
+1219,4c3,KI Fire Admn,T,Kirkland (Fire-Talk) - Fire Department Administration,Fire-Talk,Kirkland
+1221,4c5,Iss CityWide,T,Issaquah (Interop) - Citywide,Interop,Issaquah
+1237,4d5,IPD Tac 2,T,Issaquah (Law Tac) - Police Tactical 2,Law Tac,Issaquah
+1239,4d7,IPD Tac 1,T,Issaquah (Law Tac) - Police Tactical 1,Law Tac,Issaquah
+1243,4db,Issaq/Snoq PD,T,Snoqualmie (Law Dispatch) - Issaquah/Snoqualmie PD Dispatch,Law Dispatch,Snoqualmie
+1245,4dd,Shor FD Admn,T,Shoreline (Fire-Talk) - Fire - Administration,Fire-Talk,Shoreline
+1247,4df,Woodnvl PW,T,Woodinville (Public Works) - Public Works,Public Works,Woodinville
+1261,4ed,Bot Pd Tac,T,Bothell (Law Tac) - Police Tactical,Law Tac,Bothell
+1263,4ef,Bot PD Disp,T,Bothell (Law Dispatch) - Police Dispatch,Law Dispatch,Bothell
+1273,4f9,Bell Streets,T,Bellevue (Public Works) - Streets,Public Works,Bellevue
+1275,4fb,Bell St Dsp,T,Bellevue (Public Works) - Streets - Dispatch,Public Works,Bellevue
+1277,4fd,Bell Wtr Dsp,T,Bellevue (Public Works) - Water - Dispatch,Public Works,Bellevue
+1281,501,Bell PW Code,T,Bellevue (Public Works) - Works - CODE,Public Works,Bellevue
+1285,505,Bell PW Srvy,T,Bellevue (Public Works) - Works - Survey Crews,Public Works,Bellevue
+1287,507,Bell ECS,T,Bellevue (Public Works) - Electronics Communications Service,Public Works,Bellevue
+1289,509,Bell Trans,T,Bellevue (Transportation) - Transportation,Transportation,Bellevue
+1307,51b,Bell CityW1,T,Bellevue (Interop) - Citywide 1,Interop,Bellevue
+1317,525,NC Admin,T,NORCOM (Public Works) - Administrative - NORCOM Staff,Public Works,NORCOM
+1319,527,NC Tac 15,T,NORCOM (Law Tac) - Police Tactical 15,Law Tac,NORCOM
+1321,529,NC Tac 14,T,NORCOM (Law Tac) - Police Tactical 14,Law Tac,NORCOM
+1323,52b,NC Tac 16,T,NORCOM (Law Tac) - Police Tactical 16,Law Tac,NORCOM
+1325,52d,NC Tac 13,T,NORCOM (Law Tac) - Police Tactical 13,Law Tac,NORCOM
+1327,52f,NC CC 1,T,NORCOM (Law Talk) - Police Car to Car 1 (Bellevue / Clyde Hill / Medina),Law Talk,NORCOM
+1329,531,BPD Train,T,Bellevue (Law Talk) - Police - Training,Law Talk,Bellevue
+1331,533,NC Tac 12,T,NORCOM (Law Tac) - Police Tactical 12,Law Tac,NORCOM
+1333,535,NC Tac 11,T,NORCOM (Law Tac) - Police Tactical 11,Law Tac,NORCOM
+1335,537,NC PD Data,D,NORCOM (Law Tac) - Police Data,Law Tac,NORCOM
+1337,539,NC Tac 1,T,NORCOM (Law Tac) - Police Tactical 1,Law Tac,NORCOM
+1339,53b,NC Pol 1,T,"NORCOM (Law Dispatch) - Police 1 (Bellevue, Clyde Hill, Medina)",Law Dispatch,NORCOM
+1357,54d,NC PD Emer,T,NORCOM (Law Tac) - Police Emergency Button Talk Group,Law Tac,NORCOM
+1361,551,ESPD Interop 4,T,King County (Law Tac) - Eastside Police Agencies Interoperation 4,Law Tac,King County
+1363,553,ESPD Interop 3,T,King County (Law Tac) - Eastside Police Agencies Interoperation 3,Law Tac,King County
+1365,555,ESPD Interop 2,T,King County (Law Tac) - Eastside Police Agencies Interoperation 2,Law Tac,King County
+1367,557,ESPD Interop 1,T,King County (Law Tac) - Eastside Police Agencies Interoperation 1,Law Tac,King County
+1369,559,ENTF1,T,East Side Agencies (Law Tac) - Eastside Narcotics Task Force 1,Law Tac,East Side Agencies
+1377,561,FTAC 7,T,NORCOM (Fire-Tac) - Fire Tactical 7,Fire-Tac,NORCOM
+1379,563,FTAC 6,T,NORCOM (Fire-Tac) - Fire Tactical 6,Fire-Tac,NORCOM
+1381,565,FTAC 5,T,NORCOM (Fire-Tac) - Fire Tactical 5,Fire-Tac,NORCOM
+1383,567,FTAC 4,T,NORCOM (Fire-Tac) - Fire Tactical 4,Fire-Tac,NORCOM
+1385,569,FTAC 3,T,NORCOM (Fire-Tac) - Fire Tactical 3,Fire-Tac,NORCOM
+1387,56b,FTAC 2,T,NORCOM (Fire-Tac) - Fire Tactical 2,Fire-Tac,NORCOM
+1389,56d,FTAC 1,T,NORCOM (Fire-Tac) - Fire Tactical 1,Fire-Tac,NORCOM
+1393,571,Norcom Amb,D,NORCOM (EMS Dispatch) - Norcom Ambulance,EMS Dispatch,NORCOM
+1397,575,Fdisp 2,T,NORCOM (Fire Dispatch) - Trucks to Dispatch,Fire Dispatch,NORCOM
+1399,577,FDisp 1,T,NORCOM (Fire Dispatch) - Fire Dispatch 1,Fire Dispatch,NORCOM
+1401,579,Radio Shop 2,T,King County (Public Works) - Radio Shop 2,Public Works,King County
+1409,581,KC RadioShop,T,King County (Public Works) - King County Radio Shop,Public Works,King County
+1421,58d,KCEOC-Ops,T,King County (Emergency Ops) - Emergency Operations Center Operations,Emergency Ops,King County
+1423,58f,KCEOC-Common,T,King County (Emergency Ops) - Emergency Operations Management Common,Emergency Ops,King County
+1429,595,KC Emr Mgt1,T,King County (Emergency Ops) - Emergency Management Zone 1,Emergency Ops,King County
+1431,597,KC Emr Mgt3,T,King County (Emergency Ops) - Emergency Management Zone 3,Emergency Ops,King County
+1443,5a3,Court Sec 2,T,King County Sheriff (Security) - Court Security 2,Security,King County Sheriff
+1445,5a5,Court Sec 1,T,King County Sheriff (Law Tac) - Court Security ,Law Tac,King County Sheriff
+1447,5a7,KCSO North,T,King County Sheriff (Law Dispatch) - Dispatch North,Law Dispatch,King County Sheriff
+1449,5a9,KCSO Tac 2,T,King County Sheriff (Law Tac) - Tactical 2,Law Tac,King County Sheriff
+1451,5ab,KCSO SE,T,King County Sheriff (Law Dispatch) - Dispatch Southeast,Law Dispatch,King County Sheriff
+1453,5ad,KCSO Tac 3,T,King County Sheriff (Law Tac) - Tactical 3,Law Tac,King County Sheriff
+1455,5af,KCSO SW,T,King County Sheriff (Law Dispatch) - Dispatch Southwest,Law Dispatch,King County Sheriff
+1457,5b1,KCSO Tac 4,T,King County Sheriff (Law Tac) - Tactical 4,Law Tac,King County Sheriff
+1459,5b3,KCSO NW,T,King County Sheriff (Law Dispatch) - Dispatch Northwest,Law Dispatch,King County Sheriff
+1461,5b5,KCSO Tac 5,T,King County Sheriff (Law Tac) - Tactical 5,Law Tac,King County Sheriff
+1463,5b7,KCSO Sp Ops,T,King County Sheriff (Law Tac) - Special Operations,Law Tac,King County Sheriff
+1465,5b9,KCSO Tac 6,T,King County Sheriff (Law Tac) - Tactical 6,Law Tac,King County Sheriff
+1467,5bb,KCSO Data,D,King County Sheriff (Law Tac) - KCSO DATA,Law Tac,King County Sheriff
+1469,5bd,KCSO Tac 1,T,King County Sheriff (Law Tac) - Tactical 1,Law Tac,King County Sheriff
+1471,5bf,KCSO Tac 7,T,King County Sheriff (Law Tac) - Tactical 7,Law Tac,King County Sheriff
+1473,5c1,KCSO Tac 8,T,King County Sheriff (Law Tac) - Tactical 8,Law Tac,King County Sheriff
+1475,5c3,KCSO Tac 9,T,King County Sheriff (Law Tac) - Tactical 9,Law Tac,King County Sheriff
+1477,5c5,KCSO Tac 12,T,King County Sheriff (Law Tac) - Tactical 12,Law Tac,King County Sheriff
+1479,5c7,KC Event 1,T,King County (Multi-Tac) - Event 1,Multi-Tac,King County
+1483,5cb,KC Event 3 R,T,King County (Multi-Tac) - Event 3 Radio Shop,Multi-Tac,King County
+1487,5cf,KC Event 5,T,King County (Multi-Tac) - Event 5,Multi-Tac,King County
+1497,5d9,Metro PD Pri,T,Sound Transit (Law Dispatch) - Metro Transit Police - Primary,Law Dispatch,Sound Transit
+1499,5db,Metro PD Tac,T,Sound Transit (Law Tac) - Metro Transit Police-  TAC,Law Tac,Sound Transit
+1503,5df,Metro Trans F8,T,Sound Transit (Transportation) - Metro Transit F8,Transportation,Sound Transit
+1513,5e9,Court Escort 1,T,King County (Security) - Court Escorts 1,Security,King County
+1515,5eb,Court Escort 2,T,King County (Security) - Court Escorts 2,Security,King County
+1517,5ed,KC Court 3,T,King County (Law Talk) - Court Escorts 3,Law Talk,King County
+1519,5ef,AMR Dispatch,T,King County (EMS Dispatch) - AMR Dispatch,EMS Dispatch,King County
+1525,5f5,Jail Ops 1,T,King County (Corrections) - Jail Operations 1,Corrections,King County
+1527,5f7,Jail OPS 2,D,King County Sheriff (Corrections) - Jail OPS 2,Corrections,King County Sheriff
+1529,5f9,Jail OPS 3,D,King County Sheriff (Corrections) - Jail OPS 3,Corrections,King County Sheriff
+1557,615,SPD T-Mob Field,T,Seattle Police (Law Tac) - T-Mobile Field Operations,Law Tac,Seattle Police
+1561,619,KCSO Tac 14,T,King County Sheriff (Law Tac) - Tactical 14,Law Tac,King County Sheriff
+1589,635,KCSO Tac 10,T,King County Sheriff (Law Tac) - Tactical 10,Law Tac,King County Sheriff
+1607,647,BFI Admin,T,King County (Public Works) - Boeing Field Airport Adminstration,Public Works,King County
+1609,649,BFI Fire,T,King County (Fire Dispatch) - Boeing Field Airport Fire & Rescue,Fire Dispatch,King County
+1663,67f,KCSO Tac 16,T,King County Sheriff (Law Tac) - Tactical 16,Law Tac,King County Sheriff
+1677,68d,KC Waste 1,T,King County (Public Works) - Solid Waste Division 1,Public Works,King County
+1681,691,KCPW Trtmnt1,T,King County (Public Works) - Waste Treatment 1,Public Works,King County
+1689,699,Youth Services,T,King County (Other) - Youth Services,Other,King County
+1693,69d,KCSO Tac 18,T,King County Sheriff (Law Tac) - Tactical 18,Law Tac,King County Sheriff
+1709,6ad,KCSO Tac 30,T,King County Sheriff (Law Tac) - Tactical 30,Law Tac,King County Sheriff
+1773,6ed,Snoq PD Tac1,T,Snoqualmie (Law Tac) - Police Tactical 1,Law Tac,Snoqualmie
+1775,6ef,Snoq PD Tac2,T,Snoqualmie (Law Tac) - Police Tactical 2,Law Tac,Snoqualmie
+1821,71d,FWPD Disp,T,Federal Way (Law Dispatch) - Police Dispatch,Law Dispatch,Federal Way
+1823,71f,FWPD Tac,T,Federal Way (Law Tac) - Police Tactical,Law Tac,Federal Way
+1825,721,FWPD 1825,T,Federal Way (Law Tac) - Federal Way Police 1825,Law Tac,Federal Way
+1863,747,Encaw PD Disp,T,Enumclaw (Law Dispatch) - Police Dispatch,Law Dispatch,Enumclaw
+1883,75b,KCSO Tac 20,T,King County Sheriff (Law Tac) - Tactical 20,Law Tac,King County Sheriff
+1917,77d,ValleyCom Fire 5,T,Valley Communications (Fire-Tac) - Fire 5,Fire-Tac,Valley Communications
+1919,77f,ValleyCom Fire 6,T,Valley Communications (Fire-Tac) - Fire 6,Fire-Tac,Valley Communications
+1921,781,ValleyCom Fire 7,T,Valley Communications (Fire-Tac) - Fire 7,Fire-Tac,Valley Communications
+1963,7ab,FTAC 8,T,NORCOM (Fire-Tac) - Fire Tactical 8,Fire-Tac,NORCOM
+1965,7ad,FTAC 9,T,NORCOM (Fire-Tac) - Fire Tactical 9,Fire-Tac,NORCOM
+1967,7af,FTAC 10,T,NORCOM (Fire-Tac) - Fire Tactical 10,Fire-Tac,NORCOM
+1969,7b1,NORCOM Fire Trn,D,NORCOM (Fire-Tac) - Fire Training Ops,Fire-Tac,NORCOM
+1991,7c7,ESFD Admin,T,King County (Fire-Talk) - Eastside Fire and Rescue Administration,Fire-Talk,King County
+1993,7c9,Snoq FAdmin,T,Snoqualmie (Fire-Talk) - Fire Administration,Fire-Talk,Snoqualmie
+2003,7d3,Encaw Fire Disp,D,Enumclaw (Fire Dispatch) - Fire Dispatch,Fire Dispatch,Enumclaw
+2005,7d5,Encaw Fire TAC,D,Enumclaw (Fire-Tac) - Fire TAC/Responses,Fire-Tac,Enumclaw
+2049,801,Duv CityWide,T,Duval (Interop) - Citywide,Interop,Duval
+2101,835,Water Dist 20,T,King County (Public Works) - Water District 20,Public Works,King County
+2103,837,Highline H20,T,King County (Public Works) - Highline Water District,Public Works,King County
+2195,893,FWPS Sec Pri,T,Federal Way (Security) - Schools - Security,Security,Federal Way
+2197,895,HL Schools,T,Highline (Schools) - Schools	Schools,Schools,Highline
+2239,8bf,KCSO Tac 22,T,King County Sheriff (Law Tac) - Tactical 22,Law Tac,King County Sheriff
+2303,8ff,Alg PD Tac 1,T,Algona-Pacific (Law Tac) - Police Tactical 1,Law Tac,Algona-Pacific
+2305,901,Alg PD Tac 2,T,Algona-Pacific (Law Tac) - Police Tactical 2,Law Tac,Algona-Pacific
+2307,903,Alg PD Admin,T,Algona-Pacific (Law Tac) - Police Administration,Law Tac,Algona-Pacific
+2309,905,Aubur PD Pri,T,Auburn (Law Dispatch) - Police Primary,Law Dispatch,Auburn
+2311,907,Aubur PD Tac,T,Auburn (Law Tac) - Police Tactical,Law Tac,Auburn
+2313,909,Abur PD Admin,T,Auburn (Law Tac) - Police Administration,Law Tac,Auburn
+2315,90b,Des PD Pri,T,Des Moines (Law Dispatch) - Police Primary,Law Dispatch,Des Moines
+2317,90d,Des PD Tac,T,Des Moines (Law Tac) - Police Tactical,Law Tac,Des Moines
+2319,90f,Des PD Admin,T,Des Moines (Law Talk) - Police Administration,Law Talk,Des Moines
+2321,911,Kent PD Pri,T,Kent (Law Dispatch) - Police Primary,Law Dispatch,Kent
+2323,913,Kent PD Tac,T,Kent (Law Tac) - Police Tactical,Law Tac,Kent
+2325,915,Kent PD Admin,T,Kent (Law Tac) - Police Administration,Law Tac,Kent
+2327,917,RetPD Pri,T,Renton (Law Dispatch) - Police Primary,Law Dispatch,Renton
+2329,919,RetPD Tac,T,Renton (Law Tac) - Police Tactical,Law Tac,Renton
+2331,91b,RetPD 2331,T,Renton (Law Tac) - Renton Police 2331,Law Tac,Renton
+2333,91d,Tuk PD Pri,T,Tukwila (Law Dispatch) - Police Primary,Law Dispatch,Tukwila
+2335,91f,Tuk PD Tac,T,Tukwila (Law Tac) - Police Tactical,Law Tac,Tukwila
+2337,921,Tuk PD Admin,T,Tukwila (Law Tac) - Police Administration,Law Tac,Tukwila
+2339,923,Police Data,D,Valley Communications (Law Tac) - Police Data,Law Tac,Valley Communications
+2343,927,ValCom SpecOps 1,T,Valley Communications (Law Tac) - Police Special Operations 1,Law Tac,Valley Communications
+2345,929,ValCom SpecOps 2,T,Valley Communications (Law Tac) - Police Special Operations 2,Law Tac,Valley Communications
+2347,92b,ValCom SpecOps 3,T,Valley Communications (Law Tac) - Police Special Operations 3,Law Tac,Valley Communications
+2349,92d,ValCom SpecOps 4,T,Valley Communications (Law Tac) - Police Special Operations 4,Law Tac,Valley Communications
+2355,933,ValCom SpecOps 5,T,Valley Communications (Law Tac) - Police Special Operations 5,Law Tac,Valley Communications
+2403,963,ValleyCom Fire 1,T,Valley Communications (Fire Dispatch) - Fire 1,Fire Dispatch,Valley Communications
+2405,965,ValleyCom Fire 2,T,Valley Communications (Fire-Tac) - Fire 2 (EMS calls),Fire-Tac,Valley Communications
+2407,967,ValleyCom Fire 3,T,"Valley Communications (Fire-Tac) - Fire 3 (Alarms, Accidents)",Fire-Tac,Valley Communications
+2409,969,ValleyCom Fire 4,T,Valley Communications (Fire-Tac) - Fire 4 (Structure Fires),Fire-Tac,Valley Communications
+2411,96b,Ops 1,T,Valley Communications (Fire-Tac) - ValleyCom Operations 1,Fire-Tac,Valley Communications
+2413,96d,Fire 9,D,Valley Communications (Fire-Tac) - Fire 9,Fire-Tac,Valley Communications
+2415,96f,Fire Trn Ops,D,Valley Communications (Fire-Tac) - Fire Training OPS,Fire-Tac,Valley Communications
+2421,975,Tri-Med EMS,D,Valley Communications (EMS Dispatch) - Tri-Med Ambulance Dispatch,EMS Dispatch,Valley Communications
+2449,991,KCFD44 Admin,T,King County (Fire-Talk) - Fire District 44 Administration,Fire-Talk,King County
+2611,a33,SOS H20,T,King County (Public Works) - Soos Creek Water District,Public Works,King County
+2613,a35,Water Dist 111,T,King County (Public Works) - Water District 111,Public Works,King County
+2615,a37,Cedar Rvr H20,T,King County (Public Works) - Cedar River Water District,Public Works,King County
+2617,a39,Covngt H20,T,King County (Public Works) - Covington Water District,Public Works,King County
+2733,aad,Kent SchSec,T,Kent (Schools) - Kent Schools Security,Schools,Kent
+2737,ab1,Kent SD Tra1,T,Kent (Schools) - Kent Schools Transportation 1,Schools,Kent
+2739,ab3,Kent SD Tra2,T,Kent (Schools) - Kent Schools Transportation 2,Schools,Kent
+2741,ab5,Kent SD Mat,T,Kent (Schools) - Kent Schools Maintenance,Schools,Kent
+2801,af1,SPD AS NARC,T,Seattle Police (Law Talk) - Narcotics,Law Talk,Seattle Police
+2803,af3,SPD DVICE1,T,Seattle Police (Law Talk) - Vice 1 - Digital,Law Talk,Seattle Police
+2805,af5,SPD DVICE2,T,Seattle Police (Law Talk) - Vice 2- Digital,Law Talk,Seattle Police
+2807,af7,SPD Enc 44912,TE,Seattle Police (Law Tac) - Encrypted,Law Tac,Seattle Police
+2811,afb,SPD DTAC1,T,Seattle Police (Law Talk) - Tactical 1 - Digital,Law Talk,Seattle Police
+2813,afd,SPD DTAC2,T,Seattle Police (Law Talk) - Tactical 2 - Digital,Law Talk,Seattle Police
+2815,aff,SPD Enc 45040,TE,Seattle Police (Law Tac) - Encrypted,Law Tac,Seattle Police
+2817,b01,SPD Enc 45072,TE,Seattle Police (Law Tac) - Encrypted,Law Tac,Seattle Police
+2821,b05,SPD Enc 45136,TE,Seattle Police (Law Tac) - Encrypted,Law Tac,Seattle Police
+3753,ea9,MLOPS1 SOUTH,D,Sound Transit (Transportation) - Mainline Operations OPS1 SOUTH,Transportation,Sound Transit
+3754,eaa,MLOPS3 EAST,D,Sound Transit (Transportation) - Mainline Operations OPS3 EAST,Transportation,Sound Transit
+3755,eab,MLOPS2 NORTH,D,Sound Transit (Transportation) - Mainline Operations OPS2 NORTH,Transportation,Sound Transit
+3756,eac,MLOPS4 TEST TRAI,D,Sound Transit (Transportation) - Mainline Operations LOPS4 TEST TRAINS,Transportation,Sound Transit
+3757,ead,DSTTOPS,D,Sound Transit (Transportation) - DSTTOPS,Transportation,Sound Transit
+3759,eaf,ST YARDOPS1 OMFC,D,Sound Transit (Transportation) - ST YARDOPS1 OMF Central,Transportation,Sound Transit
+3760,eb0,ST YARDOPS2 OMFE,D,Sound Transit (Transportation) -  ST YARDOPS2 OMF East,Transportation,Sound Transit
+3761,eb1,ST FIBER MAINT S,D,Sound Transit (Transportation) - FIBER MAINT SIGNALS,Transportation,Sound Transit
+3762,eb2,ST MNTNC,D,Sound Transit (Transportation) - ST MNTNC,Transportation,Sound Transit
+3763,eb3,ST FACILITIES1,D,Sound Transit (Transportation) - ST FACILITIES1,Transportation,Sound Transit
+3765,eb5,ST DSTTOPS FACIL,D,Sound Transit (Transportation) - Downtown Seattle Transit Tunnel OPS FACILITIES,Transportation,Sound Transit
+3767,eb7,SND TRAN SEC,T,King County Metro Transit (Security) - Sound Transit Security,Security,King County Metro Transit
+3769,eb9,Metro TunnelSec2,T,Sound Transit (Transportation) - Metro Transit TUNNEL SECURITY 2,Transportation,Sound Transit
+3771,ebb,Metro TunnelSec1,T,Sound Transit (Transportation) - Metro Transit TUNNEL SECURITY 1,Transportation,Sound Transit
+3777,ec1,Metro Security 1,T,Sound Transit (Transportation) - Metro Transit Security Ch 1,Transportation,Sound Transit
+3779,ec3,Metro Transit PD,T,Sound Transit (Law Tac) - Metro Transit Sound Transit Police,Law Tac,Sound Transit
+3803,edb,Multicare Aub MC,T,Hospital (Hospital) - Multicare Auburn Medical Center,Hospital,Hospital
+3805,edd,SEA Childrens,T,Hospital (Hospital) - Seattle Children’s,Hospital,Hospital
+3809,ee1,Evergreen Hosp,T,Hospital (Hospital) - Evergreen,Hospital,Hospital
+3811,ee3,Unkn Hosp,D,Hospital (Hospital) - *UNKNOWN/TBD*,Hospital,Hospital
+3815,ee7,UWMC Harborview,D,Hospital (Hospital) - Harborview Medical Center,Hospital,Hospital
+3817,ee9,St Anne Hosp,T,Hospital (Hospital) - VHFM - St. Anne Hospital - Burien,Hospital,Hospital
+3819,eeb,UWMC NW Hosp,T,Hospital (Hospital) - UWMC Northwest Hospital - Seattle,Hospital,Hospital
+3821,eed,Overlake Hosp,T,Hospital (Hospital) - Overlake Hospital - Bellevue,Hospital,Hospital
+3827,ef3,Snoq Valley Hosp,D,Hospital (Hospital) - Snoqualmie Valley Hospital ,Hospital,Hospital
+3829,ef5,St Francis FedWa,D,Hospital (Hospital) - VMFH St. Francis Federal Way ,Hospital,Hospital
+3831,ef7,Ballard Swed Hos,T,Hospital (Hospital) - Ballard Swedish,Hospital,Hospital
+3833,ef9,Swed Seattle,D,Hospital (Hospital) - Swedish - Seattle,Hospital,Hospital
+3835,efb,UW Med Cntr,T,Hospital (Hospital) - UW Medical Center,Hospital,Hospital
+3837,efd,VA Seattle,D,Hospital (Hospital) - VA Seattle,Hospital,Hospital
+3839,eff,Vly Med Ctr Rent,T,Hospital (Hospital) - Valley Medical Center Renton,Hospital,Hospital
+3841,f01,VMFH - Seattle,T,Hospital (Hospital) - Virginia Mason Seattle,Hospital,Hospital
+3855,f0f,Hosp Common,T,Hospital (Hospital) - Hospital Common,Hospital,Hospital
+3857,f11,PS BlodCntrs,T,Businesses (Business) - Puget Sound Blood Centers,Business,Businesses
+3873,f21,DPH OPS 3,T,King County (Other) - King County Dept Public Health,Other,King County
+3875,f23,DPH OPS 2,T,King County (Other) - King County Dept Public Health,Other,King County
+3877,f25,DPH OPS 1,T,King County (Other) - King County Dept Public Health,Other,King County
+3879,f27,DPH COMMO,T,King County (Other) - King County Dept Public Health,Other,King County
+3901,f3d,Interop 9,T,King County (Interop) - King County Interop 9,Interop,King County
+3903,f3f,Interop 10,T,King County (Interop) - King County Interop 10,Interop,King County
+3905,f41,Interop 12,T,King County (Interop) - King County Interop 12,Interop,King County
+3907,f43,Interop 13,T,King County (Interop) - King County Interop 13,Interop,King County
+3909,f45,Interop 15,T,King County (Interop) - King County Interop 15,Interop,King County
+3913,f49,Interop 8,T,King County (Interop) - King County Interop 8,Interop,King County
+3915,f4b,Emer Z1,T,NORCOM (Fire-Tac) - Fire Zone 1 Emergency Button Talk Group,Fire-Tac,NORCOM
+3917,f4d,Interop 11,T,King County (Interop) - King County Interop 11,Interop,King County
+3919,f4f,Emer Z3,T,Valley Communications (Fire-Tac) - Fire Zone 3 Emergency Button Talkgroup,Fire-Tac,Valley Communications
+3921,f51,Interop 14,T,King County (Interop) - King County Interop 14,Interop,King County
+3925,f55,PSAP to PSAP,T,King County (Interop) - Public Safety Answering Point Common,Interop,King County
+3929,f59,L.E.R.N.,T,King County (Interop) - Law Enforcement Radio Network,Interop,King County
+3931,f5b,M.A.R.S.,T,King County (Interop) - King County Mutual Aid Radio System,Interop,King County
+3933,f5d,Interop 6,T,King County (Interop) - King County Interop 6,Interop,King County
+3935,f5f,Interop 7,T,King County (Interop) - King County Interop 7,Interop,King County
+3937,f61,Interop 4,T,King County (Interop) - King County Interop 4,Interop,King County
+3939,f63,Interop 5,T,King County (Interop) - King County Interop 5,Interop,King County
+3945,f69,KC All Gov,T,King County (Interop) - Interop All Local Government,Interop,King County
+3969,f81,IMS-All,T,King County (Interop) - Incident Management System - All,Interop,King County
+3971,f83,Interop 2,T,King County (Interop) - King County Interop 2,Interop,King County
+3973,f85,Interop 3,T,King County (Interop) - King County Interop 3,Interop,King County
+50001,c351,TECH 1,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50002,c352,TECH 2,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50003,c353,TECH 3,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50004,c354,TECH 4,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50005,c355,TECH 5,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50006,c356,TECH 6,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50007,c357,TECH 7,D,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50008,c358,TECH 8,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50009,c359,TECH 9,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians
+50010,c35a,TECH 10,T,Radio Technicians (Public Works) - Radio Techs (Voice Testing),Public Works,Radio Technicians

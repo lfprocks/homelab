@@ -1,0 +1,124 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cilium-ingress
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal-gateway-http
+  namespace: cilium-ingress
+spec:
+  gatewayClassName: cilium
+  addresses:
+    - type: IPAddress
+      value: "${EXTERNAL_GATEWAY_IP}"
+  listeners:
+    - name: default-http
+      hostname: "*.${DOMAIN_COBRA_LANTERN}"
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+  # https://github.com/l7mp/stunner/tree/main
+  # stunner can be used for webrtc on gateway api, however we're just going to ignore that for now
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: external-gateway-https
+  namespace: cilium-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  gatewayClassName: cilium
+  addresses:
+    - type: IPAddress
+      value: "${EXTERNAL_GATEWAY_HTTPS_IP}"
+  # Allow the forgejo SSH LoadBalancer Service to share this IP. Cilium LB
+  # IPAM only co-locates Services that agree on a sharing-key and explicitly
+  # permit each other's namespace.
+  infrastructure:
+    annotations:
+      lbipam.cilium.io/sharing-key: "ext-shared-01"
+      lbipam.cilium.io/sharing-cross-namespace: "forgejo"
+  listeners:
+    - name: coronet-year-443
+      hostname: "${DOMAIN_CORONET_YEAR}"
+      port: 443
+      protocol: HTTPS
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: coronet-year-tls
+    - name: looking-mariner-443
+      hostname: "*.${DOMAIN_LOOKING_MARINER}"
+      port: 443
+      protocol: HTTPS
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: looking-mariner-tls
+    - name: coronet-summit-443
+      hostname: "*.${DOMAIN_CORONET_SUMMIT}"
+      port: 443
+      protocol: HTTPS
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: coronet-summit-tls
+    - name: star-common-star-443
+      hostname: "*.${DOMAIN_COMMON_STAR}"
+      port: 443
+      protocol: HTTPS
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: common-star-tls
+    - name: common-star-443
+      hostname: "${DOMAIN_COMMON_STAR}"
+      port: 443
+      protocol: HTTPS
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: common-star-tls

@@ -1,0 +1,94 @@
+image:
+  tag: v1.4.1
+
+args:
+  - "posix"
+  - "/var/vgw/data"
+
+environmentVariables:
+  # ROOT_ACCESS_KEY / ROOT_SECRET_KEY provided via the SOPS-encrypted
+  # versitygw-values-secret (valuesFrom).
+  VGW_PORT: ":80"
+  VGW_HEALTH: "/healthcheck"
+  # VGW_DEBUG: "true"
+  VGW_META_SIDECAR: "/var/vgw/meta"
+  VGW_EVENT_WEBHOOK_URL: "http://versitygw-webhook-pulsar-proxy.versity.svc.cluster.local/webhook"
+
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["${SUB_IRON_WARDEN}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - versitygw
+        topologyKey: kubernetes.io/hostname
+
+livenessProbe:
+  httpGet:
+    path: /healthcheck
+    port: http
+readinessProbe:
+  httpGet:
+    path: /healthcheck
+    port: http
+
+resources:
+  limits:
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+replicaCount: 8
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80
+  #     targetMemoryUtilizationPercentage: 80
+
+persistence:
+  enabled: true
+  pvc:
+    data:
+      name: versitygw
+      accessMode: ReadWriteMany
+      storageClassName: smb-client
+      size: 100Gi
+    metadata:
+      enabled: true
+      name: versitygw-metadata
+      accessMode: ReadWriteMany
+      storageClassName: smb-client
+      size: 10Gi
+
+# Additional volumes on the output Deployment definition.
+volumes:
+  - name: file-storage
+    persistentVolumeClaim:
+      claimName: versitygw
+  - name: metadata-storage
+    persistentVolumeClaim:
+      claimName: versitygw-metadata
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts:
+  - name: file-storage
+    mountPath: /var/vgw/data
+  - name: metadata-storage
+    mountPath: /var/vgw/meta

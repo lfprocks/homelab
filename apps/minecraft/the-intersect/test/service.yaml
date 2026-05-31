@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft-test
+  labels:
+    app: minecraft-test
+spec:
+  selector:
+    app: minecraft-test
+  ports:
+    - port: 25565
+      targetPort: 25565
+      protocol: TCP
+      name: minecraft
+    - port: 8100
+      targetPort: 8100
+      protocol: TCP
+      name: bluemap
+  type: ClusterIP

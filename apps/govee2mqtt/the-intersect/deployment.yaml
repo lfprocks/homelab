@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: govee2mqtt
+  namespace: govee2mqtt
+  labels:
+    app: govee2mqtt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: govee2mqtt
+  template:
+    metadata:
+      labels:
+        app: govee2mqtt
+    spec:
+      containers:
+        - name: govee2mqtt
+          image: ghcr.io/wez/govee2mqtt:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: govee2mqtt-config
+            - secretRef:
+                name: govee2mqtt-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+      restartPolicy: Always

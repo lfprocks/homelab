@@ -1,0 +1,106 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: katalog
+  namespace: katalog
+spec:
+  chart:
+    spec:
+      chart: katalog
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 0.1.2
+  interval: 1m0s
+  # Sensitive values (db passwords, JWE/AES secrets, GitHub OAuth secret) are provided
+  # via the SOPS-encrypted katalog-values-secret and deep-merged by Flux. See
+  # values-secret.sops.yaml.
+  valuesFrom:
+    - kind: Secret
+      name: katalog-values-secret
+  values:
+    dragonfly:
+      enabled: true
+
+    postgresql:
+      enabled: true
+      image:
+        debug: true
+      global:
+        postgresql:
+          auth:
+            username: katalog
+            database: katalog
+        defaultStorageClass: "smb"
+      commonAnnotations:
+        "helm.sh/hook": pre-install,pre-upgrade
+        "helm.sh/hook-weight": "-5"
+
+    migrations:
+      environmentVariables:
+        DATABASE_USER: "katalog"
+        # DATABASE_PASSWORD provided via katalog-values-secret (valuesFrom)
+        DATABASE_HOST: "katalog-postgresql.katalog.svc.cluster.local"
+        DATABASE_PORT: "5432"
+        DATABASE_NAME: "katalog"
+
+    backend:
+      replicaCount: 1
+
+      image:
+        repository: ghcr.io/alpineworks/katalog-backend
+
+      environmentVariables:
+        KATALOG_LOG_LEVEL: "debug"
+        KATALOG_DRAGONFLY_HOST: "katalog-dragonfly.katalog.svc.cluster.local"
+        KATALOG_DRAGONFLY_PORT: "6379"
+        KATALOG_DRAGONFLY_AUTH: ""
+
+        # KATALOG_POSTGRES_URL, KATALOG_JWE_SECRET, KATALOG_AES_KEY are provided via
+        # katalog-values-secret (valuesFrom). MUST be rotated (upstream demo values).
+
+        KATALOG_METRICS_ENABLED: "true"
+        KATALOG_METRICS_PORT: "8081"
+
+        KATALOG_TRACING_ENABLED: "false"
+
+    frontend:
+      replicaCount: 1
+
+      image:
+        repository: ghcr.io/alpineworks/katalog-frontend
+
+      environmentVariables:
+        # AUTH_SECRET (must match backend KATALOG_JWE_SECRET), AUTH_GITHUB_ID and
+        # AUTH_GITHUB_SECRET are provided via katalog-values-secret (valuesFrom).
+        AUTH_URL: "http://${SUB_RIVET_LANTERN}.${DOMAIN_COBRA_LANTERN}"
+
+        BACKEND_HOST_URL: "http://katalog-backend.katalog.svc.cluster.local:8080"
+        NEXT_PUBLIC_BACKEND_HOST_URL: "http://${SUB_CONSTANT_HAWK}.${DOMAIN_COBRA_LANTERN}"
+
+        AUTH_TRUST_HOST: "true"
+        AUTHJS_DEBUG: "false"
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: katalog-agent
+  namespace: katalog
+spec:
+  chart:
+    spec:
+      chart: katalog-agent
+      sourceRef:
+        kind: HelmRepository
+        name: alpineworks
+        namespace: alpineworks
+      version: 0.1.2
+  interval: 1m0s
+  values:
+    environmentVariables:
+      CLUSTER_NAME: "the-intersect"
+      CRON_SCHEDULE: "* * * * *"
+      BLACKLISTED_NAMESPACES: ""
+      KATALOG_HOST: "katalog-backend.katalog.svc.cluster.local:50051"

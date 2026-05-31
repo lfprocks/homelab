@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yt-playlist-ripper-env-configmap
+data:
+  # logging
+  LOG_LEVEL: "info"
+
+  PLAYLIST_LIST: "PLUcjmvZLvmS_vTF8su_eqA6XgCfl88kuV,PLUcjmvZLvmS8PaBz77N1eFAbJ0cLENSwU,PL-Hns0B5NmTPqhM0wlHYRykUjrHfOokyI"
+  ARCHIVE_FILE: "/media/YouTube/archive.txt"
+  # Jellyfin-compatible on-disk layout. With JELLYFIN_LAYOUT=true the
+  # playlist runner buckets videos by uploader (one Show per channel)
+  # under {OUTPUT_ROOT}/{uploader}/Season {YYYY}/, and bootstraps each
+  # channel-level info.json once. Library was bulk-migrated from the
+  # legacy {playlist} - ({uploader})/ shape via cmd/migrate-to-jellyfin.
+  JELLYFIN_LAYOUT: "true"
+  OUTPUT_ROOT: "/media/YouTube"
+  MERGE_OUTPUT_FORMAT: "mp4"
+  PULSAR_URL: http://pnp-writer.pnp.svc.cluster.local
+  QUIET: "true"
+
+  # metrics
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+
+  # tracing
+  TRACING_ENABLED: "false"
+  TRACING_SAMPLERATE: "1.0"
+  TRACING_SERVICE: "yt-playlist-ripper"
+  TRACING_VERSION: "3.1.1"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://lgtm:4317"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name yt-playlist-ripper
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "yt-playlist-ripper"
+        k8s.lfp.rocks/version: "v3.1.1"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/yt-playlist-ripper:v3.1.1
+          volumeMounts:
+            - name: yt-playlist-ripper-media
+              mountPath: /media
+      volumes:
+        - name: yt-playlist-ripper-media
+          persistentVolumeClaim:
+            claimName: yt-playlist-ripper-pvc
