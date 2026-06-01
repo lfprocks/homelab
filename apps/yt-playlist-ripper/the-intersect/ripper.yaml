@@ -28,7 +28,7 @@ data:
   TRACING_ENABLED: "false"
   TRACING_SAMPLERATE: "1.0"
   TRACING_SERVICE: "yt-playlist-ripper"
-  TRACING_VERSION: "3.1.1"
+  TRACING_VERSION: "3.2.1"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://lgtm:4317"
 ---
 apiVersion: apps/v1
@@ -46,7 +46,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "yt-playlist-ripper"
-        k8s.lfp.rocks/version: "v3.1.1"
+        k8s.lfp.rocks/version: "v3.2.1"
     spec:
       affinity:
         nodeAffinity:
@@ -59,7 +59,7 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/yt-playlist-ripper:v3.1.1
+          image: ghcr.io/michaelpeterswa/yt-playlist-ripper:v3.2.1
           volumeMounts:
             - name: yt-playlist-ripper-media
               mountPath: /media
