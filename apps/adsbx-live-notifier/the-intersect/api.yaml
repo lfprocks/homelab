@@ -9,7 +9,7 @@ data:
   METRICS_PORT: "8081"
   TRACING_ENABLED: "false"
   TRACING_SERVICE: adsbx-live-notifier
-  TRACING_VERSION: v1.0.0
+  TRACING_VERSION: v1.1.0
 
   # ADSBX_HOST is provided via the SOPS-encrypted api_secret (envFrom), not this ConfigMap.
   ADSBX_POLL_INTERVAL: 1s
@@ -36,7 +36,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "adsbx-live-notifier"
-        k8s.lfp.rocks/version: "v1.0.0"
+        k8s.lfp.rocks/version: "v1.1.0"
     spec:
       affinity:
         nodeAffinity:
@@ -49,4 +49,4 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/adsbx-live-notifier:v1.0.0
+          image: ghcr.io/michaelpeterswa/adsbx-live-notifier:v1.1.0
