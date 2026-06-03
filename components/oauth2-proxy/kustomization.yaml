@@ -6,7 +6,7 @@
 #     - ../../../components/oauth2-proxy
 #
 # Contract -- the consuming app must provide:
-#   1. label `oauth2-proxy.lfp.rocks/inject: "true"` on BOTH its Deployment and
+#   1. label `oauth2.lfp.rocks/inject: "true"` on BOTH its Deployment and
 #      its Service metadata.labels (that's how these patches find them).
 #   2. a ConfigMap named `oauth2-proxy-config` with the per-app upstream, e.g.
 #        OAUTH2_PROXY_UPSTREAMS: "http://127.0.0.1:9080"
@@ -26,7 +26,7 @@ kind: Component
 patches:
   - target:
       kind: Deployment
-      labelSelector: oauth2-proxy.lfp.rocks/inject=true
+      labelSelector: oauth2.lfp.rocks/inject=true
     patch: |-
       - op: add
         path: /spec/template/spec/containers/-
@@ -90,7 +90,7 @@ patches:
 
   - target:
       kind: Service
-      labelSelector: oauth2-proxy.lfp.rocks/inject=true
+      labelSelector: oauth2.lfp.rocks/inject=true
     patch: |-
       - op: add
         path: /spec/ports/-

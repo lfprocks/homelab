@@ -6,7 +6,7 @@ metadata:
   labels:
     app: cookcli
     service: cookcli
-    oauth2-proxy.lfp.rocks/inject: "true"
+    oauth2.lfp.rocks/inject: "true"
 spec:
   type: ClusterIP
   selector:
