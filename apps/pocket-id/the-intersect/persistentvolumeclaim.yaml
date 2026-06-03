@@ -1,0 +1,15 @@
+---
+# SQLite database + uploads. MUST be block storage (ceph-block) -- SQLite over a
+# network filesystem (SMB/NFS) breaks file locking and risks corruption.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pocket-id-pvc
+  namespace: pocket-id
+spec:
+  storageClassName: ceph-block
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
