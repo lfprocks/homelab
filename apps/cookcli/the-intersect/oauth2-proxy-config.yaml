@@ -12,3 +12,7 @@ data:
   OAUTH2_PROXY_OIDC_ISSUER_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
   OAUTH2_PROXY_SCOPE: "openid email profile groups"
   OAUTH2_PROXY_UPSTREAMS: "http://127.0.0.1:9080"
+  # Pocket-ID is passkey-based and never runs an email-verification flow, so it
+  # issues email_verified=false. Trust it (admin-set emails, not self-asserted);
+  # the authenticated-emails allowlist still applies. Required for Pocket-ID apps.
+  OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"
