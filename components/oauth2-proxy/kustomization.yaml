@@ -1,0 +1,108 @@
+---
+# Reusable oauth2-proxy sidecar as a kustomize Component. Provider-agnostic:
+# works with Google OR an OIDC provider (e.g. self-hosted Pocket-ID), chosen
+# per-app. openwebui-style Google and Pocket-ID apps can coexist in the cluster.
+#
+# Include it from an app overlay with:
+#   components:
+#     - ../../../components/oauth2-proxy
+#
+# Contract -- the consuming app must provide:
+#   1. label `oauth2.lfp.rocks/inject: "true"` on BOTH its Deployment and its
+#      Service metadata.labels (that's how these patches find them).
+#   2. a ConfigMap named `oauth2-proxy-config` with the per-app provider settings:
+#        OAUTH2_PROXY_PROVIDER:     google | oidc
+#        OAUTH2_PROXY_UPSTREAMS:    http://127.0.0.1:<app-port>
+#        # oidc only:
+#        OAUTH2_PROXY_OIDC_ISSUER_URL: https://<idp-host>
+#        OAUTH2_PROXY_SCOPE:        "openid email profile groups"
+#   3. Secrets `oauth2-proxy-secrets` (client-id/client-secret/cookie-secret) and
+#      `oauth2-proxy-emails` (authenticated-emails.txt). Reusing one client +
+#      cookie-secret across apps yields SSO (cookie-domain is the wildcard
+#      *.${DOMAIN_CORONET_SUMMIT}).
+#   4. its external HTTPRoute pointed at the Service's `oauth2-proxy` port (4180).
+#   5. the app's `https://<host>/oauth2/callback` registered as a redirect URI on
+#      the provider (Google console, or -- for Pocket-ID -- once as a wildcard).
+#
+# ${DOMAIN_CORONET_SUMMIT} is resolved by each app's Flux Kustomization via
+# postBuild.substituteFrom cluster-vars.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+patches:
+  - target:
+      kind: Deployment
+      labelSelector: oauth2.lfp.rocks/inject=true
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/-
+        value:
+          name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.9.0
+          args:
+            # provider + upstream + (for oidc) issuer/scope come from the
+            # per-app oauth2-proxy-config ConfigMap via envFrom below.
+            - --email-domain=*
+            - --authenticated-emails-file=/etc/oauth2-proxy/authenticated-emails.txt
+            - --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
+            - --cookie-secure=true
+            - --cookie-samesite=lax
+            - --cookie-name=_oauth2_proxy
+            - --cookie-expire=168h
+            - --cookie-refresh=1h
+            - --set-xauthrequest=true
+            - --reverse-proxy=true
+            - --whitelist-domain=.${DOMAIN_CORONET_SUMMIT}
+            - --skip-provider-button=true
+            - --http-address=0.0.0.0:4180
+          envFrom:
+            # per-app config -- must define OAUTH2_PROXY_PROVIDER + _UPSTREAMS
+            - configMapRef:
+                name: oauth2-proxy-config
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secrets
+                  key: client-id
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secrets
+                  key: client-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secrets
+                  key: cookie-secret
+          ports:
+            - containerPort: 4180
+              name: oauth2-proxy
+          volumeMounts:
+            - name: oauth2-proxy-emails
+              mountPath: /etc/oauth2-proxy
+              readOnly: true
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              memory: "64Mi"
+      - op: add
+        path: /spec/template/spec/volumes/-
+        value:
+          name: oauth2-proxy-emails
+          secret:
+            secretName: oauth2-proxy-emails
+
+  - target:
+      kind: Service
+      labelSelector: oauth2.lfp.rocks/inject=true
+    patch: |-
+      - op: add
+        path: /spec/ports/-
+        value:
+          name: oauth2-proxy
+          port: 4180
+          targetPort: 4180
+          protocol: TCP
