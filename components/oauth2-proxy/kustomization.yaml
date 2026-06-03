@@ -54,6 +54,7 @@ patches:
             - --reverse-proxy=true
             - --whitelist-domain=.${DOMAIN_CORONET_SUMMIT}
             - --skip-provider-button=true
+            - --code-challenge-method=S256
             - --http-address=0.0.0.0:4180
           envFrom:
             # per-app config -- must define OAUTH2_PROXY_PROVIDER + _UPSTREAMS

@@ -53,6 +53,7 @@ spec:
                           - --whitelist-domain=.${DOMAIN_CORONET_SUMMIT}
                           - --upstream=http://localhost:8080
                           - --skip-provider-button=true
+                          - --code-challenge-method=S256
                           - --http-address=0.0.0.0:4180
                         env:
                           - name: OAUTH2_PROXY_CLIENT_ID
