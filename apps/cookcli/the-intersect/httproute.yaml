@@ -11,5 +11,7 @@ spec:
   hostnames: ["${SUB_RUGGED_COMET}.${DOMAIN_CORONET_SUMMIT}"]
   rules:
     - backendRefs:
+        # route through the oauth2-proxy sidecar (Google OAuth) instead of
+        # straight to the app -- see components/oauth2-proxy.
         - name: cookcli
-          port: 80
+          port: 4180

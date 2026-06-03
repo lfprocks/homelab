@@ -1,0 +1,9 @@
+---
+# Per-app config for the shared oauth2-proxy component. The sidecar reverse-
+# proxies authenticated requests to cookcli on the pod's loopback.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+data:
+  OAUTH2_PROXY_UPSTREAMS: "http://127.0.0.1:9080"
