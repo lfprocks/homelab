@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pocket-id-env-configmap
+data:
+  # Public URL of the IdP; also the WebAuthn relying-party origin. Resolved by
+  # Flux postBuild substitution from cluster-vars.
+  APP_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
+  # Behind the TLS-terminating Cilium gateway -- trust X-Forwarded-* headers.
+  TRUST_PROXY: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name pocket-id
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  strategy:
+    # SQLite on a single RWO volume -- never run two writers at once.
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "pocket-id"
+        k8s.lfp.rocks/version: "v1.3.1"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      securityContext:
+        # image runs as PUID/PGID 1000; make the ceph-block volume writable by it
+        fsGroup: 1000
+      containers:
+        - name: *name
+          image: ghcr.io/pocket-id/pocket-id:v1.3.1
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: pocket-id-env-configmap
+          ports:
+            - name: http
+              containerPort: 1411
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "20m"
+              memory: "64Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pocket-id-pvc
