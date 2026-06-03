@@ -64,6 +64,7 @@ stringData:
     SUB_SILVER_LANTERN: ENC[AES256_GCM,data:UMa3ap4uy0nYjf8SeNYl/nFSJEbTr64OLkRRgdhj,iv:E402SC6cI1m9ZYPTah5zU0s8iuDnR2FaXoKa8Gk1ZEw=,tag:SZX1lDZAcLRh2Wpe+FMmqw==,type:str]
     SUB_COMPASS_HAWK: ENC[AES256_GCM,data:goRAABopAA==,iv:fKwuqakNMIAEaOQGs9ZWubvfJFPeVrl6ilWjFLmhIl4=,tag:M92hDeiL3GHfLke/HboSLg==,type:str]
     SUB_IRON_REACH: ENC[AES256_GCM,data:GCy8D0i5qA==,iv:xZT5aq4onyCwiapVpuOVJGp5IxTqnjYb+6kkTkh6Exw=,tag:gbT7suwrOYhPGMefT6813w==,type:str]
+    SUB_RUGGED_COMET: ENC[AES256_GCM,data:ujXZcoqvIw==,iv:FQmziN5rWJtFVk6q8PcJmrEf8bztfCeZUxAFC0KkoF4=,tag:fLklig6X3i7SbcbgP+FRow==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -75,7 +76,7 @@ sops:
             Zkt1UFBNWGRlMmc0Q0xSdDI1QnhIMDQKlwYLsDTpKi5MC9T0iYmj+m/Tx3AmWNj5
             Se6RFuDv+aurhKLL1l6/kh7s8kcsyVMsu9LJBBf1C/NRgqwWxaFx/A==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-05-31T22:29:08Z"
-    mac: ENC[AES256_GCM,data:wM3XGg+3RQaibfze1SiauGnu7JIwBZj4UKrmY/sHXlJRUr5UNcf71Uoxnpg5cnsQ6RLZsxr4cum2xHIEDS5fdRCVrOeA8jwopP6Aqu9XxwxudNdFPLNyhdYYCeS6DHyfFwU/NJrUzPyfqSV+ocpKRMfLDhRqwACQF8T25CtLgUM=,iv:Nc9cBpOIg1r+0FLTB/wI6v8GyoINiIQ9TU6De8KECSQ=,tag:pV3lW9PiUJWbHOLVqjukYA==,type:str]
+    lastmodified: "2026-06-03T01:23:17Z"
+    mac: ENC[AES256_GCM,data:G2AJ8lc75pS++sjaiMpcPmL3pQybYvLN+074e1tF21gm49kE2YjIGpm9ZiBUE40gk953RBrsqS6IiYaJanvpsWDIVFL0a8FcLNemmXzLN6LX3YXe192jzLaOgvu/eY7JjASgL8HnmHOxzjMxNaHaNHijtsFF6hQvoFHc9p7/cmQ=,iv:9FgG2fIVgW1uv3/PSPI23RhMudjQxA3rTu1Nu+S0QHw=,tag:Ns9mV8dDLx4UIWEYTz6WOw==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0

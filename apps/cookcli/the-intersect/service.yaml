@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cookcli
+  labels:
+    app: cookcli
+    service: cookcli
+spec:
+  type: ClusterIP
+  selector:
+    app: cookcli
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
