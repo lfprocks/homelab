@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cookcli
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: cookcli
+
+# Recipes are versioned in this repo. Add one `files:` entry per .cook file.
+# The generated name carries a content hash, so committing a recipe change
+# rolls the Deployment automatically.
+#
+# NOTE: each file becomes a ConfigMap key, so recipe filenames must be valid
+# ConfigMap keys -- alphanumerics plus '-', '_', '.' only (NO spaces). cookcli
+# shows the filename (sans .cook) as the recipe title.
+configMapGenerator:
+  - name: cookcli-recipes
+    files:
+      - recipes/Pancakes.cook
