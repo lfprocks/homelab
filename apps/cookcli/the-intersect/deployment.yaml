@@ -11,6 +11,7 @@ metadata:
   name: &name cookcli
   labels:
     app: *name
+    oauth2.lfp.rocks/inject: "true"
 spec:
   selector:
     matchLabels:

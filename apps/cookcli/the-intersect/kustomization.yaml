@@ -7,6 +7,12 @@ resources:
   - service.yaml
   - httproute.yaml
   - persistentvolume.yaml
+  - oauth2-proxy-config.yaml
+  - oauth2-proxy-secret.yaml
+  - oauth2-proxy-emails-secret.yaml
+
+components:
+  - ../../../components/oauth2-proxy
 
 labels:
   - includeSelectors: true

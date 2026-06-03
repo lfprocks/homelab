@@ -1,0 +1,14 @@
+---
+# Per-app config for the shared oauth2-proxy component. cookcli authenticates via
+# Pocket-ID (OIDC); the sidecar reverse-proxies authenticated requests to cookcli
+# on the pod's loopback. ${SUB_AMBER_MERIDIAN}/${DOMAIN_CORONET_SUMMIT} are
+# resolved by Flux postBuild substitution from cluster-vars.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+data:
+  OAUTH2_PROXY_PROVIDER: "oidc"
+  OAUTH2_PROXY_OIDC_ISSUER_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
+  OAUTH2_PROXY_SCOPE: "openid email profile groups"
+  OAUTH2_PROXY_UPSTREAMS: "http://127.0.0.1:9080"
