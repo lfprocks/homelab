@@ -36,6 +36,22 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        # cookcli's entrypoint refuses to start unless /recipes is writable, so
+        # the read-only ConfigMap can't be mounted there directly. Seed the
+        # versioned recipes into a writable emptyDir instead. A recipe change
+        # bumps the ConfigMap hash -> pod restarts -> fresh re-seed.
+        - name: seed-recipes
+          image: ghcr.io/cooklang/cookcli:0.30.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "cp /recipes-src/*.cook /recipes/"]
+          volumeMounts:
+            - name: recipes-src
+              mountPath: /recipes-src
+              readOnly: true
+            - name: recipes
+              mountPath: /recipes
       containers:
         - name: *name
           # Image default ENTRYPOINT/CMD already runs `cook server /recipes --host`
@@ -68,8 +84,9 @@ spec:
           volumeMounts:
             - name: recipes
               mountPath: /recipes
-              readOnly: true
       volumes:
-        - name: recipes
+        - name: recipes-src
           configMap:
             name: cookcli-recipes
+        - name: recipes
+          emptyDir: {}
