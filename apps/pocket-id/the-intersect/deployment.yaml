@@ -32,7 +32,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "pocket-id"
-        k8s.lfp.rocks/version: "v1.3.1"
+        k8s.lfp.rocks/version: "v2.8.0"
     spec:
       affinity:
         nodeAffinity:
@@ -48,7 +48,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: *name
-          image: ghcr.io/pocket-id/pocket-id:v1.3.1
+          image: ghcr.io/pocket-id/pocket-id:v2.8.0
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
