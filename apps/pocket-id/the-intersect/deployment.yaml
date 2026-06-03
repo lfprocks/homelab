@@ -53,6 +53,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: pocket-id-env-configmap
+            - secretRef:
+                name: pocket-id-env-secret
           ports:
             - name: http
               containerPort: 1411
