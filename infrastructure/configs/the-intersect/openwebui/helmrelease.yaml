@@ -39,7 +39,20 @@ spec:
                       - name: oauth2-proxy
                         image: quay.io/oauth2-proxy/oauth2-proxy:v7.9.0
                         args:
-                          - --provider=google
+                          # --- Provider: Pocket-ID (OIDC). ---
+                          # Previous Google config is preserved for reference:
+                          #   - --provider=google   (no issuer/scope/unverified-email flags)
+                          # and the Google client creds are kept (encrypted) in
+                          # oauth2-proxy-secret.google.yaml. To revert: restore
+                          # --provider=google, drop the --oidc-*/--scope/
+                          # --insecure-oidc-allow-unverified-email flags, and put the
+                          # Google client back into oauth2-proxy-secret.yaml.
+                          - --provider=oidc
+                          - --oidc-issuer-url=https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}
+                          - --scope=openid email profile groups
+                          # Pocket-ID issues email_verified=false (passkey IdP, no
+                          # email-verification flow); allowlist below still applies.
+                          - --insecure-oidc-allow-unverified-email=true
                           - --email-domain=*
                           - --authenticated-emails-file=/etc/oauth2-proxy/authenticated-emails.txt
                           - --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
