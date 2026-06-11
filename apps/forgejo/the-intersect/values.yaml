@@ -8,14 +8,13 @@ service:
   ssh:
     type: LoadBalancer
     port: 22
-    # Share the external-gateway-https IP (${EXTERNAL_GATEWAY_HTTPS_IP}). 22 (ssh) and 443
-    # (https) don't conflict, so Cilium LB IPAM can co-locate them. The
-    # gateway Service lives in cilium-ingress, so cross-namespace sharing
-    # must be permitted on both Services with a matching sharing-key.
+    # Dedicated IP. This previously shared ${EXTERNAL_GATEWAY_HTTPS_IP} with
+    # the external gateway via a sharing-key, but Cilium L2 announcements
+    # take a lease per Service (not per IP), so the two leases can land on
+    # different nodes and ARP-fight over the shared IP, causing intermittent
+    # ECONNRESET on every hostname behind the gateway.
     annotations:
-      lbipam.cilium.io/ips: "${EXTERNAL_GATEWAY_HTTPS_IP}"
-      lbipam.cilium.io/sharing-key: "ext-shared-01"
-      lbipam.cilium.io/sharing-cross-namespace: "cilium-ingress"
+      lbipam.cilium.io/ips: "${FORGEJO_SSH_IP}"
 
 # Enables Gateway API HTTPRoute as a replacement for traditional Ingress resources
 ## @section Gateway-API HTTPRoute

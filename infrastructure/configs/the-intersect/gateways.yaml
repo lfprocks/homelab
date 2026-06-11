@@ -44,13 +44,6 @@ spec:
   addresses:
     - type: IPAddress
       value: "${EXTERNAL_GATEWAY_HTTPS_IP}"
-  # Allow the forgejo SSH LoadBalancer Service to share this IP. Cilium LB
-  # IPAM only co-locates Services that agree on a sharing-key and explicitly
-  # permit each other's namespace.
-  infrastructure:
-    annotations:
-      lbipam.cilium.io/sharing-key: "ext-shared-01"
-      lbipam.cilium.io/sharing-cross-namespace: "forgejo"
   listeners:
     - name: coronet-year-443
       hostname: "${DOMAIN_CORONET_YEAR}"
