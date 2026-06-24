@@ -4,6 +4,9 @@ kind: ConfigMap
 metadata:
   name: trunk-recorder-env-configmap
 data:
+  # S3 endpoint for upload_to_s3.sh. Without this the script falls back to its
+  # broken default (http://versitygw.) and every upload times out.
+  AWS_ENDPOINT_URL: "http://${SUB_IRON_WARDEN}.${DOMAIN_COBRA_LANTERN}"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
