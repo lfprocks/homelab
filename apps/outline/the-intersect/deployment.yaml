@@ -31,10 +31,14 @@ spec:
         # Outline does not auto-migrate on boot; run migrations once before start.
         - name: migrate
           image: docker.getoutline.com/outlinewiki/outline:1.8.1
-          # production env keeps TLS on (rejectUnauthorized:false), matching the
-          # encrypted connection used by the main container. If the DB connection
-          # ever fails on TLS, fall back to "--env=production-ssl-disabled" + PGSSLMODE=disable.
-          command: ["yarn", "db:migrate", "--env=production"]
+          workingDir: /opt/outline
+          # Invoke the sequelize binary directly via node. The image's global yarn
+          # is 1.x while package.json pins yarn@4 via corepack, so "yarn db:migrate"
+          # fails; the binary avoids yarn/corepack entirely (db:migrate == this).
+          # --env=production keeps TLS on (rejectUnauthorized:false), matching the
+          # encrypted connection used by the main container. Fallback if DB TLS ever
+          # fails: "--env=production-ssl-disabled" + PGSSLMODE=disable.
+          command: ["node", "./node_modules/.bin/sequelize", "db:migrate", "--env=production"]
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
