@@ -1,0 +1,34 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: outline-env
+  namespace: outline
+# Non-secret Outline env, shared by the migrate initContainer AND the app
+# container so they always run with identical config. Some Outline data
+# migrations boot the full app config and validate the whole env schema
+# (URL, REDIS_URL, COLLABORATION_URL, ...), so the migrator needs the same
+# environment as the server, not just the database connection.
+# Flux postBuild substitutes the ${...} tokens from cluster-vars.
+data:
+  NODE_ENV: production
+  # require = encrypt to CNPG without CA verification (self-signed cert)
+  PGSSLMODE: require
+  REDIS_URL: redis://outline-dragonfly.outline.svc.cluster.local:6379
+  URL: https://${SUB_SILENT_HARBOR}.${DOMAIN_CORONET_SUMMIT}
+  COLLABORATION_URL: https://${SUB_SILENT_HARBOR}.${DOMAIN_CORONET_SUMMIT}
+  PORT: "3000"
+  # TLS is terminated at the Cilium gateway; do not redirect inside the pod.
+  FORCE_HTTPS: "false"
+  # ---- File storage: local PVC ----
+  FILE_STORAGE: local
+  FILE_STORAGE_LOCAL_ROOT_DIR: /var/lib/outline/data
+  FILE_STORAGE_UPLOAD_MAX_SIZE: "262144000"
+  # ---- OIDC (PocketID); standard PocketID routes, only the host is tokenized ----
+  OIDC_AUTH_URI: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/authorize
+  OIDC_TOKEN_URI: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/token
+  OIDC_USERINFO_URI: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/userinfo
+  OIDC_LOGOUT_URI: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/end-session
+  OIDC_USERNAME_CLAIM: preferred_username
+  OIDC_DISPLAY_NAME: Pocket ID
+  OIDC_SCOPES: openid profile email

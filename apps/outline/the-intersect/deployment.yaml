@@ -44,6 +44,11 @@ spec:
             capabilities:
               drop: ["ALL"]
           envFrom:
+            # Same full app env as the server: data migrations boot the app config
+            # and validate the whole env schema (URL, REDIS_URL, COLLABORATION_URL).
+            - configMapRef:
+                name: outline-env
+            # SECRET_KEY, UTILS_SECRET, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET
             - secretRef:
                 name: outline-secret
           env:
@@ -52,9 +57,6 @@ spec:
                 secretKeyRef:
                   name: outline-postgres-app
                   key: uri
-            - name: PGSSLMODE
-              # require = encrypt without CA verification (CNPG serves a self-signed cert)
-              value: require
       containers:
         - name: outline
           image: docker.getoutline.com/outlinewiki/outline:1.8.1
@@ -66,52 +68,16 @@ spec:
             - name: http
               containerPort: 3000
           envFrom:
-            # SECRET_KEY, UTILS_SECRET, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET
+            - configMapRef:
+                name: outline-env
             - secretRef:
                 name: outline-secret
           env:
-            - name: NODE_ENV
-              value: production
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: outline-postgres-app
                   key: uri
-            - name: PGSSLMODE
-              value: disable
-            - name: REDIS_URL
-              value: redis://outline-dragonfly.outline.svc.cluster.local:6379
-            - name: URL
-              value: https://${SUB_SILENT_HARBOR}.${DOMAIN_CORONET_SUMMIT}
-            - name: PORT
-              value: "3000"
-            - name: FORCE_HTTPS
-              # TLS is terminated at the Cilium gateway; do not redirect inside the pod.
-              value: "false"
-            # ---- File storage: local PVC ----
-            - name: FILE_STORAGE
-              value: local
-            - name: FILE_STORAGE_LOCAL_ROOT_DIR
-              value: /var/lib/outline/data
-            - name: FILE_STORAGE_UPLOAD_MAX_SIZE
-              value: "262144000"
-            # ---- OIDC (PocketID) ----
-            # Paths are PocketID's standard OIDC routes; only the host (id.<domain>) changes.
-            # If your PocketID subdomain is not "id", update the host below.
-            - name: OIDC_AUTH_URI
-              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/authorize
-            - name: OIDC_TOKEN_URI
-              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/token
-            - name: OIDC_USERINFO_URI
-              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/userinfo
-            - name: OIDC_LOGOUT_URI
-              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/end-session
-            - name: OIDC_USERNAME_CLAIM
-              value: preferred_username
-            - name: OIDC_DISPLAY_NAME
-              value: Pocket ID
-            - name: OIDC_SCOPES
-              value: openid profile email
           volumeMounts:
             - name: data
               mountPath: /var/lib/outline/data
