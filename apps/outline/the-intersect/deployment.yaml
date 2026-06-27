@@ -1,0 +1,139 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outline
+  namespace: outline
+  labels:
+    app.kubernetes.io/name: outline
+spec:
+  replicas: 1
+  # RWO ceph-block PVC for local file storage -> never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: outline
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: outline
+    spec:
+      securityContext:
+        # Outline image runs as uid/gid 1001 (nodejs); fsGroup makes the PVC writable.
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Outline does not auto-migrate on boot; run migrations once before start.
+        - name: migrate
+          image: docker.getoutline.com/outlinewiki/outline:1.8.1
+          # production env keeps TLS on (rejectUnauthorized:false), matching the
+          # encrypted connection used by the main container. If the DB connection
+          # ever fails on TLS, fall back to "--env=production-ssl-disabled" + PGSSLMODE=disable.
+          command: ["yarn", "db:migrate", "--env=production"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          envFrom:
+            - secretRef:
+                name: outline-secret
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: outline-postgres-app
+                  key: uri
+            - name: PGSSLMODE
+              # require = encrypt without CA verification (CNPG serves a self-signed cert)
+              value: require
+      containers:
+        - name: outline
+          image: docker.getoutline.com/outlinewiki/outline:1.8.1
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            # SECRET_KEY, UTILS_SECRET, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET
+            - secretRef:
+                name: outline-secret
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: outline-postgres-app
+                  key: uri
+            - name: PGSSLMODE
+              value: disable
+            - name: REDIS_URL
+              value: redis://outline-dragonfly.outline.svc.cluster.local:6379
+            - name: URL
+              value: https://${SUB_SILENT_HARBOR}.${DOMAIN_CORONET_SUMMIT}
+            - name: PORT
+              value: "3000"
+            - name: FORCE_HTTPS
+              # TLS is terminated at the Cilium gateway; do not redirect inside the pod.
+              value: "false"
+            # ---- File storage: local PVC ----
+            - name: FILE_STORAGE
+              value: local
+            - name: FILE_STORAGE_LOCAL_ROOT_DIR
+              value: /var/lib/outline/data
+            - name: FILE_STORAGE_UPLOAD_MAX_SIZE
+              value: "262144000"
+            # ---- OIDC (PocketID) ----
+            # Paths are PocketID's standard OIDC routes; only the host (id.<domain>) changes.
+            # If your PocketID subdomain is not "id", update the host below.
+            - name: OIDC_AUTH_URI
+              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/authorize
+            - name: OIDC_TOKEN_URI
+              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/token
+            - name: OIDC_USERINFO_URI
+              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/userinfo
+            - name: OIDC_LOGOUT_URI
+              value: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/api/oidc/end-session
+            - name: OIDC_USERNAME_CLAIM
+              value: preferred_username
+            - name: OIDC_DISPLAY_NAME
+              value: Pocket ID
+            - name: OIDC_SCOPES
+              value: openid profile email
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/outline/data
+          livenessProbe:
+            httpGet:
+              path: /_health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /_health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: outline-data
