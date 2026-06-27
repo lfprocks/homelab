@@ -1,0 +1,24 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: outline-postgres
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:16
+  instances: 2
+
+  managed:
+    roles:
+      # Least privilege: outline owns its own database (set via initdb.owner
+      # below) which is all it needs for migrations. No cluster superuser.
+      - name: outline
+        login: true
+
+  bootstrap:
+    initdb:
+      database: outline
+      owner: outline
+
+  storage:
+    size: 8Gi
+    storageClass: ceph-block

@@ -1,0 +1,15 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: outline-httproute
+  namespace: outline
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_SILENT_HARBOR}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - backendRefs:
+        - name: outline
+          port: 3000
