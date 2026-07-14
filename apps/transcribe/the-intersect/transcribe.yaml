@@ -101,12 +101,12 @@ data:
   # DATASET_BUFFER_SIZE: "1000"
 
   # Pulpo / PulsePoint CAD unit enrichment (v1.3.0): feeds the units assigned to the active
-  # rescue into cleanup + summary so garbled callsigns snap to real units. SCAFFOLDED BUT
-  # DISABLED — set PULPO_ENABLED "true" and fill PULPO_BASE_URL + PULPO_AGENCY_ID here (and
-  # PULPO_API_KEY in the secret) once you have the pulpo endpoint + PulsePoint agency id.
+  # rescue into cleanup + summary so garbled callsigns snap to real units. Endpoint + Basic-auth
+  # credentials (PULPO_USERNAME/PASSWORD/API_KEY in the secret) are wired; still DISABLED pending
+  # the PulsePoint agency id. Set PULPO_AGENCY_ID and flip PULPO_ENABLED "true" to activate.
   PULPO_ENABLED: "false"
-  PULPO_BASE_URL: "" # e.g. https://pulpo.<your-domain>/v1
-  PULPO_AGENCY_ID: "" # your PulsePoint agency id
+  PULPO_BASE_URL: "https://api.pulsepoint.org"
+  PULPO_AGENCY_ID: "" # TODO: your PulsePoint agency id, then set PULPO_ENABLED=true
   # PULPO_TIMEOUT: "5s"
   # PULPO_REFRESH_INTERVAL: "45s"
 
