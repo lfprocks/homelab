@@ -1,0 +1,35 @@
+---
+# CloudNativePG cluster backing the optional dataset capture (DATASET_ENABLED=true).
+# transcribe writes a best-effort corpus of ASR transcriptions + LLM interactions here for
+# offline prompt refinement; it drops rather than blocks on a slow/unavailable DB, so a single
+# instance is acceptable for this non-critical sink.
+#
+# CNPG publishes connection details in the auto-generated `transcribe-postgres-app` Secret
+# (keys: uri, username, password, host, port, dbname, ...). The Deployment wires
+# DATASET_POSTGRES_URL from that secret's `uri` key (see transcribe.yaml), same pattern as
+# outline-postgres. goose migrations embedded in the image create the tables at startup.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: transcribe-postgres
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  # Non-critical, best-effort dataset sink — one instance keeps the footprint small. Bump to
+  # 2 if this corpus ever becomes something you can't afford to lose during a node drain.
+  instances: 1
+
+  managed:
+    roles:
+      # Least privilege: transcribe owns only its own database (set via initdb.owner below),
+      # which is all goose needs to run migrations. No cluster superuser.
+      - name: transcribe
+        login: true
+
+  bootstrap:
+    initdb:
+      database: transcribe
+      owner: transcribe
+
+  storage:
+    size: 10Gi
+    storageClass: ceph-block

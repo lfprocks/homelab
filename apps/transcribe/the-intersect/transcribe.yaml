@@ -14,8 +14,25 @@ data:
 
   ASR_ENDPOINT: http://asr.asr.svc.cluster.local/api/v1/transcribe
 
-  # OpenAI-compatible chat completions (llama-cpp in this cluster). OPENAI_API_KEY
-  # lives in the secret since llama-cpp is launched with --api-key-file.
+  # ML backend: "anthropic" (first-party Claude, v1.4.0) or "openai" (the OpenAI-compatible
+  # llama-cpp path below). v1.4.0 moved dispatch parsing, per-transmission cleanup, and rescue
+  # summarization to Claude for speed + quality. ANTHROPIC_API_KEY lives in the secret.
+  ML_BACKEND: "anthropic"
+
+  # Anthropic / Claude (used when ML_BACKEND=anthropic). Per-task models: cheap/fast Haiku for
+  # the high-volume dispatch classifier + per-transmission TAC cleanup, stronger Sonnet for the
+  # lower-volume rescue summaries. ANTHROPIC_TIMEOUT stays well under WORKER_TIMEOUT so the
+  # cleanup + summary calls (two serial round-trips) both fit the worker budget.
+  ANTHROPIC_DISPATCH_MODEL: "claude-haiku-4-5"
+  ANTHROPIC_SUMMARY_MODEL: "claude-sonnet-5"
+  ANTHROPIC_CLEANUP_MODEL: "claude-haiku-4-5"
+  ANTHROPIC_TIMEOUT: "30s"
+  ANTHROPIC_MAX_TOKENS: "2048"
+  # ANTHROPIC_BASE_URL: ""   # optional; empty uses the SDK default (api.anthropic.com)
+
+  # OpenAI-compatible chat completions (llama-cpp in this cluster). Retained as an inert fallback
+  # under ML_BACKEND=anthropic; flip ML_BACKEND back to "openai" to use it. OPENAI_API_KEY lives
+  # in the secret since llama-cpp is launched with --api-key-file.
   OPENAI_BASE_URL: "http://llama-cpp.llama-cpp.svc.cluster.local"
   # Keep this matching what apps/llama-cpp/the-intersect/llama-cpp.yaml's -hf flag loads —
   # with a single loaded model the server returns it regardless of what's requested, so
@@ -69,8 +86,37 @@ data:
   # PULSAR_MAX_DELIVERIES: "5"
   # PULSAR_NACK_REDELIVERY_DELAY: "30s"
 
+  # Per-transmission TAC cleanup (v1.4.0): every TAC transmission is rewritten by the ML backend
+  # to fix ASR errors, place names, and unit callsigns before it's posted + fed to the summary.
+  # Safe on the fast Haiku cleanup model; TAC_CLEANUP_TIMEOUT (default 20s, baked in) sub-bounds
+  # it so it can't starve the summary. Set "false" to post raw ASR.
+  TAC_CLEANUP_ENABLED: "true"
+  # TAC_CLEANUP_TIMEOUT: "20s"
+
+  # Dataset capture (v1.4.0): best-effort corpus of ASR transcriptions + LLM I/O in Postgres for
+  # offline prompt refinement. Drops rather than blocks. Backed by the CNPG transcribe-postgres
+  # cluster (postgres.yaml); DATASET_POSTGRES_URL is injected from the transcribe-postgres-app
+  # secret in the Deployment env below.
+  DATASET_ENABLED: "true"
+  # DATASET_BUFFER_SIZE: "1000"
+
+  # Pulpo / PulsePoint CAD unit enrichment (v1.4.0): feeds the units assigned to the active
+  # rescue into cleanup + summary so garbled callsigns snap to real units. Endpoint + Basic-auth
+  # credentials live in the secret (PULPO_USERNAME/PASSWORD/API_KEY).
+  PULPO_ENABLED: "true"
+  # /v2 is required — the pulpo client appends relative paths (e.g. "incidents"), so the base
+  # must resolve to https://api.pulsepoint.org/v2/incidents.
+  PULPO_BASE_URL: "https://api.pulsepoint.org/v2"
+  # Eastside Batt 7/8 — covers Issaquah, North Bend, Sammamish, Snoqualmie (the I-90/Snoqualmie
+  # trail-rescue corridor). This is the PulsePoint `agencyid` CODE from the agency directory,
+  # NOT the numeric `id` (1912). Change if trail rescues shift to another battalion.
+  PULPO_AGENCY_ID: "17D10"
+  # PULPO_TIMEOUT: "5s"
+  # PULPO_REFRESH_INTERVAL: "45s"
+
   WORKER_COUNT: "2"
-  # Must be >= OPENAI_TIMEOUT or the worker cancels the LLM round-trip.
+  # Must be >= the slowest single ML round-trip AND cover cleanup + summary in series.
+  # ANTHROPIC_TIMEOUT (30s) + summary leaves ample headroom here.
   WORKER_TIMEOUT: "180s"
 ---
 apiVersion: apps/v1
@@ -93,7 +139,7 @@ spec:
         prometheus.io/port: "8081"
       labels:
         k8s.lfp.rocks/service: "transcribe"
-        k8s.lfp.rocks/version: "v1.2.1"
+        k8s.lfp.rocks/version: "v1.4.0"
     spec:
       # affinity:
       #   nodeAffinity:
@@ -106,7 +152,16 @@ spec:
       #                 - enabled
       containers:
         - name: *name
-          image: ghcr.io/searchandrescuegg/transcribe:v1.2.1
+          image: ghcr.io/searchandrescuegg/transcribe:v1.4.0
+          env:
+            # DATASET_POSTGRES_URL from the CNPG-generated app secret (see postgres.yaml). The
+            # `uri` key is postgresql://transcribe:<pw>@transcribe-postgres-rw:5432/transcribe;
+            # pgx negotiates TLS (sslmode=prefer). Only consumed when DATASET_ENABLED=true.
+            - name: DATASET_POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: transcribe-postgres-app
+                  key: uri
           volumeMounts:
             - name: calltypes
               mountPath: /config
