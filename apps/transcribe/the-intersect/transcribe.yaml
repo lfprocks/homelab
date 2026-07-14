@@ -14,8 +14,8 @@ data:
 
   ASR_ENDPOINT: http://asr.asr.svc.cluster.local/api/v1/transcribe
 
-  # ML backend: "anthropic" (first-party Claude, v1.3.0) or "openai" (the OpenAI-compatible
-  # llama-cpp path below). v1.3.0 moved dispatch parsing, per-transmission cleanup, and rescue
+  # ML backend: "anthropic" (first-party Claude, v1.4.0) or "openai" (the OpenAI-compatible
+  # llama-cpp path below). v1.4.0 moved dispatch parsing, per-transmission cleanup, and rescue
   # summarization to Claude for speed + quality. ANTHROPIC_API_KEY lives in the secret.
   ML_BACKEND: "anthropic"
 
@@ -86,21 +86,21 @@ data:
   # PULSAR_MAX_DELIVERIES: "5"
   # PULSAR_NACK_REDELIVERY_DELAY: "30s"
 
-  # Per-transmission TAC cleanup (v1.3.0): every TAC transmission is rewritten by the ML backend
+  # Per-transmission TAC cleanup (v1.4.0): every TAC transmission is rewritten by the ML backend
   # to fix ASR errors, place names, and unit callsigns before it's posted + fed to the summary.
   # Safe on the fast Haiku cleanup model; TAC_CLEANUP_TIMEOUT (default 20s, baked in) sub-bounds
   # it so it can't starve the summary. Set "false" to post raw ASR.
   TAC_CLEANUP_ENABLED: "true"
   # TAC_CLEANUP_TIMEOUT: "20s"
 
-  # Dataset capture (v1.3.0): best-effort corpus of ASR transcriptions + LLM I/O in Postgres for
+  # Dataset capture (v1.4.0): best-effort corpus of ASR transcriptions + LLM I/O in Postgres for
   # offline prompt refinement. Drops rather than blocks. Backed by the CNPG transcribe-postgres
   # cluster (postgres.yaml); DATASET_POSTGRES_URL is injected from the transcribe-postgres-app
   # secret in the Deployment env below.
   DATASET_ENABLED: "true"
   # DATASET_BUFFER_SIZE: "1000"
 
-  # Pulpo / PulsePoint CAD unit enrichment (v1.3.0): feeds the units assigned to the active
+  # Pulpo / PulsePoint CAD unit enrichment (v1.4.0): feeds the units assigned to the active
   # rescue into cleanup + summary so garbled callsigns snap to real units. Endpoint + Basic-auth
   # credentials live in the secret (PULPO_USERNAME/PASSWORD/API_KEY).
   PULPO_ENABLED: "true"
@@ -139,7 +139,7 @@ spec:
         prometheus.io/port: "8081"
       labels:
         k8s.lfp.rocks/service: "transcribe"
-        k8s.lfp.rocks/version: "v1.3.0"
+        k8s.lfp.rocks/version: "v1.4.0"
     spec:
       # affinity:
       #   nodeAffinity:
@@ -152,7 +152,7 @@ spec:
       #                 - enabled
       containers:
         - name: *name
-          image: ghcr.io/searchandrescuegg/transcribe:v1.3.0
+          image: ghcr.io/searchandrescuegg/transcribe:v1.4.0
           env:
             # DATASET_POSTGRES_URL from the CNPG-generated app secret (see postgres.yaml). The
             # `uri` key is postgresql://transcribe:<pw>@transcribe-postgres-rw:5432/transcribe;
