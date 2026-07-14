@@ -5,6 +5,7 @@ namespace: transcribe
 resources:
   - ../base/
   - transcribe-calltypes-secret.yaml
+  - postgres.yaml
 labels:
   - includeSelectors: true
     pairs:
