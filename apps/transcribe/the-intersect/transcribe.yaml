@@ -102,11 +102,13 @@ data:
 
   # Pulpo / PulsePoint CAD unit enrichment (v1.3.0): feeds the units assigned to the active
   # rescue into cleanup + summary so garbled callsigns snap to real units. Endpoint + Basic-auth
-  # credentials (PULPO_USERNAME/PASSWORD/API_KEY in the secret) are wired; still DISABLED pending
-  # the PulsePoint agency id. Set PULPO_AGENCY_ID and flip PULPO_ENABLED "true" to activate.
-  PULPO_ENABLED: "false"
+  # credentials live in the secret (PULPO_USERNAME/PASSWORD/API_KEY).
+  PULPO_ENABLED: "true"
   PULPO_BASE_URL: "https://api.pulsepoint.org"
-  PULPO_AGENCY_ID: "" # TODO: your PulsePoint agency id, then set PULPO_ENABLED=true
+  # Eastside Batt 7/8 — covers Issaquah, North Bend, Sammamish, Snoqualmie (the I-90/Snoqualmie
+  # trail-rescue corridor). This is the PulsePoint `agencyid` CODE from the agency directory,
+  # NOT the numeric `id` (1912). Change if trail rescues shift to another battalion.
+  PULPO_AGENCY_ID: "17D10"
   # PULPO_TIMEOUT: "5s"
   # PULPO_REFRESH_INTERVAL: "45s"
 
