@@ -104,7 +104,9 @@ data:
   # rescue into cleanup + summary so garbled callsigns snap to real units. Endpoint + Basic-auth
   # credentials live in the secret (PULPO_USERNAME/PASSWORD/API_KEY).
   PULPO_ENABLED: "true"
-  PULPO_BASE_URL: "https://api.pulsepoint.org"
+  # /v2 is required — the pulpo client appends relative paths (e.g. "incidents"), so the base
+  # must resolve to https://api.pulsepoint.org/v2/incidents.
+  PULPO_BASE_URL: "https://api.pulsepoint.org/v2"
   # Eastside Batt 7/8 — covers Issaquah, North Bend, Sammamish, Snoqualmie (the I-90/Snoqualmie
   # trail-rescue corridor). This is the PulsePoint `agencyid` CODE from the agency directory,
   # NOT the numeric `id` (1912). Change if trail rescues shift to another battalion.
