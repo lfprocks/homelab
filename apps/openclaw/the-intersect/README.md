@@ -1,59 +1,82 @@
 # openclaw
 
-[OpenClaw](https://github.com/openclaw/openclaw) run inside the **Agent Sandbox**
-under **gVisor** on the-intersect, following the upstream
+[OpenClaw](https://github.com/openclaw/openclaw) — a long-running personal AI
+agent — running inside the [Agent Sandbox](https://github.com/kubernetes-sigs/agent-sandbox)
+under **gVisor** on the-intersect. Follows the upstream
 [`examples/openclaw-gvisor-sandbox`](https://github.com/kubernetes-sigs/agent-sandbox/tree/main/examples/openclaw-gvisor-sandbox)
-reference (SandboxTemplate + SandboxWarmPool + SandboxClaim), adapted for this
-GitOps repo.
+(SandboxTemplate + SandboxWarmPool + SandboxClaim), adapted for this GitOps repo
+and this cluster's networking/TLS.
 
-## Shape
+## Access
 
-- `sandboxtemplate.yaml` — `SandboxTemplate` with `runtimeClassName: gvisor`,
-  init container seeding config, `openclaw` gateway
-  (`ghcr.io/openclaw/openclaw:2026.3.23`, pinned), and a **`volumeClaimTemplates`**
-  5Gi `ceph-block` workspace at `/workspace/.openclaw`. Hardened (non-root 1000,
-  drop ALL caps, no privesc, seccomp RuntimeDefault; `readOnlyRootFilesystem:
-  false` as OpenClaw requires). Token + `ANTHROPIC_API_KEY` come from the secret.
-- `sandboxwarmpool.yaml` — one pre-warmed sandbox.
-- `sandboxclaim.yaml` — adopts a sandbox and stamps `sandbox.users.io/openclaw-claim`
-  on its pod so the Service targets exactly the claimed sandbox.
-- `configmap.yaml` — minimal `openclaw.json` (Control UI allowed origins; bind/port/auth
-  come from the gateway CLI flags).
-- `service.yaml` — ClusterIP `openclaw-gateway:18789` selecting the claim label.
-- `openclaw-secret.yaml` — SOPS-encrypted `openclaw-provider-keys`
-  (`OPENCLAW_GATEWAY_TOKEN` generated; `ANTHROPIC_API_KEY` is a **placeholder**).
+- **URL:** `https://openclaw.intersect.k8s.lfp.rocks` (LAN-only, via
+  `internal-gateway-http`'s HTTPS listener; real Let's Encrypt cert).
+- **Auth:** the `OPENCLAW_GATEWAY_TOKEN` (in the `openclaw-provider-keys` secret)
+  **plus** per-device pairing (below). Read the token with:
+  ```bash
+  kubectl -n openclaw get secret openclaw-provider-keys \
+    -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 -d
+  ```
+- **Device pairing** (required for any remote/non-loopback browser): open the UI,
+  paste the token in Settings; the request shows up as *pending* and must be
+  approved server-side (or from an already-paired device with `operator.approvals`):
+  ```bash
+  POD=$(kubectl -n openclaw get pod -l sandbox=openclaw-template-sandbox \
+    -o jsonpath='{.items[0].metadata.name}')
+  kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js devices list
+  kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js devices approve <request-id>
+  ```
+  Pairing is stored in `/workspace/.openclaw/devices` on the Ceph PVC, so it
+  survives pod restarts.
 
-Namespace in `clusters/the-intersect/namespaces.yaml`; Flux Kustomization
-`apps-openclaw` in `clusters/the-intersect/apps.yaml`.
+## Resources
 
-Validated with server-side dry-run against the installed `agents.x-k8s.io` CRDs.
+| File | What |
+|------|------|
+| `sandboxtemplate.yaml` | `SandboxTemplate`: `runtimeClassName: gvisor`, init container seeds config, `openclaw` gateway (`ghcr.io/openclaw/openclaw:2026.3.23`, pinned), hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs), 5Gi `ceph-block` workspace via `volumeClaimTemplates` at `/workspace/.openclaw`. **`networkPolicyManagement: Unmanaged`** (see Networking). Token + `ANTHROPIC_API_KEY` from the secret. |
+| `sandboxwarmpool.yaml` | One pre-warmed sandbox. |
+| `sandboxclaim.yaml` | Adopts a sandbox; stamps `sandbox.users.io/openclaw-claim` on its pod so the Service targets exactly the claimed sandbox. |
+| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host) + `trustedProxies` for the Cilium gateway. bind/port + `--allow-unconfigured` come from the CLI in the template. |
+| `service.yaml` | ClusterIP `openclaw-gateway:18789`, selects the claim label. |
+| `httproute.yaml` | `HTTPRoute` on `internal-gateway-http` → `openclaw-gateway:18789`, host `openclaw.${DOMAIN_COBRA_LANTERN}`. |
+| `ciliumnetworkpolicy.yaml` | Replacement for the controller's default policy — see below. |
+| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN` + `ANTHROPIC_API_KEY`. |
 
-## Before it works: set the API key
+Namespace: `clusters/the-intersect/namespaces.yaml`. Flux Kustomization
+`apps-openclaw`: `clusters/the-intersect/apps.yaml`. The internal HTTPS listener +
+Cloudflare DNS-01 solver live in `infrastructure/configs/the-intersect/`
+(`gateways.yaml`, `certmanager/`).
 
-The committed secret ships a placeholder key. Inject your real one (reuse the key
-already in `transcribe-secret`, or a new one) and re-commit:
+## Networking (the tricky part)
 
+The agent-sandbox controller's **default** NetworkPolicy is unusable here: it
+blocks `10.0.0.0/8` egress (kills cluster DNS → agent can't resolve Anthropic)
+and only allows ingress from a `sandbox-router` that isn't deployed. So:
+
+- `networkPolicyManagement: Unmanaged` on the SandboxTemplate stops the
+  controller creating that policy.
+- `ciliumnetworkpolicy.yaml` replaces it: **egress** = cluster DNS + `world`
+  (internet), no internal LAN; **ingress** = only from the Cilium `ingress`
+  entity (the gateway) + `host`, on 18789. A standard NetworkPolicy can't express
+  the gateway identity — hence CiliumNetworkPolicy.
+
+## Secret
+
+`openclaw-provider-keys` uses `data`/base64 (not `stringData` — that form left a
+stray `data: []` that broke Flux server-side apply). Edit it only with `sops`
+(never `sed` — that corrupts the SOPS MAC):
 ```bash
-sops set apps/openclaw/the-intersect/openclaw-secret.yaml \
-  '["stringData"]["ANTHROPIC_API_KEY"]' '"sk-ant-..."'
+sops apps/openclaw/the-intersect/openclaw-secret.yaml   # values are base64
 ```
 
-## Access (after it's Running)
+## Gotchas
 
-```bash
-# the claim's pod is labelled sandbox.users.io/openclaw-claim=openclaw-sandbox-claim
-kubectl -n openclaw port-forward svc/openclaw-gateway 18789:18789
-# token: kubectl -n openclaw get secret openclaw-provider-keys \
-#   -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 -d
-open http://localhost:18789
-```
-
-## Notes / follow-ups
-
-- **Model:** now the full Sandbox pattern (Template/WarmPool/Claim), matching the
-  upstream example — pause/resume, warm-pool pre-warming, stable identity.
-- **Image** pinned to `2026.3.23` (the example's tag); bump via Renovate.
-- **`--allow-unconfigured`** lets the gateway start before a provider is set; it
-  works once `ANTHROPIC_API_KEY` is populated.
-- **External access:** ClusterIP + port-forward for now. For remote UI access add
-  an HTTPRoute on the shared gateway (mind auth/TLS for an agent UI).
+- **Editing the SandboxTemplate does NOT roll running pods.** Delete the
+  `Sandbox` objects to regenerate (`kubectl -n openclaw delete sandbox --all`) —
+  which also gives a fresh PVC, so you re-pair the device. Normal pod restarts
+  keep the PVC/pairing.
+- **ConfigMap changes need a pod recreate** (the init container copies config once
+  at start) — mind the kubelet configmap-sync lag: recreate a bit after the
+  configmap has settled, or the pod copies the stale version.
+- **gVisor breaks `kubectl port-forward`** (the gateway listens in gVisor's
+  netstack, not the host pod-netns loopback). Reach it via the HTTPS route only.

@@ -35,6 +35,26 @@ applied cluster-wide). See the Talos repo `the-intersect/gvisor/` for that setup
 > out-of-band (kubectl), not Flux-managed. Moving it into this repo (like
 > `nvidia/runtimeclass.yaml`) would make the dependency fully GitOps-tracked.
 
+## Operating notes (learned deploying `openclaw`)
+
+- **The controller's default NetworkPolicy is unusable on this cluster.** For a
+  managed sandbox it creates a policy that blocks `10.0.0.0/8` egress (kills
+  cluster DNS — the agent can't resolve anything) and only allows ingress from a
+  `sandbox-router` component that this install does **not** deploy. Set
+  `spec.networkPolicyManagement: Unmanaged` on the `SandboxTemplate` and supply
+  your own policy. See `apps/openclaw/the-intersect/ciliumnetworkpolicy.yaml` for
+  a working example (Cilium `ingress` entity + DNS/world egress).
+- **Editing a `SandboxTemplate` does not roll existing pods.** The WarmPool
+  captured the template when it created its `Sandbox` objects; deleting the *pod*
+  just recreates it from the stale spec. To apply template changes:
+  `kubectl -n <ns> delete sandbox --all` (regenerates from the current template —
+  and gives fresh `volumeClaimTemplates` PVCs).
+- **Reaching a sandbox:** `kubectl port-forward` does not work with gVisor pods
+  (the listener is in gVisor's netstack, not the host pod-netns loopback). Expose
+  via a Service + HTTPRoute (see the openclaw app), not port-forward.
+
+`apps/openclaw/the-intersect/` is the reference workload for all of the above.
+
 ## Smoke test (manual)
 
 `smoke-test/sandbox-gvisor.yaml` is a minimal gVisor-isolated Sandbox. It is
