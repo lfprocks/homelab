@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+  labels:
+    app: openclaw
+data:
+  # Minimal config — bind/port/auth come from the gateway CLI flags in the
+  # SandboxTemplate. Only the Control UI allowed origins are set here (adjust
+  # if you expose the UI via an HTTPRoute instead of port-forward).
+  openclaw.json: |
+    {
+      "gateway": {
+        "controlUi": {
+          "allowedOrigins": [
+            "http://localhost:18789",
+            "http://127.0.0.1:18789"
+          ]
+        }
+      }
+    }

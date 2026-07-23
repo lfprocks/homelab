@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-default-deny-ingress
+  labels:
+    app: openclaw
+spec:
+  # Applies to every openclaw sandbox pod (warm-pool + claimed) — they all carry
+  # this label from the SandboxTemplate podTemplate.
+  podSelector:
+    matchLabels:
+      sandbox: openclaw-template-sandbox
+  policyTypes:
+    - Ingress
+  # No ingress rules => deny ALL pod-network ingress to the gateway. The agent is
+  # --bind=lan (needed for the claim Service) but is only reachable via
+  # `kubectl port-forward`, which the kubelet handles node-locally and therefore
+  # bypasses NetworkPolicy. Egress is intentionally left open — the agent needs to
+  # reach the Anthropic API and tool endpoints.

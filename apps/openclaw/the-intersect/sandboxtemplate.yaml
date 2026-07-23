@@ -1,0 +1,113 @@
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxTemplate
+metadata:
+  name: openclaw-template
+spec:
+  podTemplate:
+    metadata:
+      labels:
+        sandbox: openclaw-template-sandbox
+        # Required by the cluster's kyverno require-labels policy.
+        k8s.lfp.rocks/service: openclaw
+        k8s.lfp.rocks/version: "1"
+    spec:
+      # Run the agent inside a gVisor userspace-kernel sandbox.
+      runtimeClassName: gvisor
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: init-config
+          image: ghcr.io/openclaw/openclaw:2026.3.23
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          command:
+            - sh
+            - -c
+            - cp /etc/openclaw-readonly/openclaw.json /etc/openclaw/openclaw.json
+          volumeMounts:
+            - name: cm-volume
+              mountPath: /etc/openclaw-readonly
+            - name: openclaw-etc-writable
+              mountPath: /etc/openclaw
+      containers:
+        - name: openclaw
+          image: ghcr.io/openclaw/openclaw:2026.3.23
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            # OpenClaw writes to its root fs at runtime — must stay false
+            # (per the upstream agent-sandbox example).
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: OPENCLAW_GATEWAY_TOKEN
+            - name: OPENCLAW_CONFIG_PATH
+              value: "/etc/openclaw/openclaw.json"
+            - name: HOME
+              value: "/workspace"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: ANTHROPIC_API_KEY
+          command:
+            - sh
+            - -c
+            - |
+              node dist/index.js gateway --bind=lan --port 18789
+            # NOTE (security): dropped the upstream example's test-only flags.
+            #  - --allow-unconfigured: would serve before auth is configured
+            #    (fail-open). The ANTHROPIC_API_KEY env configures the provider,
+            #    so the gateway starts fail-closed instead.
+            #  - --verbose: risks leaking the API key / prompts into cluster logs
+            #    (Loki/Grafana).
+            # --bind=lan is kept (the claim Service needs pod-network reach); a
+            # default-deny-ingress NetworkPolicy restricts access to authenticated
+            # `kubectl port-forward` only. See networkpolicy.yaml.
+          ports:
+            - containerPort: 18789
+            - containerPort: 18790
+          volumeMounts:
+            - mountPath: /workspace/.openclaw
+              name: workspaces-pvc
+            - mountPath: /etc/openclaw
+              name: openclaw-etc-writable
+            - mountPath: /workspace
+              name: home-dir
+      volumes:
+        - name: cm-volume
+          configMap:
+            name: openclaw-config
+        - name: openclaw-etc-writable
+          emptyDir: {}
+        - name: home-dir
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: workspaces-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        # Ceph RBD (the-intersect default) for the persistent agent workspace.
+        storageClassName: ceph-block
+        resources:
+          requests:
+            storage: 5Gi
