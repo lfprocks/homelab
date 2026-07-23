@@ -73,3 +73,11 @@ postgresql:
       enabled: true
       storageClass: "smb-client"
       size: 8Gi
+
+redis:
+  enabled: true
+  # Bitnami removed legacy free tags from docker.io/bitnami; use the bitnamilegacy
+  # archive (same image the chart pulled before). Matches the postgresql fix above.
+  image:
+    repository: bitnamilegacy/redis
+    tag: "7.4.1-debian-12-r2"
