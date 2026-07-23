@@ -43,6 +43,16 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
+      # lfp.rocks is on Cloudflare — use a Cloudflare DNS-01 solver for it.
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - "lfp.rocks"
+      # Everything else stays on Route53 (default solver, no selector).
       - dns01:
           route53:
             region: us-west-2
