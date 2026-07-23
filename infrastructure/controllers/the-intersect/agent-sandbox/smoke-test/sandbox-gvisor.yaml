@@ -1,0 +1,47 @@
+# gVisor smoke test for Agent Sandbox — MANUAL, not wired into Flux.
+#
+# Prereqs (already satisfied on the-intersect):
+#   - gVisor system extension on the workers (Talos Image Factory, all 4 workers)
+#   - RuntimeClass "gvisor" (handler: runsc) present in the cluster
+#   - agent-sandbox controller Running (this dir's kustomization)
+#
+# Run:
+#   kubectl apply -f sandbox-gvisor.yaml
+#   kubectl get sandbox gvisor-smoketest -n default
+#   kubectl get pods -n default -l agents.x-k8s.io/sandbox=gvisor-smoketest -o wide
+#   kubectl logs -n default -l agents.x-k8s.io/sandbox=gvisor-smoketest
+#     # uname should report the emulated gVisor kernel "4.4.0", NOT 6.18-talos
+#   kubectl delete -f sandbox-gvisor.yaml
+apiVersion: agents.x-k8s.io/v1beta1
+kind: Sandbox
+metadata:
+  name: gvisor-smoketest
+  namespace: default
+spec:
+  operatingMode: Running
+  # Satisfies the cluster's kyverno require-labels policy on the created pod.
+  additionalPodMetadata:
+    labels:
+      k8s.lfp.rocks/service: agent-sandbox-smoketest
+      k8s.lfp.rocks/version: "1"
+  podTemplate:
+    spec:
+      runtimeClassName: gvisor
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: agent
+          image: docker.io/library/busybox:1.37
+          command:
+            - sh
+            - -c
+            - "uname -a && echo 'gVisor Agent Sandbox smoke test OK' && sleep 3600"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
