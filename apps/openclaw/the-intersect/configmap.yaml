@@ -10,6 +10,7 @@ data:
   openclaw.json: |
     {
       "gateway": {
+        "trustedProxies": ["10.244.0.0/16"],
         "controlUi": {
           "allowedOrigins": [
             "https://openclaw.${DOMAIN_COBRA_LANTERN}",
