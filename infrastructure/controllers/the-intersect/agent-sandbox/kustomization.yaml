@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Vendored upstream release manifest for kubernetes-sigs/agent-sandbox.
+# Pinned to v0.5.2 (sandbox-with-extensions.yaml = core Sandbox CRD + the
+# SandboxTemplate / SandboxClaim / SandboxWarmPool extensions + controller).
+# To bump: re-download the release asset and replace sandbox-with-extensions.yaml.
+#   curl -sL https://github.com/kubernetes-sigs/agent-sandbox/releases/download/vX.Y.Z/sandbox-with-extensions.yaml \
+#     -o sandbox-with-extensions.yaml
+# The smoke-test/ dir is intentionally NOT included here (manual validation only).
+resources:
+  - sandbox-with-extensions.yaml
