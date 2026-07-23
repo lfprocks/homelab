@@ -5,13 +5,11 @@ metadata:
   labels:
     app: openclaw
 data:
-  # gateway.mode=local is required for the gateway to start (the upstream example
-  # relied on --allow-unconfigured for this, which we dropped as fail-open). bind
-  # and port come from the CLI flags in the SandboxTemplate.
+  # Minimal config (matches the upstream example). The gateway is started with
+  # --allow-unconfigured (see sandboxtemplate.yaml); bind/port come from the CLI.
   openclaw.json: |
     {
       "gateway": {
-        "mode": "local",
         "controlUi": {
           "allowedOrigins": [
             "http://localhost:18789",

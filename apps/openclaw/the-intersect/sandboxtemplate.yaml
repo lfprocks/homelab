@@ -72,16 +72,19 @@ spec:
             - sh
             - -c
             - |
-              node dist/index.js gateway --bind=lan --port 18789
-            # NOTE (security): dropped the upstream example's test-only flags.
-            #  - --allow-unconfigured: would serve before auth is configured
-            #    (fail-open). The ANTHROPIC_API_KEY env configures the provider,
-            #    so the gateway starts fail-closed instead.
-            #  - --verbose: risks leaking the API key / prompts into cluster logs
-            #    (Loki/Grafana).
-            # --bind=lan is kept (the claim Service needs pod-network reach); a
-            # default-deny-ingress NetworkPolicy restricts access to authenticated
-            # `kubectl port-forward` only. See networkpolicy.yaml.
+              node dist/index.js gateway --bind=lan --port 18789 --allow-unconfigured
+            # SECURITY NOTES:
+            #  - --allow-unconfigured is REQUIRED for the gateway to start — the
+            #    startup gate isn't satisfied by gateway.mode in the config file
+            #    (confirmed: mode=local set, gateway still reports "unset"). The
+            #    upstream example uses this flag for the same reason. The resulting
+            #    exposure is mitigated below, not by omitting the flag.
+            #  - --verbose is intentionally OMITTED: it risks leaking the API key /
+            #    prompts into cluster logs (Loki/Grafana).
+            #  - --bind=lan is needed for the claim Service, but the default-deny
+            #    NetworkPolicy (networkpolicy.yaml) + the controller's own sandbox
+            #    NetworkPolicy make the gateway reachable ONLY via authenticated
+            #    `kubectl port-forward`; the OPENCLAW_GATEWAY_TOKEN gates the UI.
           ports:
             - containerPort: 18789
             - containerPort: 18790
