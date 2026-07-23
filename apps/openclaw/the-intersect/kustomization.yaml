@@ -8,3 +8,4 @@ resources:
   - sandboxwarmpool.yaml
   - sandboxclaim.yaml
   - service.yaml
+  - networkpolicy.yaml
