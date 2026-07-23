@@ -5,44 +5,17 @@ metadata:
   labels:
     app: openclaw
 data:
+  # Minimal config — bind/port/auth come from the gateway CLI flags in the
+  # SandboxTemplate. Only the Control UI allowed origins are set here (adjust
+  # if you expose the UI via an HTTPRoute instead of port-forward).
   openclaw.json: |
     {
       "gateway": {
-        "mode": "local",
-        "bind": "loopback",
-        "port": 18789,
-        "auth": {
-          "mode": "token"
-        },
         "controlUi": {
-          "enabled": true
+          "allowedOrigins": [
+            "http://localhost:18789",
+            "http://127.0.0.1:18789"
+          ]
         }
-      },
-      "agents": {
-        "defaults": {
-          "workspace": "~/.openclaw/workspace"
-        },
-        "list": [
-          {
-            "id": "default",
-            "name": "OpenClaw Assistant",
-            "workspace": "~/.openclaw/workspace"
-          }
-        ]
-      },
-      "cron": { "enabled": false }
+      }
     }
-  AGENTS.md: |
-    # OpenClaw Assistant
-
-    You are a helpful AI assistant running in Kubernetes on the-intersect,
-    sandboxed with gVisor.
-
-    Before proposing or building a custom system, feature, workflow, tool,
-    integration, or automation, do a brief check for open-source projects,
-    maintained libraries, existing OpenClaw plugins, or free platforms that
-    already solve it well enough. Prefer those when adequate. Build custom only
-    when existing options are unsuitable, too expensive, unmaintained, unsafe,
-    non-compliant, or the user explicitly asks for custom. Avoid paid-service
-    recommendations unless the user explicitly approves spend. Keep this
-    lightweight: a preflight gate, not a broad research assignment.
