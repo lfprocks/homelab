@@ -13,6 +13,10 @@ kind: Gateway
 metadata:
   name: internal-gateway-http
   namespace: cilium-ingress
+  annotations:
+    # cert-manager gateway-shim: auto-issues the TLS cert for the HTTPS listener
+    # below (secret cobra-lantern-tls) via letsencrypt-prod / Route53 DNS-01.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   gatewayClassName: cilium
   addresses:
@@ -23,6 +27,20 @@ spec:
       hostname: "*.${DOMAIN_COBRA_LANTERN}"
       port: 80
       protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+    - name: default-https
+      hostname: "*.${DOMAIN_COBRA_LANTERN}"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: cobra-lantern-tls
       allowedRoutes:
         namespaces:
           from: Selector
