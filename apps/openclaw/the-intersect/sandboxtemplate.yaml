@@ -3,6 +3,11 @@ kind: SandboxTemplate
 metadata:
   name: openclaw-template
 spec:
+  # Manage the sandbox network policy ourselves — the controller's default
+  # blocks cluster-DNS egress (agent can't resolve api.anthropic.com) and only
+  # allows ingress from a sandbox-router that isn't deployed. See
+  # ciliumnetworkpolicy.yaml.
+  networkPolicyManagement: Unmanaged
   podTemplate:
     metadata:
       labels:

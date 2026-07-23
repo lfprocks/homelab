@@ -1,0 +1,40 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: openclaw-sandbox
+  labels:
+    app: openclaw
+# Replaces the controller's default policy (networkPolicyManagement: Unmanaged on
+# the SandboxTemplate). Fixes the two things that made the sandbox non-functional:
+# allows cluster-DNS + internet egress, and internal-gateway ingress to the UI.
+spec:
+  endpointSelector:
+    matchLabels:
+      sandbox: openclaw-template-sandbox
+  ingress:
+    # Cilium Gateway API traffic carries the reserved "ingress" identity — this is
+    # how the internal-gateway-http route reaches the gateway. "host" covers the
+    # node/kubelet (exec, probes). Everything else is denied.
+    - fromEntities:
+        - ingress
+        - host
+      toPorts:
+        - ports:
+            - port: "18789"
+              protocol: TCP
+  egress:
+    # Cluster DNS, so the agent can resolve api.anthropic.com (etc.).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Public internet (LLM API + tools). "world" excludes in-cluster / LAN
+    # endpoints, keeping the agent isolated from internal services.
+    - toEntities:
+        - world

@@ -1,0 +1,17 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openclaw-httproute
+  namespace: openclaw
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  # Internal LAN only (gateway 10.0.10.100). Needs a DNS record for this host
+  # pointing at the internal gateway (or a matching wildcard).
+  hostnames: ["openclaw.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: openclaw-gateway
+          port: 18789

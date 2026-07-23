@@ -8,4 +8,5 @@ resources:
   - sandboxwarmpool.yaml
   - sandboxclaim.yaml
   - service.yaml
-  - networkpolicy.yaml
+  - ciliumnetworkpolicy.yaml
+  - httproute.yaml
