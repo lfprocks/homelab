@@ -5,12 +5,13 @@ metadata:
   labels:
     app: openclaw
 data:
-  # Minimal config — bind/port/auth come from the gateway CLI flags in the
-  # SandboxTemplate. Only the Control UI allowed origins are set here (adjust
-  # if you expose the UI via an HTTPRoute instead of port-forward).
+  # gateway.mode=local is required for the gateway to start (the upstream example
+  # relied on --allow-unconfigured for this, which we dropped as fail-open). bind
+  # and port come from the CLI flags in the SandboxTemplate.
   openclaw.json: |
     {
       "gateway": {
+        "mode": "local",
         "controlUi": {
           "allowedOrigins": [
             "http://localhost:18789",
