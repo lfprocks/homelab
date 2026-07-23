@@ -14,9 +14,11 @@ metadata:
   name: internal-gateway-http
   namespace: cilium-ingress
   annotations:
-    # cert-manager gateway-shim: auto-issues the TLS cert for the HTTPS listener
-    # below (secret cobra-lantern-tls) via letsencrypt-prod / Route53 DNS-01.
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # cert-manager gateway-shim auto-issues cobra-lantern-tls for the HTTPS
+    # listener below. The internal domain (${DOMAIN_COBRA_LANTERN}) isn't in
+    # Route53, so ACME/DNS-01 can't validate it — use the self-signed issuer.
+    # Internal-only service: browsers show a one-time cert warning to accept.
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
 spec:
   gatewayClassName: cilium
   addresses:
