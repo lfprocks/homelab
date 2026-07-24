@@ -50,3 +50,17 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    # Home Assistant's MCP server (streamable HTTP at /api/mcp), so the agent
+    # can read state and control exposed entities. Reached via the
+    # home-assistant ClusterIP Service (port 8080 -> pod port 8123); both ports
+    # are allowed to cover Cilium service translation.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: home-assistant
+            k8s:app.kubernetes.io/name: home-assistant
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "8123"
+              protocol: TCP
