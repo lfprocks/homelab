@@ -1,0 +1,161 @@
+apiVersion: agents.x-k8s.io/v1beta1
+kind: Sandbox
+metadata:
+  name: openclaw
+  labels:
+    app: openclaw
+# A single, standalone Sandbox (previously SandboxTemplate + SandboxWarmPool +
+# SandboxClaim). One long-lived agent needs no pre-warming, and a warm pool
+# can't share an RWO PVC across two pods anyway. Dropping the pool/claim lets us
+# mount an externally-owned PVC (pvc.yaml) so the agent's memory survives Sandbox
+# regeneration — the extensions volumeClaimTemplates path made the PVC
+# Sandbox-owned (cascade-deleted on regen), which is what wiped sessions.
+#
+# Regenerating this Sandbox (kubectl delete sandbox openclaw) is how an image
+# bump is applied; the openclaw-data PVC is not owned by it, so sessions persist.
+spec:
+  operatingMode: Running
+  # Retain the Sandbox's own resources on shutdown (belt-and-suspenders; the
+  # durable state lives on the external openclaw-data PVC, not here).
+  shutdownPolicy: Retain
+  podTemplate:
+    metadata:
+      labels:
+        # Service selector + CiliumNetworkPolicy endpointSelector both match this.
+        sandbox: openclaw-template-sandbox
+        # Required by the cluster's kyverno require-labels policy.
+        k8s.lfp.rocks/service: openclaw
+        k8s.lfp.rocks/version: "1"
+    spec:
+      # Run the agent inside a gVisor userspace-kernel sandbox.
+      runtimeClassName: gvisor
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # 1) Seed the non-secret base config (gateway/model/origins) from the
+        #    ConfigMap into the writable /etc/openclaw emptyDir.
+        - name: init-config
+          image: ghcr.io/openclaw/openclaw:2026.7.1
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          command:
+            - sh
+            - -c
+            - cp /etc/openclaw-readonly/openclaw.json /etc/openclaw/openclaw.json
+          volumeMounts:
+            - name: cm-volume
+              mountPath: /etc/openclaw-readonly
+            - name: openclaw-etc-writable
+              mountPath: /etc/openclaw
+        # 2) Materialize the MCP servers into that config. OpenClaw does NOT
+        #    interpolate env vars in HTTP headers, so the shell expands the
+        #    secret-backed token into an idempotent `mcp set` upsert (which does
+        #    not connect to the target — safe at boot). URLs/transports stay
+        #    readable here; only the tokens come from the SOPS secret.
+        - name: init-mcp
+          image: ghcr.io/openclaw/openclaw:2026.7.1
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: OPENCLAW_CONFIG_PATH
+              value: "/etc/openclaw/openclaw.json"
+            - name: WSDOT_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: WSDOT_MCP_TOKEN
+            - name: HA_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: HA_MCP_TOKEN
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              node /app/dist/index.js mcp set wsdot "$(printf '{"url":"http://mcp-wsdot.mcp-wsdot.svc.cluster.local:8080/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$WSDOT_MCP_TOKEN")"
+              node /app/dist/index.js mcp set homeassistant "$(printf '{"url":"http://home-assistant.home-assistant.svc.cluster.local:8080/api/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$HA_MCP_TOKEN")"
+          volumeMounts:
+            - name: openclaw-etc-writable
+              mountPath: /etc/openclaw
+      containers:
+        - name: openclaw
+          image: ghcr.io/openclaw/openclaw:2026.7.1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            # OpenClaw writes to its root fs at runtime — must stay false
+            # (per the upstream agent-sandbox example).
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: OPENCLAW_GATEWAY_TOKEN
+            - name: OPENCLAW_CONFIG_PATH
+              value: "/etc/openclaw/openclaw.json"
+            - name: HOME
+              value: "/workspace"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: ANTHROPIC_API_KEY
+          command:
+            - sh
+            - -c
+            - |
+              node dist/index.js gateway --bind=lan --port 18789 --allow-unconfigured
+            # SECURITY NOTES:
+            #  - --allow-unconfigured is REQUIRED for the gateway to start — the
+            #    startup gate isn't satisfied by gateway.mode in the config file.
+            #    The resulting exposure is mitigated by the CiliumNetworkPolicy
+            #    (ingress only from the gateway) + the OPENCLAW_GATEWAY_TOKEN +
+            #    per-device pairing, not by omitting the flag.
+            #  - --verbose is intentionally OMITTED: it risks leaking the API key /
+            #    prompts (and now MCP tokens) into cluster logs (Loki/Grafana).
+          ports:
+            - containerPort: 18789
+            - containerPort: 18790
+          volumeMounts:
+            - mountPath: /workspace/.openclaw
+              name: workspaces-pvc
+            - mountPath: /etc/openclaw
+              name: openclaw-etc-writable
+            - mountPath: /workspace
+              name: home-dir
+      volumes:
+        - name: cm-volume
+          configMap:
+            name: openclaw-config
+        - name: openclaw-etc-writable
+          emptyDir: {}
+        - name: home-dir
+          emptyDir: {}
+        # Durable agent state — externally-owned PVC (pvc.yaml), NOT a
+        # Sandbox-owned volumeClaimTemplate. This is the whole point: it survives
+        # `kubectl delete sandbox openclaw`.
+        - name: workspaces-pvc
+          persistentVolumeClaim:
+            claimName: openclaw-data
