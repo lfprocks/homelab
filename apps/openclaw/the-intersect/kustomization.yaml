@@ -4,9 +4,8 @@ namespace: openclaw
 resources:
   - openclaw-secret.yaml
   - configmap.yaml
-  - sandboxtemplate.yaml
-  - sandboxwarmpool.yaml
-  - sandboxclaim.yaml
+  - pvc.yaml
+  - sandbox.yaml
   - service.yaml
   - ciliumnetworkpolicy.yaml
   - httproute.yaml

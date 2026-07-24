@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openclaw-data
+  labels:
+    app: openclaw
+# Durable, Flux-managed home for the agent's state at /workspace/.openclaw
+# (sessions in openclaw-agent.sqlite, device pairing, credentials, identity).
+# Deliberately NOT provisioned via the Sandbox's volumeClaimTemplates: those
+# PVCs are Sandbox-owned and cascade-delete when the Sandbox is regenerated
+# (which is how image bumps are applied), wiping the agent's memory. Owning
+# this PVC in Git decouples its lifecycle from the Sandbox.
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 10Gi

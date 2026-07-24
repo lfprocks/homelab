@@ -2,10 +2,11 @@
 
 [OpenClaw](https://github.com/openclaw/openclaw) — a long-running personal AI
 agent — running inside the [Agent Sandbox](https://github.com/kubernetes-sigs/agent-sandbox)
-under **gVisor** on the-intersect. Follows the upstream
-[`examples/openclaw-gvisor-sandbox`](https://github.com/kubernetes-sigs/agent-sandbox/tree/main/examples/openclaw-gvisor-sandbox)
-(SandboxTemplate + SandboxWarmPool + SandboxClaim), adapted for this GitOps repo
-and this cluster's networking/TLS.
+under **gVisor** on the-intersect. Based on the upstream
+[`examples/openclaw-gvisor-sandbox`](https://github.com/kubernetes-sigs/agent-sandbox/tree/main/examples/openclaw-gvisor-sandbox),
+but deployed as a **single standalone `Sandbox`** (not
+SandboxTemplate + WarmPool + Claim) so its state can live on an
+**externally-owned PVC** that survives Sandbox regeneration. See *Durable state*.
 
 ## Access
 
@@ -26,39 +27,78 @@ and this cluster's networking/TLS.
   kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js devices list
   kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js devices approve <request-id>
   ```
-  Pairing is stored in `/workspace/.openclaw/devices` on the Ceph PVC, so it
-  survives pod restarts.
+  Pairing is stored in `/workspace/.openclaw/devices` on the durable PVC, so it
+  survives pod restarts **and** Sandbox regeneration.
 
 ## Resources
 
 | File | What |
 |------|------|
-| `sandboxtemplate.yaml` | `SandboxTemplate`: `runtimeClassName: gvisor`, init container seeds config, `openclaw` gateway (`ghcr.io/openclaw/openclaw:2026.7.1`, pinned), hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs), 5Gi `ceph-block` workspace via `volumeClaimTemplates` at `/workspace/.openclaw`. **`networkPolicyManagement: Unmanaged`** (see Networking). Token + `ANTHROPIC_API_KEY` from the secret. |
-| `sandboxwarmpool.yaml` | One pre-warmed sandbox. |
-| `sandboxclaim.yaml` | Adopts a sandbox; stamps `sandbox.users.io/openclaw-claim` on its pod so the Service targets exactly the claimed sandbox. |
-| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host), `trustedProxies` for the Cilium gateway, and a pinned **default model** `agents.defaults.model.primary` (needed since v2026.7.1's default flipped to OpenAI, which we have no key for). bind/port + `--allow-unconfigured` come from the CLI in the template. |
-| `service.yaml` | ClusterIP `openclaw-gateway:18789`, selects the claim label. |
+| `sandbox.yaml` | A single `Sandbox` (`agents.x-k8s.io/v1beta1`, name `openclaw`): `runtimeClassName: gvisor`, hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs). Two init containers — `init-config` (seeds base config from the ConfigMap) and `init-mcp` (materializes the MCP servers from the secret, see *MCP servers*). Mounts the external `openclaw-data` PVC at `/workspace/.openclaw`. `shutdownPolicy: Retain`. Secrets injected via `secretKeyRef`. |
+| `pvc.yaml` | External, Flux-owned `openclaw-data` PVC (10Gi `ceph-block`, RWO). The durable home for agent state — **not** a Sandbox-owned `volumeClaimTemplate` (see *Durable state*). |
+| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host), `trustedProxies` for the Cilium gateway, and a pinned **default model** `agents.defaults.model.primary` (needed since v2026.7.1's default flipped to OpenAI, which we have no key for). bind/port + `--allow-unconfigured` come from the CLI. No secrets here. |
+| `service.yaml` | ClusterIP `openclaw-gateway:18789`, selects the pod label `sandbox: openclaw-template-sandbox`. |
 | `httproute.yaml` | `HTTPRoute` on `internal-gateway-http` → `openclaw-gateway:18789`, host `openclaw.${DOMAIN_COBRA_LANTERN}`. |
-| `ciliumnetworkpolicy.yaml` | Replacement for the controller's default policy — see below. |
-| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN` + `ANTHROPIC_API_KEY`. |
+| `ciliumnetworkpolicy.yaml` | Replacement for the controller's default policy — see *Networking*. Also allows egress to the two in-cluster MCP servers. |
+| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY`, `WSDOT_MCP_TOKEN`, `HA_MCP_TOKEN`. |
 
 Namespace: `clusters/the-intersect/namespaces.yaml`. Flux Kustomization
 `apps-openclaw`: `clusters/the-intersect/apps.yaml`. The internal HTTPS listener +
 Cloudflare DNS-01 solver live in `infrastructure/configs/the-intersect/`
 (`gateways.yaml`, `certmanager/`).
 
+## Durable state (why a standalone Sandbox)
+
+Agent memory — sessions (`openclaw-agent.sqlite`), device pairing, credentials,
+identity — lives under `/workspace/.openclaw`. Originally this was a
+**`volumeClaimTemplates` PVC on the SandboxTemplate**, which the controller makes
+**Sandbox-owned**. Applying an image bump means regenerating the Sandbox, and that
+cascade-deletes the owned PVC — silently wiping the agent's memory.
+
+The fix: own the PVC in Git (`pvc.yaml`) and mount it by `claimName`. Its
+lifecycle is now decoupled from the Sandbox, so `kubectl -n openclaw delete
+sandbox openclaw` (how you apply an image bump) preserves everything.
+
+## MCP servers (secrets)
+
+Two in-cluster MCP servers are wired in: `wsdot`
+(`mcp-wsdot.mcp-wsdot.svc:8080/mcp`) and `homeassistant`
+(`home-assistant.home-assistant.svc:8080/api/mcp`). Both are HTTP
+(`streamable-http`) with a bearer token.
+
+OpenClaw does **not** interpolate env vars in HTTP MCP headers (verified against
+the binary + `docs/cli/mcp.md`; `--env` is stdio-only), so a `${VAR}` in the
+config is **not** expanded — the token must be a literal. To keep the tokens in
+the SOPS secret as the single source of truth, the `init-mcp` container
+shell-expands the secret-backed env var into an idempotent upsert at boot:
+
+```sh
+node /app/dist/index.js mcp set wsdot "$(printf '{...,"headers":{"Authorization":"Bearer %s"}}' "$WSDOT_MCP_TOKEN")"
+```
+
+The *shell* substitutes `$WSDOT_MCP_TOKEN` before OpenClaw sees it; `mcp set` is
+an idempotent write that does **not** connect to the target (safe at boot even if
+the MCP server is down). URLs/transports stay readable in `sandbox.yaml`; only the
+tokens come from the secret. Nothing plaintext is committed.
+
+To rotate a token: `sops apps/openclaw/the-intersect/openclaw-secret.yaml`, update
+the base64 value, then regenerate the Sandbox to re-materialize the config.
+
 ## Networking (the tricky part)
 
 The agent-sandbox controller's **default** NetworkPolicy is unusable here: it
 blocks `10.0.0.0/8` egress (kills cluster DNS → agent can't resolve Anthropic)
-and only allows ingress from a `sandbox-router` that isn't deployed. So:
+and only allows ingress from a `sandbox-router` that isn't deployed. So
+`ciliumnetworkpolicy.yaml` replaces it: **egress** = cluster DNS + `world`
+(internet) + the two MCP services; **ingress** = only from the Cilium `ingress`
+entity (the gateway) + `host`, on 18789. A standard NetworkPolicy can't express
+the gateway identity — hence CiliumNetworkPolicy.
 
-- `networkPolicyManagement: Unmanaged` on the SandboxTemplate stops the
-  controller creating that policy.
-- `ciliumnetworkpolicy.yaml` replaces it: **egress** = cluster DNS + `world`
-  (internet), no internal LAN; **ingress** = only from the Cilium `ingress`
-  entity (the gateway) + `host`, on 18789. A standard NetworkPolicy can't express
-  the gateway identity — hence CiliumNetworkPolicy.
+> Note: on the extensions `SandboxTemplate` this was paired with
+> `networkPolicyManagement: Unmanaged` to suppress the controller's default. The
+> core `Sandbox` has no such field; today the controller creates no default policy
+> for a standalone Sandbox (`kubectl -n openclaw get networkpolicy` is empty). If
+> that ever changes, set `spec.networkPolicy` on the Sandbox accordingly.
 
 ## Secret
 
@@ -71,10 +111,10 @@ sops apps/openclaw/the-intersect/openclaw-secret.yaml   # values are base64
 
 ## Gotchas
 
-- **Editing the SandboxTemplate does NOT roll running pods.** Delete the
-  `Sandbox` objects to regenerate (`kubectl -n openclaw delete sandbox --all`) —
-  which also gives a fresh PVC, so you re-pair the device. Normal pod restarts
-  keep the PVC/pairing.
+- **Editing `sandbox.yaml` / the ConfigMap does NOT roll the running pod.**
+  Regenerate: `kubectl -n openclaw delete sandbox openclaw` (the controller
+  recreates it from Git). The `openclaw-data` PVC is external, so sessions +
+  pairing survive — unlike the old template path.
 - **ConfigMap changes need a pod recreate** (the init container copies config once
   at start) — mind the kubelet configmap-sync lag: recreate a bit after the
   configmap has settled, or the pod copies the stale version.

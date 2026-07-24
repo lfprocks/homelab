@@ -5,11 +5,11 @@ metadata:
   labels:
     app: openclaw
 spec:
-  # ClusterIP for the-intersect (reach the Control UI via port-forward, or add
-  # an HTTPRoute on the shared gateway later). Selects the claimed sandbox pod.
+  # ClusterIP for the-intersect; the HTTPRoute (httproute.yaml) fronts it.
+  # Selects the standalone Sandbox's pod (sandbox.yaml podTemplate label).
   type: ClusterIP
   selector:
-    sandbox.users.io/openclaw-claim: openclaw-sandbox-claim
+    sandbox: openclaw-template-sandbox
   ports:
     - name: gateway
       port: 18789
