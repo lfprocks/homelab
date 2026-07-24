@@ -33,7 +33,7 @@ and this cluster's networking/TLS.
 
 | File | What |
 |------|------|
-| `sandboxtemplate.yaml` | `SandboxTemplate`: `runtimeClassName: gvisor`, init container seeds config, `openclaw` gateway (`ghcr.io/openclaw/openclaw:2026.3.23`, pinned), hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs), 5Gi `ceph-block` workspace via `volumeClaimTemplates` at `/workspace/.openclaw`. **`networkPolicyManagement: Unmanaged`** (see Networking). Token + `ANTHROPIC_API_KEY` from the secret. |
+| `sandboxtemplate.yaml` | `SandboxTemplate`: `runtimeClassName: gvisor`, init container seeds config, `openclaw` gateway (`ghcr.io/openclaw/openclaw:2026.7.1`, pinned), hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs), 5Gi `ceph-block` workspace via `volumeClaimTemplates` at `/workspace/.openclaw`. **`networkPolicyManagement: Unmanaged`** (see Networking). Token + `ANTHROPIC_API_KEY` from the secret. |
 | `sandboxwarmpool.yaml` | One pre-warmed sandbox. |
 | `sandboxclaim.yaml` | Adopts a sandbox; stamps `sandbox.users.io/openclaw-claim` on its pod so the Service targets exactly the claimed sandbox. |
 | `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host) + `trustedProxies` for the Cilium gateway. bind/port + `--allow-unconfigured` come from the CLI in the template. |

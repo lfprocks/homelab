@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: init-config
-          image: ghcr.io/openclaw/openclaw:2026.3.23
+          image: ghcr.io/openclaw/openclaw:2026.7.1
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -47,7 +47,7 @@ spec:
               mountPath: /etc/openclaw
       containers:
         - name: openclaw
-          image: ghcr.io/openclaw/openclaw:2026.3.23
+          image: ghcr.io/openclaw/openclaw:2026.7.1
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
