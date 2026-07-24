@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-wsdot
+  namespace: mcp-wsdot
+  labels:
+    app: mcp-wsdot
+  annotations:
+    # Roll the pods when the ConfigMap or Secret changes.
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  # In-memory MCP sessions: avoid two pods serving at once during a rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mcp-wsdot
+  template:
+    metadata:
+      labels:
+        app: mcp-wsdot
+        k8s.lfp.rocks/service: mcp-wsdot
+        k8s.lfp.rocks/version: v1.1.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      # Hardened, non-root pod (satisfies the restricted Pod Security Standard).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp-wsdot
+          image: ghcr.io/michaelpeterswa/mcp-wsdot:v1.1.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: mcp-wsdot-env
+            - secretRef:
+                name: mcp-wsdot-secret
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # readOnlyRootFilesystem is on; give the process a writable /tmp.
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,58 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: mcp-wsdot
+  namespace: mcp-wsdot
+  labels:
+    app: mcp-wsdot
+# Default-deny once this selects the pod: only the flows below are allowed.
+# Pairs with the egress rule added to the openclaw sandbox policy so the agent
+# can reach this server in-cluster.
+spec:
+  endpointSelector:
+    matchLabels:
+      app: mcp-wsdot
+  ingress:
+    # openclaw agent -> MCP endpoint.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: openclaw
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # kubelet/node liveness + readiness probes (/healthz, /readyz).
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Prometheus metrics scrape from grafana-alloy.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    # Cluster DNS, to resolve the WSDOT API hostname.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # WSDOT API over HTTPS (public internet). "world" excludes in-cluster / LAN
+    # endpoints, so the server cannot reach other internal services.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

@@ -38,3 +38,15 @@ spec:
     # endpoints, keeping the agent isolated from internal services.
     - toEntities:
         - world
+    # mcp-wsdot MCP server (in-cluster). DNS resolution of its service name is
+    # already covered by the kube-dns rule above; this allows the connection to
+    # the pod on its MCP port. This is the one internal service the sandbox may
+    # reach — everything else in-cluster stays denied.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: mcp-wsdot
+            k8s:app: mcp-wsdot
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

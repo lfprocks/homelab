@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-wsdot-env
+  namespace: mcp-wsdot
+  labels:
+    app: mcp-wsdot
+data:
+  LOG_LEVEL: "info"
+
+  # Streamable HTTP is the current MCP transport for remote hosting. The MCP
+  # endpoint is served at HTTP_PATH on HTTP_PORT; probes hit /healthz + /readyz
+  # on the same port (unauthenticated).
+  TRANSPORT: "streamablehttp"
+  HTTP_PORT: "8080"
+  HTTP_PATH: "/mcp"
+  SERVER_NAME: "mcp-wsdot"
+
+  # Prometheus metrics on a separate port, scraped via the pod annotations.
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+
+  # Keep idle streams alive through the gateway/proxy; drain on SIGTERM.
+  MCP_HEARTBEAT_INTERVAL: "30s"
+  SHUTDOWN_TIMEOUT: "15s"
+
+  WSDOT_API_TIMEOUT: "5s"
+
+  # Tracing off by default (metrics use the in-cluster Prometheus exporter).
+  TRACING_ENABLED: "false"
+  # MCP_STATELESS: "false"  # set true only if scaling beyond one replica
