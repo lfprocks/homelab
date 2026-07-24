@@ -36,7 +36,7 @@ and this cluster's networking/TLS.
 | `sandboxtemplate.yaml` | `SandboxTemplate`: `runtimeClassName: gvisor`, init container seeds config, `openclaw` gateway (`ghcr.io/openclaw/openclaw:2026.7.1`, pinned), hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs), 5Gi `ceph-block` workspace via `volumeClaimTemplates` at `/workspace/.openclaw`. **`networkPolicyManagement: Unmanaged`** (see Networking). Token + `ANTHROPIC_API_KEY` from the secret. |
 | `sandboxwarmpool.yaml` | One pre-warmed sandbox. |
 | `sandboxclaim.yaml` | Adopts a sandbox; stamps `sandbox.users.io/openclaw-claim` on its pod so the Service targets exactly the claimed sandbox. |
-| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host) + `trustedProxies` for the Cilium gateway. bind/port + `--allow-unconfigured` come from the CLI in the template. |
+| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host), `trustedProxies` for the Cilium gateway, and a pinned **default model** `agents.defaults.model.primary` (needed since v2026.7.1's default flipped to OpenAI, which we have no key for). bind/port + `--allow-unconfigured` come from the CLI in the template. |
 | `service.yaml` | ClusterIP `openclaw-gateway:18789`, selects the claim label. |
 | `httproute.yaml` | `HTTPRoute` on `internal-gateway-http` → `openclaw-gateway:18789`, host `openclaw.${DOMAIN_COBRA_LANTERN}`. |
 | `ciliumnetworkpolicy.yaml` | Replacement for the controller's default policy — see below. |
