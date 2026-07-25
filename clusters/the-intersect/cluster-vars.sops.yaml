@@ -68,6 +68,7 @@ stringData:
     SUB_AMBER_MERIDIAN: ENC[AES256_GCM,data:kxk=,iv:mvLDeQsb/v7O6X+QIxXF0sQXLL6rW4lkafTiB18nlG4=,tag:ROdhrThzlcbM9C1sv7u/QA==,type:str]
     FORGEJO_SSH_IP: ENC[AES256_GCM,data:qJtBnX8Jl5Py/nk=,iv:zVwezhDJDpNGQbDLqy2VkQH8b6U4Z0aHvXuBJ5JAz0Y=,tag:IJlZsi/RxxCPwEAMIYoIZg==,type:str]
     SUB_SILENT_HARBOR: ENC[AES256_GCM,data:GJwHI3Ht0Q==,iv:gI2AXi6XmfAkKeJ+wP1LY6EmN/Yd3EwDw64iPITmi/o=,tag:KzhzJt4tOys9vfFXBU0xEw==,type:str]
+    SUB_LFPWEATHER_MCP: ENC[AES256_GCM,data:YCvu,iv:wpw/fFdBeCtTxVEYMb7mnX0aYsnkL2GBinqayTn7Kf4=,tag:vRYO2Srbff+LJUetU6xqQw==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -79,7 +80,7 @@ sops:
             Zkt1UFBNWGRlMmc0Q0xSdDI1QnhIMDQKlwYLsDTpKi5MC9T0iYmj+m/Tx3AmWNj5
             Se6RFuDv+aurhKLL1l6/kh7s8kcsyVMsu9LJBBf1C/NRgqwWxaFx/A==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-06-27T21:07:37Z"
-    mac: ENC[AES256_GCM,data:2Tp+EafMGdTLQAmhNjsQZJ4y40YMbYKUg6yGxqQ3wREACFWkYketbJyjYWNGCYi4GiROggHiqmXFdUz4+RwaoDwqJVjXX1JIHa6nCVSHW6sBrUWQkk6nj+yBoAfJQMzLOpGM9LQH+5pGvjCZjxidUK2Gm4nqtrZO2if0fW1Aou0=,iv:qNbGJxSDOj50x24Wp68rEZjrI/zNchIwRPTJKHlLs9g=,tag:lnbECj0TOg6gVqAgCt4kag==,type:str]
+    lastmodified: "2026-07-25T01:52:34Z"
+    mac: ENC[AES256_GCM,data:iYs6NB9S69R70HKPOzJDv+gb3ufMQGTGIm6X0+c1xCw6Gp0omD9PmEYg/4C1FBBg8MqHw95wLYghrIVwkk/Zuqo0HWqhIoTzXsVT4ROZAsz66EbVpaXCF0b0XAg5UcbK4OYtMyiRSAJKof6akftiOAjxgE6l+DW8HezmzipLfTI=,iv:l37ptxkUlN9MkJqC3O0YVnmjYOd5insgeN4YmA6bLvg=,tag:Z3+C2AcdvsYvRkAUpz5i6g==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0
