@@ -7,6 +7,8 @@ metadata:
 data:
   # Minimal config (matches the upstream example). The gateway is started with
   # --allow-unconfigured (see sandboxtemplate.yaml); bind/port come from the CLI.
+  # No secrets here: the Telegram bot token comes from the TELEGRAM_BOT_TOKEN env
+  # var (secret-backed; the default-account env fallback), not `botToken`.
   openclaw.json: |
     {
       "gateway": {
@@ -23,6 +25,13 @@ data:
       "agents": {
         "defaults": {
           "model": { "primary": "anthropic/claude-opus-4-8" }
+        }
+      },
+      "channels": {
+        "telegram": {
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "groups": { "*": { "requireMention": true } }
         }
       }
     }
