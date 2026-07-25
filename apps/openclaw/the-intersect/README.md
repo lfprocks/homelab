@@ -36,11 +36,11 @@ SandboxTemplate + WarmPool + Claim) so its state can live on an
 |------|------|
 | `sandbox.yaml` | A single `Sandbox` (`agents.x-k8s.io/v1beta1`, name `openclaw`): `runtimeClassName: gvisor`, hardened (non-root 1000, drop ALL, no privesc, seccomp; `readOnlyRootFilesystem: false` — OpenClaw writes to rootfs). Two init containers — `init-config` (seeds base config from the ConfigMap) and `init-mcp` (materializes the MCP servers from the secret, see *MCP servers*). Mounts the external `openclaw-data` PVC at `/workspace/.openclaw`. `shutdownPolicy: Retain`. Secrets injected via `secretKeyRef`. |
 | `pvc.yaml` | External, Flux-owned `openclaw-data` PVC (10Gi `ceph-block`, RWO). The durable home for agent state — **not** a Sandbox-owned `volumeClaimTemplate` (see *Durable state*). |
-| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host), `trustedProxies` for the Cilium gateway, and a pinned **default model** `agents.defaults.model.primary` (needed since v2026.7.1's default flipped to OpenAI, which we have no key for). bind/port + `--allow-unconfigured` come from the CLI. No secrets here. |
+| `configmap.yaml` | `openclaw.json`: `controlUi.allowedOrigins` (incl. the https host), `trustedProxies` for the Cilium gateway, a pinned **default model** `agents.defaults.model.primary`, and the **Telegram channel** (`channels.telegram`, token-free — see *Telegram*). bind/port + `--allow-unconfigured` come from the CLI. No secrets here. |
 | `service.yaml` | ClusterIP `openclaw-gateway:18789`, selects the pod label `sandbox: openclaw-template-sandbox`. |
 | `httproute.yaml` | `HTTPRoute` on `internal-gateway-http` → `openclaw-gateway:18789`, host `openclaw.${DOMAIN_COBRA_LANTERN}`. |
 | `ciliumnetworkpolicy.yaml` | Replacement for the controller's default policy — see *Networking*. Also allows egress to the two in-cluster MCP servers. |
-| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY`, `WSDOT_MCP_TOKEN`, `HA_MCP_TOKEN`. |
+| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `WSDOT_MCP_TOKEN`, `HA_MCP_TOKEN`. |
 
 Namespace: `clusters/the-intersect/namespaces.yaml`. Flux Kustomization
 `apps-openclaw`: `clusters/the-intersect/apps.yaml`. The internal HTTPS listener +
@@ -83,6 +83,35 @@ tokens come from the secret. Nothing plaintext is committed.
 
 To rotate a token: `sops apps/openclaw/the-intersect/openclaw-secret.yaml`, update
 the base64 value, then regenerate the Sandbox to re-materialize the config.
+
+## Telegram
+
+`channels.telegram` is enabled in the ConfigMap, but the bot token is **not** —
+it comes from `TELEGRAM_BOT_TOKEN` (secret-backed env on the `openclaw`
+container). OpenClaw resolves that env fallback for the **default account** only,
+which is exactly what a `channels.telegram` block with no `accounts:` uses, so no
+`botToken` literal is needed anywhere in Git.
+
+`dmPolicy: "pairing"` (the default): the first DM to the bot creates a pending
+pairing request that must be approved. Long polling to `api.telegram.org` is
+covered by the existing `world` egress rule.
+
+```bash
+POD=$(kubectl -n openclaw get pod -l sandbox=openclaw-template-sandbox \
+  -o jsonpath='{.items[0].metadata.name}')
+kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js pairing list telegram
+kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js pairing approve telegram <CODE>
+```
+
+Codes expire after 1 hour. Pairing state lives on the durable PVC. For a
+one-owner bot you can tighten this to `dmPolicy: "allowlist"` with your numeric
+Telegram user ID in `channels.telegram.allowFrom`.
+
+## OpenAI
+
+`OPENAI_API_KEY` is injected for the non-agent OpenAI surfaces (images,
+embeddings, speech). It does **not** change the agent model — `agents.defaults.
+model.primary` stays pinned to `anthropic/claude-opus-4-8` in the ConfigMap.
 
 ## Networking (the tricky part)
 

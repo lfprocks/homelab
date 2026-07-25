@@ -122,6 +122,21 @@ spec:
                 secretKeyRef:
                   name: openclaw-provider-keys
                   key: ANTHROPIC_API_KEY
+            # Non-agent OpenAI surfaces (images, embeddings, speech). The primary
+            # agent model stays anthropic/* (pinned in the ConfigMap).
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: OPENAI_API_KEY
+            # Telegram channel. OpenClaw resolves the env fallback only for the
+            # DEFAULT account, which is what channels.telegram (no `accounts`)
+            # uses — so the token stays out of the ConfigMap entirely.
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: TELEGRAM_BOT_TOKEN
           command:
             - sh
             - -c
