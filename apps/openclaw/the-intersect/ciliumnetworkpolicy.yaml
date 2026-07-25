@@ -64,3 +64,18 @@ spec:
               protocol: TCP
             - port: "8123"
               protocol: TCP
+    # lfpweather's MCP server (streamable HTTP at /mcp). Reached in-cluster via
+    # the lfpweather-mcp ClusterIP Service (port 80 -> pod port 8080); both ports
+    # are allowed to cover Cilium service translation. Deliberately NOT the
+    # public route — keeps agent traffic off the external gateway and keeps the
+    # real hostname out of Git (it lives in cluster-vars as SUB_LFPWEATHER_MCP).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lfpweather
+            k8s:app: lfpweather-mcp
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP

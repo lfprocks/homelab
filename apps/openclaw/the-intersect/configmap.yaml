@@ -33,5 +33,10 @@ data:
           "dmPolicy": "pairing",
           "groups": { "*": { "requireMention": true } }
         }
+      },
+      "tools": {
+        "web": {
+          "search": { "provider": "duckduckgo" }
+        }
       }
     }

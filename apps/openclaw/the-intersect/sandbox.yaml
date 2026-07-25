@@ -84,6 +84,11 @@ spec:
                 secretKeyRef:
                   name: openclaw-provider-keys
                   key: HA_MCP_TOKEN
+            - name: LFP_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: LFP_MCP_TOKEN
           command:
             - sh
             - -c
@@ -91,6 +96,7 @@ spec:
               set -e
               node /app/dist/index.js mcp set wsdot "$(printf '{"url":"http://mcp-wsdot.mcp-wsdot.svc.cluster.local:8080/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$WSDOT_MCP_TOKEN")"
               node /app/dist/index.js mcp set homeassistant "$(printf '{"url":"http://home-assistant.home-assistant.svc.cluster.local:8080/api/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$HA_MCP_TOKEN")"
+              node /app/dist/index.js mcp set lfpweather "$(printf '{"url":"http://lfpweather-mcp.lfpweather.svc.cluster.local:80/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$LFP_MCP_TOKEN")"
           volumeMounts:
             - name: openclaw-etc-writable
               mountPath: /etc/openclaw
