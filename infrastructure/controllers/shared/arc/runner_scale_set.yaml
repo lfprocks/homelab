@@ -36,21 +36,32 @@ spec:
     minRunners: 0
     maxRunners: 2
 
-    # The migration tooling drives throwaway Postgres containers, so the runner
-    # needs a Docker daemon. dind requires a privileged sidecar, which is the
-    # reason this scale set is pinned to one repository and one trigger.
-    containerMode:
-      type: dind
-
+    # No containerMode, and specifically no dind.
+    #
+    # The first version of this used containerMode: dind so the migration
+    # tooling could drive throwaway Postgres containers. That rebooted
+    # the-intersect-worker-03 twice, once per runner pod, taking other workloads
+    # with it. A privileged Docker daemon setting up its own bridge networking
+    # and netfilter rules does not belong on a Talos node running Cilium: the
+    # OS is immutable and minimal, and dind was visibly failing against it
+    # ("Deleting nftables IPv4 rules ... nft: executable file not found").
+    #
+    # The workflow now downloads the golang-migrate binary instead. It is
+    # statically linked and needs no daemon, so the runner is an ordinary
+    # unprivileged pod.
     template:
       spec:
         containers:
           - name: runner
             image: ghcr.io/actions/actions-runner:latest
             command: ["/home/runner/run.sh"]
+            # dind previously ran as an unlimited sidecar, so anything it
+            # started was invisible to the kubelet. With one container and a
+            # limit, the pod cannot grow without bound whatever a job does.
             resources:
               requests:
                 cpu: 200m
-                memory: 512Mi
+                memory: 256Mi
               limits:
-                memory: 2Gi
+                cpu: "2"
+                memory: 1Gi

@@ -12,16 +12,15 @@ metadata:
 # controller's service account, which holds the GitHub credentials for every
 # scale set.
 #
-# Pod security has to be privileged rather than baseline: containerMode dind
-# runs a privileged Docker-in-Docker sidecar, and baseline would reject the pod
-# outright. That is the cost of letting the migration tooling drive throwaway
-# Postgres containers, and it is why this namespace is reachable only from
-# push-to-main jobs in one pinned repository.
+# Baseline rather than privileged. This was privileged to admit the dind
+# sidecar; without it a runner is an ordinary pod, and baseline now acts as a
+# guard rail -- a future change that reintroduces a privileged container gets
+# rejected at admission instead of rebooting a node.
 apiVersion: v1
 kind: Namespace
 metadata:
   name: arc-runners
   labels:
-    pod-security.kubernetes.io/enforce: privileged
-    pod-security.kubernetes.io/audit: privileged
-    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: baseline
