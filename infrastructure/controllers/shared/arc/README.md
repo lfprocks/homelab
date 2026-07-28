@@ -45,17 +45,33 @@ set without thinking about it.
 `github_secret.sops.yaml` holds a GitHub App's credentials and **must be filled
 in before this is merged** — it is committed with placeholders.
 
-Create the App at <https://github.com/settings/apps> (or under the `lfprocks`
-org for an org-owned App):
+Create the App under the `lfprocks` organisation, at
+<https://github.com/organizations/lfprocks/settings/apps/new>:
 
-- Repository permissions: **Administration: read & write**, **Metadata: read**,
-  **Actions: read**
-- No webhook needed
-- Install it on `lfprocks/timescale-migrations` only
+- **Repository permissions → Administration: Read and write.** This is the one
+  that lets ARC register and remove runners. It is required only because the
+  scale set is scoped to a repository; an organisation-scoped scale set would
+  use **Organization permissions → Self-hosted runners: Read and write**
+  instead, and would not need Administration at all.
+- **Repository permissions → Metadata: Read-only.** GitHub selects this
+  automatically once Administration is set.
+- Nothing else. Older ARC guides also list `Actions: read` and `Checks: read`;
+  those belong to the pre-scale-set controller and its webhook-driven scaling.
+  Runner scale sets long-poll instead, so neither is needed here.
+- Uncheck **Active** under Webhook — there is no webhook to receive.
+- Set the App to **"Only on this account"**.
 
-Then collect three values — the App ID, the Installation ID (from the
-installation's URL, `.../installations/<id>`), and a generated private key —
-and write them in:
+Install it on `lfprocks/timescale-migrations` **only** — "Only select
+repositories", not "All repositories". That repository pin is half of what
+keeps a LAN-reachable runner from becoming an organisation-wide one.
+
+Then collect three values and write them in:
+
+| Value | Where |
+| --- | --- |
+| App ID | the App's own settings page, near the top |
+| Installation ID | the trailing number in `https://github.com/organizations/lfprocks/settings/installations/<id>` after installing |
+| Private key | **Generate a private key** at the bottom of the App page — downloads a `.pem`, and is shown only once |
 
 ```sh
 $EDITOR infrastructure/controllers/shared/arc/github_secret.sops.yaml
