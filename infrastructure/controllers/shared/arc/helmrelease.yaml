@@ -1,0 +1,21 @@
+---
+# Actions Runner Controller. Watches AutoscalingRunnerSet resources and starts
+# an ephemeral runner pod per queued job, then throws it away.
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: gha-runner-scale-set-controller
+  namespace: arc-systems
+spec:
+  chart:
+    spec:
+      chart: gha-runner-scale-set-controller
+      sourceRef:
+        kind: HelmRepository
+        name: actions-runner-controller
+      version: 0.14.2
+  interval: 1m0s
+  values:
+    flags:
+      # Runner pods are created in arc-runners, not alongside the controller.
+      watchSingleNamespace: ""

@@ -9,3 +9,4 @@ resources:
   - alpineworks/
   - storage/
   - node-feature-discovery/
+  - arc/
