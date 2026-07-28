@@ -35,10 +35,21 @@ narrowed in three ways:
 3. **Ephemeral pods.** Every job gets a fresh runner that is destroyed
    afterwards, so nothing persists between jobs.
 
-`containerMode: dind` runs a privileged sidecar, which is why `arc-runners` has
-privileged pod security rather than baseline. That is what the first two
-constraints are paying for — it is not a setting to copy onto an org-wide scale
-set without thinking about it.
+Runner pods are **not** privileged and there is no Docker-in-Docker. The first
+version of this used `containerMode: dind` so jobs could drive throwaway
+Postgres containers; it rebooted `the-intersect-worker-03` twice, once per
+runner pod, evicting unrelated workloads both times. A privileged Docker daemon
+configuring its own bridge networking and netfilter rules is a poor fit for a
+Talos node running Cilium — the OS is immutable and minimal, and dind was
+visibly failing against it:
+
+```
+msg="Deleting nftables IPv4 rules" error="failed to find nft tool: exec: \"nft\": executable file not found in $PATH"
+```
+
+Jobs that need a migration tool download the statically linked golang-migrate
+binary instead. Anything genuinely needing containers should run somewhere that
+is not a Talos node.
 
 ## Credentials
 
