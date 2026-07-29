@@ -16,3 +16,20 @@ spec:
     - kind: ConfigMap
       name: lgtm-distributed-values
   interval: 1m0s
+
+  # Flux defaults to a 5m timeout, which this chart cannot meet.
+  #
+  # lgtm-distributed deploys Loki, Mimir, Tempo and Grafana, several of them as
+  # StatefulSets that roll one pod at a time. Changing the Mimir ingester
+  # resources restarted four ingesters sequentially and took well over five
+  # minutes, so Helm gave up waiting:
+  #
+  #   client rate limiter Wait returned an error:
+  #   rate: Wait(n=1) would exceed context deadline
+  #
+  # The upgrade had in fact succeeded -- every ingester came back healthy with
+  # the new limits -- but the HelmRelease was left Stalled/RetriesExceeded,
+  # which blocks all further reconciliation of this release until someone
+  # clears it by hand. A timeout that reports a working change as a failure is
+  # worse than a slow one.
+  timeout: 20m0s
