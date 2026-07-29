@@ -36,7 +36,7 @@ alloy:
     content: |-
       prometheus.scrape "kubelet_metrics" {
         targets           = discovery.kubernetes.nodes.targets
-        forward_to        = [prometheus.remote_write.default.receiver]
+        forward_to        = [prometheus.relabel.kubelet_metrics.receiver]
         job_name          = "integrations/kubernetes/kubelet"
         scheme            = "https"
         bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -48,6 +48,23 @@ alloy:
         }
         clustering {
           enabled = true
+        }
+      }
+
+      // Keeplist for the kubelet. This job shipped unfiltered at 351 samples
+      // per second -- 16% of all metrics -- while cadvisor and
+      // kube-state-metrics beside it were both already filtered.
+      //
+      // Chosen for what a dashboard or an alert would actually ask: what the
+      // kubelet thinks it is running, pod lifecycle latency, certificate
+      // expiry and volume capacity. The last two are the ones nobody misses
+      // until a cluster stops quietly.
+      prometheus.relabel "kubelet_metrics" {
+        forward_to = [prometheus.remote_write.default.receiver]
+        rule {
+          source_labels = ["__name__"]
+          regex         = "up|scrape_samples_scraped|scrape_duration_seconds|scrape_samples_post_metric_relabeling|scrape_series_added|kubelet_node_name|kubelet_running_containers|kubelet_running_container_count|kubelet_running_pods|kubelet_running_pod_count|kubelet_node_config_error|kubelet_pleg_relist_duration_seconds_bucket|kubelet_pleg_relist_duration_seconds_count|kubelet_pleg_relist_duration_seconds_sum|kubelet_pleg_relist_interval_seconds_bucket|kubelet_pod_start_duration_seconds_bucket|kubelet_pod_start_duration_seconds_count|kubelet_pod_start_duration_seconds_sum|kubelet_pod_worker_duration_seconds_bucket|kubelet_pod_worker_duration_seconds_count|kubelet_pod_worker_duration_seconds_sum|kubelet_cgroup_manager_duration_seconds_bucket|kubelet_cgroup_manager_duration_seconds_count|kubelet_certificate_manager_client_expiration_renew_errors|kubelet_certificate_manager_client_ttl_seconds|kubelet_certificate_manager_server_ttl_seconds|kubelet_server_expiration_renew_errors|kubelet_volume_stats_available_bytes|kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_used_bytes|kubelet_volume_stats_inodes|kubelet_volume_stats_inodes_used|volume_manager_total_volumes|storage_operation_duration_seconds_count|storage_operation_errors_total|rest_client_requests_total|rest_client_request_duration_seconds_bucket|kubernetes_build_info"
+          action        = "keep"
         }
       }
 
@@ -74,9 +91,15 @@ alloy:
       prometheus.relabel "cadvisor_metrics" {
         forward_to = [prometheus.remote_write.default.receiver]
 
+        // `up` and the scrape_* synthetics are prepended deliberately.
+        // A keeplist filters every sample the scraper produces, including the
+        // ones it generates itself -- so without these, there is no `up` series
+        // for this job and no way to tell a healthy target from a silent one.
+        // Both of this file's original keeplists omitted them, which is why
+        // `up` covered only the unfiltered jobs.
         rule {
           source_labels = ["__name__"]
-          regex         = "container_cpu_usage_seconds_total|container_cpu_cfs_throttled_periods_total|container_cpu_cfs_periods_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_memory_swap|container_fs_reads_total|container_fs_writes_total|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_network_receive_packets_total|container_network_transmit_packets_total|container_network_receive_packets_dropped_total|container_network_transmit_packets_dropped_total|machine_memory_bytes"
+          regex         = "up|scrape_samples_scraped|scrape_duration_seconds|scrape_samples_post_metric_relabeling|scrape_series_added|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_periods_total|container_cpu_cfs_periods_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_memory_swap|container_fs_reads_total|container_fs_writes_total|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_network_receive_packets_total|container_network_transmit_packets_total|container_network_receive_packets_dropped_total|container_network_transmit_packets_dropped_total|machine_memory_bytes"
           action        = "keep"
         }
       }
@@ -115,9 +138,15 @@ alloy:
       prometheus.relabel "kube_state_metrics" {
         forward_to = [prometheus.remote_write.default.receiver]
 
+        // `up` and the scrape_* synthetics are prepended deliberately.
+        // A keeplist filters every sample the scraper produces, including the
+        // ones it generates itself -- so without these, there is no `up` series
+        // for this job and no way to tell a healthy target from a silent one.
+        // Both of this file's original keeplists omitted them, which is why
+        // `up` covered only the unfiltered jobs.
         rule {
           source_labels = ["__name__"]
-          regex         = "kube_pod_labels|kube_pod_info|kube_pod_owner|kube_pod_status_phase|kube_pod_status_reason|kube_pod_start_time|kube_pod_container_info|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_waiting_reason|kube_pod_container_status_restarts_total|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas_available|kube_deployment_status_replicas_updated|kube_deployment_metadata_generation|kube_replicaset_owner|kube_daemonset_status_number_misscheduled|kube_daemonset_status_number_available|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_updated_number_scheduled|kube_daemonset_status_current_number_scheduled|kube_statefulset_metadata_generation|kube_statefulset_status_replicas_updated|kube_statefulset_status_observed_generation|kube_statefulset_replicas|kube_statefulset_status_replicas_ready|kube_statefulset_status_current_revision|kube_statefulset_status_update_revision|kube_statefulset_status_replicas|kube_job_status_start_time|kube_job_failed|kube_job_status_active|kube_node_status_condition|kube_node_info|kube_node_spec_taint|kube_node_status_allocatable|kube_node_status_capacity|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_spec_max_replicas|kube_horizontalpodautoscaler_status_desired_replicas|kube_horizontalpodautoscaler_status_current_replicas|kube_resourcequota|kube_namespace_status_phase|kube_persistentvolumeclaim_resource_requests_storage_bytes|kube_persistentvolumeclaim_info|kube_service_info"
+          regex         = "up|scrape_samples_scraped|scrape_duration_seconds|scrape_samples_post_metric_relabeling|scrape_series_added|kube_pod_labels|kube_pod_info|kube_pod_owner|kube_pod_status_phase|kube_pod_status_reason|kube_pod_start_time|kube_pod_container_info|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_waiting_reason|kube_pod_container_status_restarts_total|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas_available|kube_deployment_status_replicas_updated|kube_deployment_metadata_generation|kube_replicaset_owner|kube_daemonset_status_number_misscheduled|kube_daemonset_status_number_available|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_updated_number_scheduled|kube_daemonset_status_current_number_scheduled|kube_statefulset_metadata_generation|kube_statefulset_status_replicas_updated|kube_statefulset_status_observed_generation|kube_statefulset_replicas|kube_statefulset_status_replicas_ready|kube_statefulset_status_current_revision|kube_statefulset_status_update_revision|kube_statefulset_status_replicas|kube_job_status_start_time|kube_job_failed|kube_job_status_active|kube_node_status_condition|kube_node_info|kube_node_spec_taint|kube_node_status_allocatable|kube_node_status_capacity|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_spec_max_replicas|kube_horizontalpodautoscaler_status_desired_replicas|kube_horizontalpodautoscaler_status_current_replicas|kube_resourcequota|kube_namespace_status_phase|kube_persistentvolumeclaim_resource_requests_storage_bytes|kube_persistentvolumeclaim_info|kube_service_info"
           action        = "keep"
         }
         rule {
@@ -176,7 +205,25 @@ alloy:
       // unscraped because no other alloy discovers them.
       prometheus.scrape "pods" {
         targets    = discovery.relabel.relabeled_pods.output
+        forward_to = [prometheus.relabel.pods.receiver]
+      }
+
+      // Drops Go runtime and client internals, which measurement showed to be
+      // 42% of everything this job ships -- 420 of 981 samples across eight
+      // annotated pods, and 94% of one of them. Nothing queries
+      // go_memstats_mspan_inuse_bytes.
+      //
+      // A droplist rather than a keeplist on purpose: every application here
+      // exposes its own metric names, so a keeplist would need curating per
+      // app and would silently lose a new one. The noise, by contrast, is
+      // always called the same thing.
+      prometheus.relabel "pods" {
         forward_to = [prometheus.remote_write.default.receiver]
+        rule {
+          source_labels = ["__name__"]
+          regex         = "(go_|process_|promhttp_).*"
+          action        = "drop"
+        }
       }
 
       discovery.relabel "relabeled_pods" {

@@ -130,6 +130,24 @@ loki:
           type: gcs
           gcs:
             bucket_name: lfpr-p-gcsb-usw1-loki-ruler-l2lw-1db580e
+      # Logs had no retention at all: no limits_config, no compactor retention,
+      # and no compactor running. Chunks accumulated in GCS permanently. At the
+      # measured 0.7 GiB/day that is 22 GiB a month, forever -- the only cost
+      # here that grows without bound rather than reaching a steady state.
+      #
+      # 30d matches mimir's compactor_blocks_retention_period, so metrics and
+      # the logs explaining them expire together.
+      limits_config:
+        retention_period: 720h
+      compactor:
+        working_directory: /var/loki/compactor
+        shared_store: gcs
+        retention_enabled: true
+        compaction_interval: 10m
+        # Delay before a deletion is actually performed, so a mistaken
+        # retention change can be reverted before data is gone.
+        retention_delete_delay: 2h
+        retention_delete_worker_count: 150
 
   ingester:
     podAnnotations:
@@ -157,11 +175,23 @@ loki:
         value: /etc/service-account/service-account.json
 
   compactor:
+    # Enabled so retention actually happens. Loki enforces retention in the
+    # compactor, and this chart defaults it off -- so before this change no
+    # compactor pod existed and retention_period would have deleted nothing
+    # however it was set.
+    enabled: true
     podAnnotations:
       prometheus.io/path: /metrics
       prometheus.io/port: "3100"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
