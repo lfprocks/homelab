@@ -367,13 +367,27 @@ mimir:
       prometheus.io/port: "8080"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
+    # Sized from measured load rather than the chart defaults. The ingesters
+    # hold the active series set in memory: at 32k series each they sit around
+    # 350Mi, so an 800Mi ceiling left under 2.5x headroom.
+    #
+    # That matters because limits.max_global_series_per_user is 500000. With
+    # replication_factor 3 across 4 ingesters that is up to 375k series each --
+    # more than ten times the current load, and multiple GB of memory. The
+    # configured tenant limit and the pod limit disagreed about how big this
+    # cluster is allowed to get.
+    #
+    # The CPU limit is raised for a different reason: WAL replay and block
+    # compaction are bursty, and a throttled ingester misses the gRPC health
+    # checks the distributor uses, which turns a slow ingester into an apparently
+    # dead one.
     resources:
       requests:
-        cpu: 60m
-        memory: 600Mi
+        cpu: 100m
+        memory: 768Mi
       limits:
-        cpu: 300m
-        memory: 800Mi
+        cpu: "1"
+        memory: 2Gi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
