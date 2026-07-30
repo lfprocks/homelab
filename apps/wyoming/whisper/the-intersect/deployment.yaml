@@ -17,7 +17,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "whisper"
-        k8s.lfp.rocks/version: "latest"
+        k8s.lfp.rocks/version: "sha-f0345691"
       annotations:
         prometheus.io/scrape: "false"
         prometheus.istio.io/merge-metrics: "false"
@@ -34,7 +34,11 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: rhasspy/wyoming-whisper:latest
+          # Pinned to the digest this deployment was already running as of
+          # 2026-07-29. Upstream publishes semver tags (3.5.0 is current) but
+          # none in the last 300 matched this digest, so the digest is the only
+          # faithful pin. Moving to a semver tag is a deliberate upgrade.
+          image: rhasspy/wyoming-whisper@sha256:f03456914affe8076fc7688c0890f4c708d93ebfac7340b0b2467f721412012d
           imagePullPolicy: IfNotPresent
           env:
             - name: HF_HUB_CACHE

@@ -29,7 +29,7 @@ spec:
                 matchLabels:
                   k8s.lfp.rocks/policy: enforce
       validate:
-        failureAction: Audit
+        failureAction: Enforce
         message: "label 'k8s.lfp.rocks/service' is required"
         pattern:
           metadata:
@@ -45,7 +45,7 @@ spec:
                 matchLabels:
                   k8s.lfp.rocks/policy: enforce
       validate:
-        failureAction: Audit
+        failureAction: Enforce
         message: "label 'k8s.lfp.rocks/version' is required"
         pattern:
           metadata:
