@@ -4,6 +4,10 @@ kind: Namespace
 metadata:
   name: alpineworks
   labels:
+    # Opts this namespace in to the kyverno require-labels policy. Harmless on
+    # the other clusters that consume shared/ -- they are archived and
+    # unreconciled, and the policy is a the-intersect ClusterPolicy anyway.
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged

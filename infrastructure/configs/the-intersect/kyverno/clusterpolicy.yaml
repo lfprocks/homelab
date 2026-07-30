@@ -2,24 +2,32 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: require-labels
+  annotations:
+    policies.kyverno.io/title: Require k8s.lfp.rocks labels
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Requires the `k8s.lfp.rocks/service` and `k8s.lfp.rocks/version` labels on
+      pods, so dashboards and log queries can attribute workloads consistently.
+
+      Scope is OPT-IN: a namespace is only checked once it carries the
+      `k8s.lfp.rocks/policy: enforce` label. This replaced a hand-maintained
+      `namespace-filters` ConfigMap that listed namespaces to skip. That
+      deny-list had drifted badly -- 29 namespaces were failing that were never
+      meant to be in scope, and it still excluded `wyze`, a namespace that no
+      longer exists. With a deny-list every new third-party chart silently
+      becomes a violation; with opt-in the failure mode is the much safer
+      "forgot to opt a namespace in".
 spec:
   rules:
     - name: check-k8s-lfp-rocks-service-label
-      context:
-        - name: namespacefilters
-          configMap:
-            name: namespace-filters
-            namespace: kyverno
       match:
         any:
           - resources:
               kinds:
                 - Pod
-      preconditions:
-        all:
-          - key: "{{ request.namespace }}"
-            operator: AnyNotIn
-            value: "{{ namespacefilters.data.exclude | parse_yaml(@).namespaces }}"
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/policy: enforce
       validate:
         failureAction: Audit
         message: "label 'k8s.lfp.rocks/service' is required"
@@ -28,21 +36,14 @@ spec:
             labels:
               k8s.lfp.rocks/service: "?*"
     - name: check-k8s-lfp-rocks-version-label
-      context:
-        - name: namespacefilters
-          configMap:
-            name: namespace-filters
-            namespace: kyverno
       match:
         any:
           - resources:
               kinds:
                 - Pod
-      preconditions:
-        all:
-          - key: "{{ request.namespace }}"
-            operator: AnyNotIn
-            value: "{{ namespacefilters.data.exclude | parse_yaml(@).namespaces }}"
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/policy: enforce
       validate:
         failureAction: Audit
         message: "label 'k8s.lfp.rocks/version' is required"
