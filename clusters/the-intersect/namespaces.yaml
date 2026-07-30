@@ -52,16 +52,6 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ntfy
-  labels:
-    shared-gateway-access: "true"
-    pod-security.kubernetes.io/enforce: privileged
-    pod-security.kubernetes.io/audit: privileged
-    pod-security.kubernetes.io/warn: privileged
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: yt-playlist-ripper
   labels:
     shared-gateway-access: "true"
