@@ -23,7 +23,6 @@ data:
       - kube-system
       - kubelet-serving-cert-approver
       - kyverno
-      - ntfy
       - paperless-ngx
       - pgadmin
       - storage

@@ -21,6 +21,12 @@ metadata:
   name: &name pnp-writer
   labels:
     app: *name
+  annotations:
+    # The writer loads its bearer-token file once at construction, so a
+    # token added to the secret has no effect until the pod restarts.
+    # Without this, granting a new client access is a silent no-op until
+    # someone notices and restarts it by hand.
+    reloader.stakater.com/auto: "true"
 spec:
   selector:
     matchLabels:
