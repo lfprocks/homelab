@@ -4,6 +4,7 @@ kind: Namespace
 metadata:
   name: r53u2
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -14,6 +15,7 @@ kind: Namespace
 metadata:
   name: letterkenny
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -24,6 +26,7 @@ kind: Namespace
 metadata:
   name: wastebin
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -34,6 +37,7 @@ kind: Namespace
 metadata:
   name: webcam-scraper
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -44,6 +48,7 @@ kind: Namespace
 metadata:
   name: lfpweather
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -54,6 +59,7 @@ kind: Namespace
 metadata:
   name: yt-playlist-ripper
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -64,6 +70,7 @@ kind: Namespace
 metadata:
   name: nws
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -74,6 +81,7 @@ kind: Namespace
 metadata:
   name: asr
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -94,6 +102,7 @@ kind: Namespace
 metadata:
   name: trunk-recorder
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -114,6 +123,7 @@ kind: Namespace
 metadata:
   name: birdnet
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -134,6 +144,7 @@ kind: Namespace
 metadata:
   name: random-server
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -144,6 +155,7 @@ kind: Namespace
 metadata:
   name: wyoming
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -174,6 +186,7 @@ kind: Namespace
 metadata:
   name: llama-cpp
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -184,6 +197,7 @@ kind: Namespace
 metadata:
   name: flippydrive
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -224,6 +238,7 @@ kind: Namespace
 metadata:
   name: pnp
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -234,6 +249,7 @@ kind: Namespace
 metadata:
   name: adsbx
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -244,6 +260,7 @@ kind: Namespace
 metadata:
   name: naas-api
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -254,6 +271,7 @@ kind: Namespace
 metadata:
   name: cookcli
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -264,6 +282,7 @@ kind: Namespace
 metadata:
   name: pocket-id
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -284,6 +303,7 @@ kind: Namespace
 metadata:
   name: openclaw
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     # Hardened + gVisor-sandboxed agent; stricter than the repo's privileged default.
     pod-security.kubernetes.io/enforce: baseline
@@ -295,6 +315,7 @@ kind: Namespace
 metadata:
   name: mcp-wsdot
   labels:
+    k8s.lfp.rocks/policy: enforce
     # Cluster-internal MCP server (no shared-gateway-access): reached via its
     # ClusterIP Service, not the shared ingress gateway. Runs fully hardened
     # and non-root, so it can enforce the restricted Pod Security Standard.
