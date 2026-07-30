@@ -9,6 +9,21 @@ global:
   annotations:
     reloader.stakater.com/auto: "true"
 
+# `global.labels` above only reaches OBJECT metadata -- the rendered Deployments
+# carry these labels but their pod templates do not, so the kyverno
+# require-labels policy (which matches Pods) still failed. `defaultPodOptions`
+# is what bjw-s common applies to the pod template.
+#
+# One top-level block is enough for every component. Each of the server /
+# machine-learning / valkey templates does `deepCopy .` and then merges its own
+# section over the root values before calling the common loader, so root-level
+# defaultPodOptions is inherited by all three. Setting it per-component would
+# also work, but would be redundant.
+defaultPodOptions:
+  labels:
+    k8s.lfp.rocks/service: "immich"
+    k8s.lfp.rocks/version: "v2.0.1"
+
 # These entries are shared between all the Immich components
 
 controllers:

@@ -104,6 +104,7 @@ kind: Namespace
 metadata:
   name: transcribe
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -164,6 +165,7 @@ kind: Namespace
 metadata:
   name: zwavejs-ui
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -204,6 +206,7 @@ kind: Namespace
 metadata:
   name: govee2mqtt
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
@@ -274,6 +277,7 @@ kind: Namespace
 metadata:
   name: outline
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged

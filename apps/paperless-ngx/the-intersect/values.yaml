@@ -60,6 +60,14 @@ persistence:
     accessMode: ReadWriteOnce
     size: 4Gi
 
+# Pod labels for the kyverno require-labels policy. This chart pins bjw-s common
+# 1.5.1 -- the OLD v1 library -- so the key is a top-level `podLabels`, NOT the
+# `defaultPodOptions` used by common v3+/v4 charts like immich. The bitnami
+# postgresql and redis subcharts have their own separate knobs below.
+podLabels:
+  k8s.lfp.rocks/service: "paperless-ngx"
+  k8s.lfp.rocks/version: "2.13.5"
+
 postgresql:
   enabled: true
   image:
@@ -69,6 +77,9 @@ postgresql:
     database: paperless
     # postgresPassword is provided via the SOPS-encrypted paperless-ngx-values-secret (valuesFrom).
   primary:
+    podLabels:
+      k8s.lfp.rocks/service: "paperless-ngx-postgresql"
+      k8s.lfp.rocks/version: "16.6.0"
     persistence:
       enabled: true
       storageClass: "smb-client"
@@ -81,3 +92,7 @@ redis:
   image:
     repository: bitnamilegacy/redis
     tag: "7.4.1-debian-12-r2"
+  master:
+    podLabels:
+      k8s.lfp.rocks/service: "paperless-ngx-redis"
+      k8s.lfp.rocks/version: "7.4.1"

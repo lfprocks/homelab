@@ -11,6 +11,13 @@ metadata:
   name: outline-dragonfly
 spec:
   replicas: 2
+  # The operator owns this StatefulSet's pod template, so `spec.labels` is the
+  # supported way to get labels onto the pods (the CRD documents it as
+  # "Labels to add to the Dragonfly pods"). The metadata.labels above only
+  # decorate the Dragonfly object itself.
+  labels:
+    k8s.lfp.rocks/service: "outline-dragonfly"
+    k8s.lfp.rocks/version: "v1.24.0"
   resources:
     requests:
       cpu: 100m

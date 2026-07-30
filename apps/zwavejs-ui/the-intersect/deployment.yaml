@@ -15,6 +15,8 @@ spec:
     metadata:
       labels:
         app: zwavejs-ui
+        k8s.lfp.rocks/service: "zwavejs-ui"
+        k8s.lfp.rocks/version: "11.19.1"
     spec:
       nodeSelector:
         # Only schedule on nodes that have the Z-Wave device
@@ -28,7 +30,11 @@ spec:
       #           operator: DoesNotExist
       containers:
         - name: zwavejs-ui
-          image: zwavejs/zwave-js-ui:latest
+          # Pinned to the version this deployment was already running as of
+          # 2026-07-29. Note `latest` has since moved to 11.22.x, so a restart
+          # under the old `:latest` would have silently pulled three minor
+          # versions into the Z-Wave controller. Bumping is a separate change.
+          image: zwavejs/zwave-js-ui:11.19.1
           ports:
             - containerPort: 8091
               name: zwavejs

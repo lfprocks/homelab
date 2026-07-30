@@ -18,6 +18,14 @@ spec:
   # 2 if this corpus ever becomes something you can't afford to lose during a node drain.
   instances: 1
 
+  # CNPG generates these pods, so the labels the kyverno require-labels policy
+  # wants cannot come from a pod template we own. inheritedMetadata propagates
+  # them to every object CNPG creates for this cluster, pods included.
+  inheritedMetadata:
+    labels:
+      k8s.lfp.rocks/service: "transcribe-postgres"
+      k8s.lfp.rocks/version: "17"
+
   managed:
     roles:
       # Least privilege: transcribe owns only its own database (set via initdb.owner below),
