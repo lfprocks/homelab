@@ -4,6 +4,25 @@ global:
 ## @param replicaCount number of replicas for the deployment
 replicaCount: 1
 
+# Forgejo's gitea-shared-storage PVC is ReadWriteOnce, so two pods can never
+# hold it at once. The chart defaults to RollingUpdate with maxSurge 100% and
+# maxUnavailable 0, which is the one combination guaranteed to deadlock on RWO:
+# the new pod is created first and the old one may not terminate until the new
+# one is Ready, so the new pod sits in Init forever with
+#
+#     Multi-Attach error for volume "pvc-..." Volume is already used by pod(s) ...
+#
+# and the Helm upgrade eventually fails with "client rate limiter Wait returned
+# an error: context deadline exceeded".
+#
+# This is latent in any forgejo pod-template change, not specific to one --
+# adding the k8s.lfp.rocks pod labels is simply what tripped it first. Recreate
+# terminates the old pod before starting the new one, which costs a short gap
+# but actually completes. Same reasoning as outline, which sets Recreate for
+# exactly this reason.
+strategy:
+  type: Recreate
+
 service:
   ssh:
     type: LoadBalancer
