@@ -1,67 +1,3 @@
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: immich-postgres
-spec:
-  # At the time of writing, immich is only compatible with pgvecto.rs <0.4. Latest postgres image with that version is 16.5.
-  imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16.5-v0.3.0@sha256:be3f025d79aa1b747817f478e07e71be43236e14d00d8a9eb3914146245035ba
-  instances: 1
-
-  # CNPG generates these pods, so the labels the kyverno require-labels policy
-  # wants cannot come from a pod template we own. inheritedMetadata propagates
-  # them to every object CNPG creates for this cluster, pods included.
-  inheritedMetadata:
-    labels:
-      k8s.lfp.rocks/service: "immich-postgres"
-      k8s.lfp.rocks/version: "16.5-v0.3.0"
-
-  postgresql:
-    shared_preload_libraries:
-      - "vectors.so"
-
-  managed:
-    roles:
-      - name: immich
-        superuser: true
-        login: true
-
-  bootstrap:
-    initdb:
-      database: immich
-      owner: immich
-      postInitSQL:
-        - CREATE EXTENSION IF NOT EXISTS "vectors";
-        - CREATE EXTENSION IF NOT EXISTS "cube" CASCADE;
-        - CREATE EXTENSION IF NOT EXISTS "earthdistance" CASCADE;
-
-  storage:
-    size: 4Gi
-    storageClass: smb-client-postgres
-
-  # WAL archiving + base backups to GCS. Proven on transcribe-postgres first:
-  # ContinuousArchiving went True, WAL .gz objects landed in the bucket, and a
-  # base backup completed, so the credential and bucket path are known good.
-  #
-  # serverName is left at its default (the cluster name), which is what keeps
-  # these clusters from colliding inside the shared bucket root.
-  #
-  # WATCH OUT: if archiving fails, PostgreSQL retains WAL until it succeeds and
-  # will fill this cluster's volume. Verify ContinuousArchiving is True.
-  backup:
-    barmanObjectStore:
-      destinationPath: gs://lfpr-p-gcsb-usw1-cnpg-backups-7q2v-60d5245
-      googleCredentials:
-        applicationCredentials:
-          name: cnpg-backup-gcs-credentials
-          key: service-account.json
-      wal:
-        compression: gzip
-      data:
-        compression: gzip
-    # Matches loki/mimir retention (both 30d) so backups do not grow unbounded.
-    # Barman expires them; the bucket has no lifecycle rule of its own.
-    retentionPolicy: "30d"
-
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -126,20 +62,6 @@ spec:
     # Matches loki/mimir retention (both 30d) so backups do not grow unbounded.
     # Barman expires them; the bucket has no lifecycle rule of its own.
     retentionPolicy: "30d"
----
-# WAL archiving alone is not a backup -- PITR needs a base backup to replay
-# from. Schedules are staggered across the clusters so four base backups do not
-# all fire at once and contend for the same ceph and network bandwidth.
-# CNPG uses a 6-field cron (seconds first).
-apiVersion: postgresql.cnpg.io/v1
-kind: ScheduledBackup
-metadata:
-  name: immich-postgres-daily
-spec:
-  schedule: "0 0 3 * * *"
-  backupOwnerReference: self
-  cluster:
-    name: immich-postgres
 ---
 # WAL archiving alone is not a backup -- PITR needs a base backup to replay
 # from. Schedules are staggered across the clusters so four base backups do not
