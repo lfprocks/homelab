@@ -48,6 +48,18 @@ spec:
         # validated directly.
         skipResourceFilters: false
 
+    # Ships the chart's own dashboard as a ConfigMap labelled
+    # `grafana_dashboard: "1"`, which the grafana sidecar picks up. Without this
+    # the Audit-tier policies are write-only -- which is how the previous setup
+    # decayed into producing findings nobody read.
+    #
+    # `grafanaDashboard.create` stays at its default of false: that renders a
+    # GrafanaDashboard CR for grafana-operator (grafana.integreatly.org), and
+    # this cluster does not run it. The CRDs present are grafana-AGENT's
+    # (monitoring.grafana.com), which are unrelated.
+    grafana:
+      enabled: true
+
     admissionController:
       podAnnotations:
         prometheus.io/scrape: "true"
