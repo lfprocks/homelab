@@ -988,3 +988,40 @@ spec:
     substituteFrom:
       - kind: Secret
         name: cluster-vars
+---
+# DISABLED, NOT DEAD. The media stack (deluge/jackett/sonarr/radarr/flaresolverr
+# behind a gluetun VPN sidecar) was taken out of the reconcile list on
+# 2026-05-31 in 1297e42, with its manifests deliberately kept under apps/media/
+# for re-add. The `media` namespace is still declared in namespaces.yaml.
+#
+# It is written out here rather than left as an absent entry because an
+# unreferenced directory is indistinguishable from debt: apps/wyoming/*/base and
+# apps/pvc-demo were deleted on exactly that reasoning, and apps/media looks the
+# same from the outside. Uncommenting this block is the whole re-add.
+#
+# Its images were pinned in #60, so a re-add will not pull moving tags.
+#
+# apiVersion: kustomize.toolkit.fluxcd.io/v1
+# kind: Kustomization
+# metadata:
+#   name: apps-media-stack
+#   namespace: flux-system
+# spec:
+#   interval: 10m0s
+#   dependsOn:
+#     - name: infra-configs
+#   sourceRef:
+#     kind: GitRepository
+#     name: flux-system
+#   path: apps/media/the-intersect
+#   prune: true
+#   wait: true
+#   timeout: 5m0s
+#   decryption:
+#     provider: sops
+#     secretRef:
+#       name: sops-age
+#   postBuild:
+#     substituteFrom:
+#       - kind: Secret
+#         name: cluster-vars
