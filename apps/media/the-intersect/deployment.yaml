@@ -96,7 +96,7 @@ spec:
               memory: "128Mi"
       containers:
         - name: deluge
-          image: linuxserver/deluge:latest
+          image: linuxserver/deluge:2.2.0
           env:
             - name: PUID
               value: "1001"
@@ -131,7 +131,7 @@ spec:
               cpu: "50m"
               memory: "256Mi"
         - name: jackett
-          image: binhex/arch-jackett:latest
+          image: binhex/arch-jackett:0.24.2277-1-01
           env:
             - name: PUID
               value: "1001"
@@ -162,7 +162,7 @@ spec:
               cpu: "20m"
               memory: "128Mi"
         - name: sonarr
-          image: binhex/arch-sonarr:latest
+          image: binhex/arch-sonarr:4.0.19.2979-1-01
           env:
             - name: PUID
               value: "1001"
@@ -195,7 +195,7 @@ spec:
               cpu: "20m"
               memory: "128Mi"
         - name: radarr
-          image: binhex/arch-radarr:latest
+          image: binhex/arch-radarr:6.3.0.10514-1-01
           env:
             - name: PUID
               value: "1001"
@@ -228,7 +228,7 @@ spec:
               cpu: "20m"
               memory: "128Mi"
         - name: flaresolverr
-          image: ghcr.io/flaresolverr/flaresolverr:latest
+          image: ghcr.io/flaresolverr/flaresolverr:v3.5.0
           env:
             - name: LOG_LEVEL
               value: "info"
