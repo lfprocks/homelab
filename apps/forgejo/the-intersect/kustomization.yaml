@@ -4,6 +4,7 @@ namespace: forgejo
 resources:
   - helmrelease.yaml
   - dragonfly.yaml
+  - cnpg-backup-credentials.sops.yaml
   - postgres.yaml
   - values-secret.sops.yaml
 configMapGenerator:
