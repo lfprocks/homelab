@@ -1,7 +1,7 @@
 ---
 # Actions Runner Controller. Watches AutoscalingRunnerSet resources and starts
 # an ephemeral runner pod per queued job, then throws it away.
-apiVersion: helm.toolkit.fluxcd.io/v2beta2
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: gha-runner-scale-set-controller

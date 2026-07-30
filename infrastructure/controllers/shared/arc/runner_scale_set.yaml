@@ -10,7 +10,7 @@
 # The other half of that containment lives in the workflow: only push-to-main
 # jobs are allowed to target this scale set. Pull request checks stay on hosted
 # runners, so code from an unmerged branch never executes in the cluster.
-apiVersion: helm.toolkit.fluxcd.io/v2beta2
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: arc-timescale-migrations
