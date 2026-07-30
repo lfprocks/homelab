@@ -18,6 +18,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: outline
+        k8s.lfp.rocks/service: "outline"
+        k8s.lfp.rocks/version: "1.8.1"
     spec:
       securityContext:
         # Outline image runs as uid/gid 1001 (nodejs); fsGroup makes the PVC writable.
