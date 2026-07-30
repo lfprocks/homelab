@@ -1,0 +1,62 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow mutable image tags
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Requires every image to carry an explicit, immutable reference -- either a
+      version tag or a digest -- and rejects `:latest` outright.
+
+      This is Enforce because mutable tags produce silent, invisible drift. The
+      motivating case: zwavejs-ui sat on `:latest` while pinned in Git to
+      nothing, running 11.19.1 after upstream had moved to 11.22.x -- any pod
+      restart would have pulled three minor versions into the Z-Wave controller
+      with no commit and no signal. wyoming/piper and wyoming/whisper had the
+      same exposure, and their `k8s.lfp.rocks/version` labels literally read
+      "latest".
+
+      Scope is the same opt-in namespace label used by require-labels. Note that
+      `media` (5 images) and `minecraft` (2) still carry `:latest`; they have no
+      running pods and are deliberately not opted in yet.
+spec:
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/policy: enforce
+      validate:
+        failureAction: Enforce
+        message: "an explicit image tag or digest is required"
+        pattern:
+          spec:
+            containers:
+              - image: "*:*"
+            # Conditional anchor: only checked when the key is present, so pods
+            # without init containers are unaffected.
+            =(initContainers):
+              - image: "*:*"
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/policy: enforce
+      validate:
+        failureAction: Enforce
+        message: "the mutable ':latest' tag is not allowed; pin a version or digest"
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+            =(initContainers):
+              - image: "!*:latest"

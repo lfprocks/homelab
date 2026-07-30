@@ -17,7 +17,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "piper"
-        k8s.lfp.rocks/version: "latest"
+        k8s.lfp.rocks/version: "sha-40670d2f"
       annotations:
         prometheus.io/scrape: "false"
         prometheus.istio.io/merge-metrics: "false"
@@ -34,7 +34,11 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: rhasspy/wyoming-piper:latest
+          # Pinned to the digest this deployment was already running as of
+          # 2026-07-29. Upstream publishes semver tags (2.3.1 is current) but
+          # none in the last 300 matched this digest, so the digest is the only
+          # faithful pin. Moving to a semver tag is a deliberate upgrade.
+          image: rhasspy/wyoming-piper@sha256:40670d2ff08562814bbcef1a20369ee22d0197709d78cce9c47c8d9458d0b89e
           imagePullPolicy: IfNotPresent
           args:
             - --voice

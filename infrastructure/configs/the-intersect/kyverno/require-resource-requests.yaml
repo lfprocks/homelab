@@ -1,0 +1,45 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-requests
+  annotations:
+    policies.kyverno.io/title: Require CPU and memory requests
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Requires `resources.requests.cpu` and `resources.requests.memory` on every
+      container, so the scheduler can make real placement decisions instead of
+      treating the workload as free.
+
+      Deliberately checks REQUESTS ONLY. It does not require limits of any kind,
+      and specifically does not require a CPU limit -- CPU limits cause CFS
+      throttling even when the node has spare capacity, so requests-without-
+      cpu-limits is the shape we actually want. Adding a cpu limit requirement
+      here would push workloads in the wrong direction.
+
+      This is Audit, not Enforce. Around 13 non-compliant containers in the
+      opt-in namespaces are operator- or chart-generated (CloudNativePG
+      postgres instances, the immich chart's components, openclaw), so
+      enforcing would block CNPG from reconciling rather than prompting anyone
+      to fix a pod template. Audit surfaces them in the Grafana dashboard;
+      they can be fixed at the source and the tier revisited later.
+spec:
+  rules:
+    - name: check-resource-requests
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/policy: enforce
+      validate:
+        failureAction: Audit
+        message: "resources.requests.cpu and resources.requests.memory are required"
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"

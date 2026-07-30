@@ -39,7 +39,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "trunk-recorder"
-        k8s.lfp.rocks/version: "v1.0.0"
+        k8s.lfp.rocks/version: "v1.0.2"
     spec:
       nodeSelector:
         feature.node.kubernetes.io/usb-ff_1d50_6089.present: "true"
@@ -57,7 +57,7 @@ spec:
               mountPath: /etc/trunk-recorder
               readOnly: true
         - name: cleanup
-          image: alpine:latest
+          image: alpine:3.24.1
           command: ["/bin/sh"]
           args: ["-c", "while true; do find /app/psernlfp -type f -delete 2>/dev/null || true; sleep 600; done"]
       volumes:
