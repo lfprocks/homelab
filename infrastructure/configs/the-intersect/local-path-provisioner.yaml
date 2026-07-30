@@ -158,5 +158,9 @@ data:
           effect: NoSchedule
       containers:
       - name: helper-pod
-        image: busybox
+        # Pinned rather than left implicitly :latest. busybox:1.38.0 currently
+        # shares a digest with :latest, so this is what is already being pulled.
+        # This template becomes a real Pod in local-path-storage every time a
+        # local-path volume is set up or torn down.
+        image: busybox:1.38.0
         imagePullPolicy: IfNotPresent
