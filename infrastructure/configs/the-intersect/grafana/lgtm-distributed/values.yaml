@@ -19,6 +19,33 @@ grafana:
     size: 10Gi
     storageClassName: smb-client
 
+  # Dashboard sidecar. Until now every dashboard was UI-created and lived only on
+  # the PVC above, so there was no GitOps path for shipping one -- which is part
+  # of why the kyverno policy results went unread for so long. The sidecar
+  # watches for ConfigMaps labelled `grafana_dashboard: "1"` and loads them, so
+  # any chart or manifest in the repo can ship a dashboard.
+  #
+  # searchNamespace ALL is needed because the dashboards come from the namespace
+  # that owns them (kyverno, here), not from grafana's. That means a cluster-wide
+  # ConfigMap watch; the sidecar only keeps labelled ConfigMaps, so the overhead
+  # is one lightweight informer rather than anything proportional to metrics
+  # volume.
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        memory: 100Mi
+
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
