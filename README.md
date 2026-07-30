@@ -235,6 +235,18 @@ flux reconcile source git flux-system                     # force an immediate p
 flux reconcile kustomization apps-jellyfin --with-source  # reconcile one app + its source
 ```
 
+Reconciling `infra-controllers` or `infra-configs` briefly shows ~30 apps as
+`dependency 'infra-configs' is not ready`. That is stale dependency status while
+the chain re-evaluates, not breakage — check pod health to tell them apart. A
+`flux reconcile kustomization infra-configs` clears it.
+
+### Restoring a Postgres backup
+
+Every Postgres cluster archives WAL and takes nightly base backups to GCS. The
+restore procedure, how to verify a restore actually worked, and how to re-clone
+a lagging replica are documented in
+[`infrastructure/controllers/the-intersect/cloudnative-pg/`](infrastructure/controllers/the-intersect/cloudnative-pg/README.md).
+
 ### Bootstrapping a cluster
 
 ```sh
