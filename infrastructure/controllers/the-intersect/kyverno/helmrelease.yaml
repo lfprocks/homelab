@@ -61,6 +61,27 @@ spec:
       enabled: true
 
     admissionController:
+      # This controller is in the admission path for every workload in the
+      # cluster, not just the namespaces the policies opt into.
+      # kyverno-resource-validating-webhook-cfg registers failurePolicy: Fail
+      # over pods/deployments/replicasets/statefulsets/daemonsets/cronjobs/jobs
+      # with a namespaceSelector that only excludes kube-system and kyverno --
+      # so if this pod is unavailable, the API server cannot ask Kyverno whether
+      # it cares, and workload creation fails cluster-wide.
+      #
+      # It ran as a single replica with no PodDisruptionBudget, which made a
+      # routine Talos node drain enough to cause that. Three replicas plus a PDB
+      # removes it. `antiAffinity.enabled` is already true by default (soft
+      # preferred anti-affinity), so they spread across nodes.
+      #
+      # The PDB is NOT implied by replicas -- podDisruptionBudget.enabled
+      # defaults to false in this chart and has to be asked for explicitly.
+      # minAvailable stays at the chart default of 1: with three replicas that
+      # still guarantees a webhook endpoint during a drain, without making node
+      # maintenance harder than it needs to be.
+      replicas: 3
+      podDisruptionBudget:
+        enabled: true
       podAnnotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
