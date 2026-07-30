@@ -41,3 +41,48 @@ spec:
   storage:
     size: 10Gi
     storageClass: ceph-block
+
+  # WAL archiving + base backups to GCS. This cluster is the CANARY for the
+  # rollout: it is a non-critical best-effort sink (see the note at the top of
+  # this file), so it is the safest place to prove the credential and bucket
+  # work before the same block goes on immich/outline/forgejo.
+  #
+  # Why this matters: before this, no CNPG cluster had any backup configured,
+  # which meant no PITR and no WAL archive for a lagging replica to recover
+  # from. immich-postgres-new-3 wedged permanently on 2026-07-22 needing a WAL
+  # segment the primary had already recycled, and had to be re-cloned by hand.
+  #
+  # `serverName` is deliberately left to its default (the cluster name), so
+  # several clusters can share this bucket root without colliding.
+  #
+  # WATCH OUT: if archiving fails, PostgreSQL retains WAL until it succeeds,
+  # which will fill the 10Gi volume above. Verify the ContinuousArchiving
+  # condition is True after this lands.
+  backup:
+    barmanObjectStore:
+      destinationPath: gs://lfpr-p-gcsb-usw1-cnpg-backups-7q2v-60d5245
+      googleCredentials:
+        applicationCredentials:
+          name: cnpg-backup-gcs-credentials
+          key: service-account.json
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    # Bounds cost the same way loki/mimir retention does (both 30d), so backups
+    # do not grow without limit. Barman expires them; the bucket has no
+    # lifecycle rule of its own.
+    retentionPolicy: "30d"
+---
+# WAL archiving alone is not a backup -- PITR needs a base backup to replay
+# from. This takes one nightly at 02:30 UTC.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: transcribe-postgres-daily
+spec:
+  # CNPG uses a 6-field cron (seconds first).
+  schedule: "0 30 2 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: transcribe-postgres

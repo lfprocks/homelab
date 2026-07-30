@@ -5,6 +5,7 @@ namespace: transcribe
 resources:
   - ../base/
   - transcribe-calltypes-secret.yaml
+  - cnpg-backup-credentials.sops.yaml
   - postgres.yaml
 labels:
   - includeSelectors: true
