@@ -15,3 +15,32 @@ spec:
     - kind: Secret
       name: forgejo-values-secret
   interval: 1m0s
+  # The kyverno require-labels policy needs these on the POD, and this chart
+  # gives us no safe values-level way to do it. It exposes no `podLabels`; the
+  # only label injection point is `.Values.deployment.labels`, and the template
+  # renders that into `spec.selector.matchLabels` as well as the pod template:
+  #
+  #     matchLabels:
+  #       {{- include "gitea.selectorLabels" . | nindent 6 }}
+  #       {{- if .Values.deployment.labels }}
+  #
+  # A Deployment selector is immutable, so using that value would fail the
+  # upgrade with a field-immutable error and strand the release the way
+  # paperless-ngx was stranded.
+  #
+  # A post-renderer patches only the pod template, leaving the selector alone.
+  # JSON Patch escapes `/` in a key as `~1`.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              version: v1
+              kind: Deployment
+              name: forgejo
+            patch: |
+              - op: add
+                path: /spec/template/metadata/labels/k8s.lfp.rocks~1service
+                value: "forgejo"
+              - op: add
+                path: /spec/template/metadata/labels/k8s.lfp.rocks~1version
+                value: "13.0.2"
