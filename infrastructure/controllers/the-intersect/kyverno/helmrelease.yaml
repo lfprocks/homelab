@@ -1,5 +1,5 @@
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta2
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: kyverno
@@ -11,16 +11,31 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: kyverno
-      version: 3.3.4
+      version: 3.8.2
   interval: 1m0s
   values:
-    installCRDs: true
+    # NOTE: `installCRDs` and `policyReportsCleanup` existed in 3.3.x and were
+    # removed by 3.8.x. CRD installation is now controlled by `crds.groups.*`,
+    # which defaults to enabled for every group, so no value is needed. The
+    # post-upgrade cleanup hook is now `webhooksCleanup`, which uses
+    # ghcr.io/kyverno/readiness-checker instead of the old
+    # docker.io/bitnami/kubectl:latest -- that image was both a mutable tag and
+    # part of the Bitnami catalog retired from public Docker Hub in 2025.
 
-    policyReportsCleanup:
-      image:
-        registry: docker.io
-        repository: bitnami/kubectl
-        tag: latest
+    config:
+      # `resourceFilters` tells Kyverno which resources to ignore entirely. The
+      # chart ships ~30 sensible defaults (Events, kube-system, Nodes, ...) and
+      # setting `resourceFilters` here would REPLACE that list, so use the
+      # additive `resourceFiltersInclude` instead.
+      #
+      # ReplicaSets account for 442 of the ~600 non-Pod PolicyReports: Kyverno's
+      # autogen covers every pod controller, and every historical scaled-to-zero
+      # ReplicaSet gets its own report. Nobody hand-applies a ReplicaSet, so
+      # ignoring them costs no admission coverage -- Deployment-level autogen
+      # still rejects a bad `kubectl apply`, and the Pods themselves are still
+      # validated.
+      resourceFiltersInclude:
+        - "[ReplicaSet,*,*]"
 
     admissionController:
       podAnnotations:
