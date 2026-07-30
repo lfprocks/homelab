@@ -14,11 +14,18 @@ spec:
     metadata:
       labels:
         app: govee2mqtt
+        k8s.lfp.rocks/service: "govee2mqtt"
+        k8s.lfp.rocks/version: "sha-d5427fa1"
     spec:
       containers:
         - name: govee2mqtt
-          image: ghcr.io/wez/govee2mqtt:latest
-          imagePullPolicy: Always
+          # Pinned to the digest that `:latest` served as of 2026-07-29, which
+          # is what this deployment was already running. Upstream publishes
+          # dated tags (e.g. 2026.03.25-ab9deb66) but none of them matched the
+          # digest `latest` points at, so the digest is the only way to pin
+          # what is actually deployed. Future bumps should move to a dated tag.
+          image: ghcr.io/wez/govee2mqtt@sha256:d5427fa1524e3e6f87c59e5cbc59e782036a2b5274e4f96cfb581d844aa2b6dc
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: govee2mqtt-config

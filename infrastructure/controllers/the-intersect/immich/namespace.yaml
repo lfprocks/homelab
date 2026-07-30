@@ -4,6 +4,7 @@ kind: Namespace
 metadata:
   name: immich
   labels:
+    k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged

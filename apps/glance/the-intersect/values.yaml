@@ -87,3 +87,19 @@ resources:
   requests:
     cpu: 100m
     memory: 128Mi
+
+# BLOCKED ON UPSTREAM: the alpineworks glance chart (0.1.0) renders only the
+# standard Helm labels and exposes no podLabels value, so this namespace cannot
+# satisfy the kyverno require-labels policy yet and is deliberately NOT opted in
+# via `k8s.lfp.rocks/policy: enforce`.
+#
+# To unblock, in the alpineworks/charts repo:
+#   1. add a `podLabels: {}` value to the glance chart
+#   2. render it into spec.template.metadata.labels in the Deployment template
+#   3. cut a new chart version
+# Then bump the chart version in helmrelease.yaml, uncomment the block below,
+# and add the opt-in label to the glance namespace.
+#
+# podLabels:
+#   k8s.lfp.rocks/service: "glance"
+#   k8s.lfp.rocks/version: "v0.8.4"

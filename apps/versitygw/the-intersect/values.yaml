@@ -92,3 +92,20 @@ volumeMounts:
     mountPath: /var/vgw/data
   - name: metadata-storage
     mountPath: /var/vgw/meta
+
+# BLOCKED ON UPSTREAM: the alpineworks versitygw chart (0.1.2) renders only the
+# standard Helm labels and exposes no podLabels value, so this namespace cannot
+# satisfy the kyverno require-labels policy yet and is deliberately NOT opted in
+# via `k8s.lfp.rocks/policy: enforce`. Applies to both the versitygw and
+# versitygw-webhook-pulsar-proxy deployments.
+#
+# To unblock, in the alpineworks/charts repo:
+#   1. add a `podLabels: {}` value to the versitygw chart
+#   2. render it into spec.template.metadata.labels in the Deployment template
+#   3. cut a new chart version
+# Then bump the chart version in helmrelease.yaml, uncomment the block below,
+# and add the opt-in label to the versity namespace.
+#
+# podLabels:
+#   k8s.lfp.rocks/service: "versitygw"
+#   k8s.lfp.rocks/version: "v1.4.1"

@@ -7,6 +7,14 @@ spec:
   imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16.5-v0.3.0@sha256:be3f025d79aa1b747817f478e07e71be43236e14d00d8a9eb3914146245035ba
   instances: 1
 
+  # CNPG generates these pods, so the labels the kyverno require-labels policy
+  # wants cannot come from a pod template we own. inheritedMetadata propagates
+  # them to every object CNPG creates for this cluster, pods included.
+  inheritedMetadata:
+    labels:
+      k8s.lfp.rocks/service: "immich-postgres"
+      k8s.lfp.rocks/version: "16.5-v0.3.0"
+
   postgresql:
     shared_preload_libraries:
       - "vectors.so"
@@ -38,6 +46,14 @@ spec:
   # At the time of writing, immich is only compatible with pgvecto.rs <0.4. Latest postgres image with that version is 16.5.
   imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16.5-v0.3.0@sha256:be3f025d79aa1b747817f478e07e71be43236e14d00d8a9eb3914146245035ba
   instances: 2
+
+  # CNPG generates these pods, so the labels the kyverno require-labels policy
+  # wants cannot come from a pod template we own. inheritedMetadata propagates
+  # them to every object CNPG creates for this cluster, pods included.
+  inheritedMetadata:
+    labels:
+      k8s.lfp.rocks/service: "immich-postgres-new"
+      k8s.lfp.rocks/version: "16.5-v0.3.0"
 
   postgresql:
     shared_preload_libraries:
