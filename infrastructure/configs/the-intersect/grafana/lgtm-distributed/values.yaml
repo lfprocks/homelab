@@ -53,9 +53,13 @@ grafana:
   # notification path that is actually consumed. ntfy was removed precisely
   # because nothing read it, and an alert nobody receives is worse than none.
   #
-  # Requires two cluster-vars entries. GRAFANA_PNP_TOKEN is already set; add
-  # GRAFANA_PUSHOVER_USER_KEY before this can deliver:
-  #   SOPS_AGE_KEY_FILE=age.agekey sops clusters/the-intersect/cluster-vars.sops.yaml
+  # Both credentials live in cluster-vars: GRAFANA_PNP_TOKEN (a writer bearer
+  # token minted for this client, listed as `grafana-alerts` in the pnp writer
+  # secret) and GRAFANA_PUSHOVER_USER_KEY (the Pushover recipient).
+  #
+  # The Pushover key is currently the same recipient adsbx publishes to. If
+  # Grafana's alerts should route separately, make a Pushover delivery group,
+  # and swap GRAFANA_PUSHOVER_USER_KEY for its key -- nothing else changes.
   alerting:
     contactpoints.yaml:
       apiVersion: 1
