@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: immich
 resources:
   # - dragonfly.yaml
+  - cnpg-backup-credentials.sops.yaml
   - postgres.yaml
   - httproute.yaml
   - persistentvolumeclaim.yaml
