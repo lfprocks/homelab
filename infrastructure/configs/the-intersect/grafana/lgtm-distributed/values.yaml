@@ -46,6 +46,214 @@ grafana:
       limits:
         memory: 100Mi
 
+  # Alerting for kyverno ENFORCE rejections -- something was actually BLOCKED at
+  # admission. The Audit tier only shows up on the dashboard; a rejection was
+  # previously silent until a deploy failed and somebody went looking.
+  #
+  # Delivery reuses pnp (writer -> pulsar -> deliverer -> pushover), the
+  # notification path that is actually consumed.
+  #
+  # Two things here are deliberate and easy to get wrong:
+  #
+  #   * The body goes in `payload.template`, NOT `message`. `message` only
+  #     templates a string field inside grafana's own fixed JSON envelope, which
+  #     pnp-writer rejects with a 400. `payload.template` replaces the whole body.
+  #
+  #   * The grafana chart runs `tpl` over these values, so unescaped {{ }} is
+  #     evaluated by HELM at render time and the upgrade dies with
+  #     "nil pointer evaluating interface {}.Firing". The backtick block below
+  #     makes Helm emit the braces verbatim so grafana evaluates them at alert
+  #     time. Verified with `helm template` against lgtm-distributed 2.1.0.
+  #
+  # Credentials are $__env{} references resolved by grafana from
+  # envFromSecret, NOT literals -- values substituted here would land in the
+  # generated values ConfigMap in plaintext.
+  envFromSecret: grafana-alerting-secrets
+
+  alerting:
+    contactpoints.yaml:
+      apiVersion: 1
+      contactPoints:
+        - orgId: 1
+          name: pnp-pushover
+          receivers:
+            - uid: pnp-pushover-webhook
+              type: webhook
+              settings:
+                url: http://pnp-writer.pnp.svc.cluster.local/notifications
+                httpMethod: POST
+                authorization_scheme: Bearer
+                authorization_credentials: $__env{GRAFANA_PNP_TOKEN}
+                payload:
+                  # Deliberately generic. This contact point serves more than
+                  # one alert now, so the wording comes from each rule's
+                  # `title` and `summary` annotations rather than being
+                  # hardcoded here. A template that names one alert is a
+                  # template that lies about every other one.
+                  template: |
+                    {{ `{
+                      "originatingService": "grafana",
+                      "idempotencyKey": {{ .GroupKey | toJson }},
+                      "content": {
+                        "title": {{ (printf "%s (%d)" (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) | toJson }},
+                        "body": {{ (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") | toJson }},
+                        "priority": 0
+                      },
+                      "pushover": { "userOrGroupKey": "$__env{GRAFANA_PUSHOVER_USER_KEY}" }
+                    }` }}
+
+    policies.yaml:
+      apiVersion: 1
+      policies:
+        - orgId: 1
+          receiver: grafana-default-email
+          routes:
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["alertname", "=", "KyvernoEnforceRejection"]
+              # Grouped so a ReplicaSet retrying a rejected pod yields one
+              # notification per namespace+policy rather than one per attempt.
+              group_by: ["resource_namespace", "policy_name"]
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["alertname", "=", "BatteryMidpointDeviation"]
+              group_by: ["alertname"]
+              # Longer waits than kyverno on purpose. This condition tracks the
+              # charge cycle rather than a discrete event: it appears as the
+              # pack enters absorption and clears when charging stops, so it
+              # can last an hour. repeat_interval of 24h means an imbalance
+              # that persists for weeks is one notification a day, not one per
+              # evaluation.
+              group_wait: 5m
+              group_interval: 30m
+              repeat_interval: 24h
+
+    rules.yaml:
+      apiVersion: 1
+      groups:
+        - orgId: 1
+          name: kyverno
+          folder: alerts
+          interval: 1m
+          rules:
+            - uid: kyverno-enforce-rejection
+              title: KyvernoEnforceRejection
+              condition: fired
+              for: 0m
+              annotations:
+                # Static: any {{ }} here would hit the same Helm tpl problem.
+                # The namespace and policy are carried on the alert labels.
+                title: kyverno blocked an admission
+                summary: A kyverno enforce policy blocked an admission request.
+              labels:
+                severity: warning
+              data:
+                - refId: rejections
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: rejections
+                    editorMode: code
+                    instant: true
+                    # dry_run="false" is NOT optional: without it every
+                    # `kubectl apply --dry-run=server` against a violating
+                    # manifest would page. policy_validation_mode="enforce"
+                    # keeps the Audit tier out.
+                    expr: >-
+                      sum by (resource_namespace, policy_name, rule_name, resource_kind, resource_request_operation)
+                      (increase(kyverno_policy_results_total{
+                        rule_result="fail",
+                        policy_validation_mode="enforce",
+                        rule_execution_cause="admission_request",
+                        dry_run="false"
+                      }[10m]))
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: rejections
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+
+        - orgId: 1
+          name: battery
+          folder: alerts
+          interval: 5m
+          rules:
+            # The midpoint of a series string should sit at half the pack
+            # voltage. Sustained drift means the two halves are diverging,
+            # which is the failure a single pack-voltage reading cannot show:
+            # 28.3 V looks healthy whether it is 14.15 + 14.15 or 13.6 + 14.7.
+            #
+            # Thresholds come from measurement, not guesswork. Over one full
+            # charge cycle the absolute deviation was:
+            #
+            #   pack 26.8-27.1 V (at rest)      0.003 - 0.023 V
+            #   pack 27.6 V      (rising)       0.184 V
+            #   pack 28.3 V      (absorption)   0.52 - 0.58 V, peak 0.69 V
+            #   pack 26.9 V      (charge over)  0.048 - 0.086 V
+            #
+            # So the fault only appears at the top of charge, and 0.35 V sits
+            # in the empty gap between the two populations. Alerting on the
+            # shunt's own `alarm_reason` was the alternative and was rejected:
+            # it was observed clearing at a LARGER deviation than it set at, so
+            # its hysteresis would make the alert flap.
+            - uid: battery-midpoint-deviation
+              title: BatteryMidpointDeviation
+              condition: fired
+              # Absorption lasts tens of minutes and the deviation is noisy
+              # within it, so a single excursion should not notify.
+              for: 15m
+              annotations:
+                title: battery bank midpoint is drifting
+                summary: >-
+                  One half of the 24V series string is diverging from the other
+                  under charge. Check cell balance before the weaker half is
+                  pushed further.
+              labels:
+                severity: warning
+              data:
+                - refId: deviation
+                  relativeTimeRange: {from: 1800, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: deviation
+                    format: time_series
+                    rawQuery: true
+                    # abs() so a drift in either direction alerts -- which half
+                    # is high depends on which battery is weaker, and that can
+                    # change.
+                    rawSql: >-
+                      SELECT time, abs(aux_value - battery_voltage / 2) AS value
+                      FROM sensors.victron_battery_monitor
+                      WHERE $__timeFilter(time)
+                        AND aux_input_type = 'midpoint voltage'
+                      ORDER BY time
+                - refId: worst
+                  relativeTimeRange: {from: 1800, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: worst
+                    type: reduce
+                    # max, not mean: a half-hour window that is mostly at rest
+                    # would average a real absorption excursion away.
+                    reducer: max
+                    expression: deviation
+                - refId: fired
+                  relativeTimeRange: {from: 1800, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: worst
+                    conditions:
+                      - evaluator: {type: gt, params: [0.35]}
+
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
