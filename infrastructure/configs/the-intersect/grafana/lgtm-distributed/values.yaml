@@ -130,6 +130,19 @@ grafana:
               group_wait: 5m
               group_interval: 30m
               repeat_interval: 24h
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["alertname", "=", "SensorDataStale"]
+              group_by: ["alertname"]
+              # Short group_wait: the alert already waited 20 minutes for the
+              # data to go stale and 5 more to confirm it. Adding more delay
+              # only widens the window in which nobody knows.
+              group_wait: 30s
+              group_interval: 15m
+              # An outage that lasts a day should say so again. Six hours is
+              # long enough not to nag and short enough that a notification
+              # missed overnight is repeated in the morning.
+              repeat_interval: 6h
 
     rules.yaml:
       apiVersion: 1
@@ -253,6 +266,78 @@ grafana:
                     expression: worst
                     conditions:
                       - evaluator: {type: gt, params: [0.35]}
+
+        - orgId: 1
+          name: sensors
+          folder: alerts
+          interval: 5m
+          rules:
+            # Alerts on silence. Every other alert in this file describes
+            # something the data SAYS; this one describes the data not being
+            # there at all, which is the failure nobody notices.
+            #
+            # On 2026-08-02 the collector host lost Wi-Fi at 07:00 and nothing
+            # reported it. It was found by a human at 13:47, 6h47m later. At
+            # 09:00 this query would already have returned 120.
+            #
+            # sensors.litime is the liveness signal because it is written every
+            # few seconds by the same container that writes the Victron tables:
+            # if the host is offline, the container is dead, or the database is
+            # unreachable, this goes stale. It does NOT cover BirdNET, which
+            # runs in its own container and writes on its own schedule.
+            - uid: sensor-data-stale
+              title: SensorDataStale
+              condition: fired
+              # 20 minutes is over a hundred times the normal write interval,
+              # so this cannot fire on jitter. With `for`, a notification
+              # arrives about 25 minutes into an outage -- late enough to
+              # ignore a reboot, early enough to matter.
+              for: 5m
+              annotations:
+                title: sensor readings have stopped
+                summary: >-
+                  No new rows in sensors.litime. The collector host is offline,
+                  its container is dead, or the database is unreachable.
+              labels:
+                severity: warning
+              # If the datasource cannot be queried, that is itself a reason to
+              # notify: an unanswerable question about liveness is not a
+              # healthy answer. Same for no data at all.
+              execErrState: Alerting
+              noDataState: Alerting
+              data:
+                - refId: staleness
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: staleness
+                    format: time_series
+                    rawQuery: true
+                    # Deliberately unbounded by $__timeFilter. The question is
+                    # "how old is the newest row", and a windowed query returns
+                    # nothing once the outage is longer than the window --
+                    # which is exactly when the answer matters most.
+                    rawSql: >-
+                      SELECT now() AS time,
+                             extract(epoch from (now() - max(time))) / 60 AS value
+                      FROM sensors.litime
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: staleness
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [20]}
 
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
