@@ -45,9 +45,9 @@ spec:
           env:
             - name: FIREWX_MODE
               value: "backfill"
-            # TODO: the start of your vantagepro2plus history.
+            # The start of the vantagepro2plus history.
             - name: FIREWX_BACKFILL_FROM
-              value: "2025-08-01T00:00:00Z"
+              value: "2024-11-09T00:00:00Z"
           resources:
             limits:
               memory: "256Mi"
