@@ -10,8 +10,8 @@ data:
   TRACING_ENABLED: "false"
 
   FIREWX_MODE: "run"
-  # TODO: the sensors.vantagepro2plus.device_id to read.
-  FIREWX_DEVICE_ID: "REPLACE_ME"
+  # Must match sensors.vantagepro2plus.device_id exactly (colons, case).
+  FIREWX_DEVICE_ID: "001D0A719F80"
   FIREWX_FUEL_MODEL: "Y"
   FIREWX_LATITUDE: "47.68"
   # TODO: confirm the slope class (1-5) for the site.
