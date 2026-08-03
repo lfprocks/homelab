@@ -1,0 +1,51 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: firewx-timescaledb-inserter-env-configmap
+data:
+  LOG_LEVEL: "info"
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+  TRACING_ENABLED: "false"
+
+  FIREWX_MODE: "run"
+  # Must match sensors.vantagepro2plus.device_id exactly (colons, case).
+  FIREWX_DEVICE_ID: "001D0A719F80"
+  FIREWX_FUEL_MODEL: "Y"
+  FIREWX_LATITUDE: "47.68"
+  # TODO: confirm the slope class (1-5) for the site.
+  FIREWX_SLOPE_CLASS: "1"
+  FIREWX_LST_OFFSET: "-8h"
+  FIREWX_REG_OBS_HOUR: "13"
+  FIREWX_MEAN_ANNUAL_PRECIP: "38"
+  FIREWX_RAIN_SIZE: "0.01"
+  FIREWX_KBDI_THRESHOLD: "800"
+  FIREWX_ANNUAL_HERB: "true"
+  SCRAPE_INTERVAL: "1h"
+  # TIMESCALE_CONN_STRING is provided via the SOPS-encrypted secret (envFrom secretRef).
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name firewx-timescaledb-inserter
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  # Starts at 0 on purpose. Run the backfill Job first, against an empty
+  # nfdrs_state, so it seeds the history and the warm checkpoint. Then flip this
+  # to 1 and run mode resumes from that checkpoint.
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "firewx-timescaledb-inserter"
+        k8s.lfp.rocks/version: "v1.0.0"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/firewx-timescaledb-inserter:v1.0.0

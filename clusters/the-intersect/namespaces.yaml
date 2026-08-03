@@ -326,3 +326,16 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: firewx
+  labels:
+    k8s.lfp.rocks/policy: enforce
+    # Compute job that reads and writes TimescaleDB (no shared-gateway-access):
+    # no ingress, so it runs hardened and non-root under the restricted Pod
+    # Security Standard.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
