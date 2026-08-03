@@ -1,0 +1,56 @@
+# One-off backfill. It is deliberately NOT referenced by kustomization.yaml, so
+# Flux neither runs nor prunes it. Apply it by hand once, over your history,
+# before switching the Deployment to run mode:
+#
+#   kubectl apply -f apps/firewx-timescaledb-inserter/the-intersect/backfill-job.yaml
+#   kubectl -n firewx logs -f job/firewx-timescaledb-inserter-backfill
+#   kubectl -n firewx delete job firewx-timescaledb-inserter-backfill   # when done
+#
+# It reuses the Deployment's ConfigMap and secret, overriding the mode and the
+# window. The first ~6 weeks of output carry the spinup flag while the
+# 1000-hour stick settles.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: firewx-timescaledb-inserter-backfill
+  namespace: firewx
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: firewx-timescaledb-inserter-backfill
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backfill
+          image: ghcr.io/michaelpeterswa/firewx-timescaledb-inserter:v1.0.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - configMapRef:
+                name: firewx-timescaledb-inserter-env-configmap
+            - secretRef:
+                name: firewx-timescaledb-inserter-env-secret
+          env:
+            - name: FIREWX_MODE
+              value: "backfill"
+            # TODO: the start of your vantagepro2plus history.
+            - name: FIREWX_BACKFILL_FROM
+              value: "2025-08-01T00:00:00Z"
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "20m"
+              memory: "128Mi"
