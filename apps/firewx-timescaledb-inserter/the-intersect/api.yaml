@@ -36,10 +36,11 @@ spec:
     matchLabels:
       app: *name
   revisionHistoryLimit: 10
-  # Starts at 0 on purpose. Run the backfill Job first, against an empty
-  # nfdrs_state, so it seeds the history and the warm checkpoint. Then flip this
-  # to 1 and run mode resumes from that checkpoint.
-  replicas: 0
+  # Run mode. The backfill Job seeded sensors.fire_danger from 2024-11-09 and
+  # wrote the warm nfdrs_state checkpoint, so run mode resumes from it and adds
+  # one row per hour. To re-seed from empty, scale to 0 and run the backfill Job
+  # again first.
+  replicas: 1
   template:
     metadata:
       labels:
