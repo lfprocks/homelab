@@ -12,6 +12,11 @@ data:
 
   NWS_CLIENT_TIMEOUT: "30s"
 
+  # lfpweather-api: source for current conditions, smoke outlook, and fire
+  # weather summaries. LFPWEATHER_API_KEY is set in the secret.
+  LFPWEATHER_API_BASE_URL: "http://lfpweather-api.lfpweather.svc.cluster.local"
+  LFPWEATHER_CLIENT_TIMEOUT: "30s"
+
   CACHE_RESULTS_DURATION: "3h"
 
   # LLM provider configuration
