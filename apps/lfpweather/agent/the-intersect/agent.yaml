@@ -29,3 +29,14 @@ data:
   RATE_LIMIT_RPM: "20"
   RATE_LIMIT_BURST: "5"
   TRUST_FORWARDED_FOR: "true"
+
+  # Telemetry: push metrics and traces over OTLP gRPC to the cluster Alloy
+  # collector (grafana namespace). The sandbox is short-lived, so it pushes
+  # rather than exposing a scrape target. Traffic is low, so sample every
+  # request, which also keeps the broker -> agent -> MCP trace whole.
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+  TRACING_SAMPLERATE: "1.0"
+  TRACING_SERVICE: "lfpweather-agent"
+  TRACING_VERSION: "v1.2.0"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.grafana.svc.cluster.local:4317"

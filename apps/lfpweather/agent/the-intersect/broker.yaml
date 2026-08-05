@@ -25,6 +25,16 @@ data:
   # from the Sandbox status and proxies HTTP to it. Points at the controller
   # Service, which exists.
   SANDBOX_ROUTER_URL: "http://agent-sandbox-controller.agent-sandbox-system.svc.cluster.local:8080"
+
+  # Telemetry: push metrics and traces over OTLP gRPC to the cluster Alloy
+  # collector (grafana namespace), which forwards to Mimir and Tempo. Traffic is
+  # low, so sample every request.
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+  TRACING_SAMPLERATE: "1.0"
+  TRACING_SERVICE: "lfpweather-broker"
+  TRACING_VERSION: "v1.2.0"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.grafana.svc.cluster.local:4317"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,8 +51,8 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-broker"
-        k8s.lfp.rocks/version: "v1.1.2"
+        k8s.lfp.rocks/version: "v1.2.0"
     spec:
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.1.2
+          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.2.0
