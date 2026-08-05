@@ -929,8 +929,8 @@ tempo:
         cpu: 5m
         memory: 60Mi
       limits:
-        cpu: 50m
-        memory: 100Mi
+        cpu: 200m
+        memory: 192Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -977,10 +977,10 @@ tempo:
     resources:
       requests:
         cpu: 5m
-        memory: 50Mi
+        memory: 128Mi
       limits:
-        cpu: 50m
-        memory: 100Mi
+        cpu: 100m
+        memory: 256Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -1004,8 +1004,8 @@ tempo:
         cpu: 5m
         memory: 80Mi
       limits:
-        cpu: 50m
-        memory: 150Mi
+        cpu: 100m
+        memory: 256Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
