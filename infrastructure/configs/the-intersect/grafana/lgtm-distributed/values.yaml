@@ -935,10 +935,13 @@ tempo:
     resources:
       requests:
         cpu: 5m
-        memory: 60Mi
+        memory: 128Mi
       limits:
         cpu: 200m
-        memory: 192Mi
+        # 192Mi still OOMKilled the ingester while completing/flushing a
+        # parquet block, which made it UNHEALTHY in the ring and broke all
+        # trace search. Give the block build real headroom.
+        memory: 512Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
