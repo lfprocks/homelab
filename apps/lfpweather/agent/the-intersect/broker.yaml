@@ -14,6 +14,10 @@ data:
   AGENT_PORT: "8080"
   SANDBOX_IDLE_TTL: "15m"
 
+  # Daily token budget (input+output, per UTC day, across all sessions). Past it
+  # the broker degrades gracefully. Sized to spread the workspace's $20/mo cap.
+  DAILY_TOKEN_BUDGET: "100000"
+
   # In-cluster sandbox router (advanced mode) for the SDK's control connection.
   # TODO(cluster): confirm the router Service name/port on this install; leave
   # unset to fall back to API-server port-forward instead.
@@ -34,10 +38,8 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-broker"
-        k8s.lfp.rocks/version: "v1.0.0"
+        k8s.lfp.rocks/version: "v1.1.0"
     spec:
       containers:
         - name: *name
-          # TODO(release): pin to the tag semantic-release cuts for the first
-          # lfpweather-agent release.
-          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.0.0
+          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.1.0

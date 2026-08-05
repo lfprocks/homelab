@@ -27,22 +27,17 @@ frontend ──▶ lfpweather-broker ──▶ Agent Sandbox (agent) ──▶ l
 
 ## Before this works (review checklist)
 
-1. **Encrypt the secret.** `the-intersect/agent_secret.yaml` is a placeholder —
-   set `ANTHROPIC_API_KEY` + `MCP_BEARER_TOKEN` and
-   `sops --encrypt --in-place` it. Use a key from a **dedicated Anthropic
-   workspace with a monthly spend cap**. `MCP_BEARER_TOKEN` is the same
-   lfpweather-mcp bearer OpenClaw uses.
-2. **Pin the image.** `broker.yaml` and the SandboxTemplate patch use
-   `:v1.0.0` — set it to the tag semantic-release cut for the first
-   `lfpweather-agent` release.
-3. **Validate the sandbox control path.** `SANDBOX_ROUTER_URL` assumes an
-   in-cluster `sandbox-router-svc` in `agent-sandbox-system`. Confirm the
-   Service name/port, or unset it to use API-server port-forward (which also
-   needs `pods/portforward: create` in the broker Role and is not granted here).
-4. **Confirm RBAC verbs** against the SDK once running (SandboxClaims
-   create/delete/get/list/watch; Sandboxes get).
-5. **Warm-pool size** (`replicas: 2`) and the agent `RATE_LIMIT_*` / `MAX_TURNS`
-   are conservative starting points — tune with real traffic.
-
-Not yet wired (broker follow-up, tracked in the app repo): a **global daily
-token budget** that reads each agent's `GET /usage` and degrades gracefully.
+- [x] **Secret encrypted.** `the-intersect/agent_secret.yaml` holds the SOPS-
+  encrypted `ANTHROPIC_API_KEY` (dedicated workspace, $20/mo cap) and
+  `MCP_BEARER_TOKEN` (the lfpweather-mcp bearer OpenClaw uses).
+- [x] **Image pinned** to `:v1.1.0` (broker Deployment + SandboxTemplate patch).
+- [x] **Daily budget set** — `DAILY_TOKEN_BUDGET: "100000"` on the broker,
+  sized to spread the workspace's $20/mo cap and degrade gracefully below it.
+- [ ] **Validate the sandbox control path.** `SANDBOX_ROUTER_URL` assumes an
+  in-cluster `sandbox-router-svc` in `agent-sandbox-system`. Confirm the
+  Service name/port, or unset it to use API-server port-forward (which also
+  needs `pods/portforward: create` in the broker Role and is not granted here).
+- [ ] **Confirm RBAC verbs** against the SDK once running (SandboxClaims
+  create/delete/get/list/watch; Sandboxes get).
+- [ ] **Tune** warm-pool size (`replicas: 2`) and the agent `RATE_LIMIT_*` /
+  `MAX_TURNS` with real traffic; watch the broker's `GET /usage`.
