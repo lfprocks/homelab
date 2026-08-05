@@ -1,0 +1,24 @@
+---
+# Agent (in-sandbox) configuration. The SandboxTemplate image and warm-pool
+# replicas are set as JSON patches in kustomization.yaml (a strategic merge on a
+# CRD would replace the container list rather than merge it).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lfpweather-agent-env-configmap
+data:
+  LOG_LEVEL: "info"
+  PORT: "8080"
+
+  ANTHROPIC_MODEL: "claude-sonnet-5"
+
+  # lfpweather-mcp, reached in-cluster via its Service.
+  MCP_URL: "http://lfpweather-mcp.lfpweather.svc.cluster.local:80/mcp"
+
+  MAX_TURNS: "8"
+  SESSION_TTL: "30m"
+
+  # Per-IP limiting: the broker forwards the real client IP.
+  RATE_LIMIT_RPM: "20"
+  RATE_LIMIT_BURST: "5"
+  TRUST_FORWARDED_FOR: "true"

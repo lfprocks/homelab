@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lfpweather-broker-env-configmap
+data:
+  LOG_LEVEL: "info"
+  PORT: "8080"
+
+  # Give each browser session its own Agent Sandbox from the warm pool.
+  PROVIDER_MODE: "sandbox"
+  WARM_POOL_NAME: "lfpweather-agent"
+  NAMESPACE: "lfpweather"
+  AGENT_PORT: "8080"
+  SANDBOX_IDLE_TTL: "15m"
+
+  # Daily token budget (input+output, per UTC day, across all sessions). Past it
+  # the broker degrades gracefully. Sized to spread the workspace's $20/mo cap.
+  DAILY_TOKEN_BUDGET: "100000"
+
+  # Forces the SDK into "direct" connection mode. This install runs no sandbox
+  # router and the agent pods carry no runtime sidecar, so leaving this unset
+  # would make CreateSandbox try (and fail) to port-forward to a runtime. In
+  # direct mode the URL is never actually dialed — the broker reads the pod IP
+  # from the Sandbox status and proxies HTTP to it. Points at the controller
+  # Service, which exists.
+  SANDBOX_ROUTER_URL: "http://agent-sandbox-controller.agent-sandbox-system.svc.cluster.local:8080"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lfpweather-broker
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "lfpweather-broker"
+        k8s.lfp.rocks/version: "v1.1.0"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.1.0

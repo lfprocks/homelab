@@ -1,0 +1,115 @@
+---
+# Broker: reaches the Kubernetes API (to create/delete SandboxClaims), cluster
+# DNS, and the per-session agent pods on their HTTP port. Fronted only by the
+# frontend.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lfpweather-broker
+  labels:
+    app: lfpweather-broker
+spec:
+  endpointSelector:
+    matchLabels:
+      app: lfpweather-broker
+  ingress:
+    # The frontend's route handler proxies chat to the broker. "host" covers
+    # kubelet probes/exec.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lfpweather
+            k8s:app: lfpweather-frontend
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    # Cluster DNS.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Kubernetes API server, for the SandboxClaim create/delete/watch calls.
+    - toEntities:
+        - kube-apiserver
+    # The per-session agent pods, reached directly on their HTTP port. (The SDK
+    # runs in direct mode and never dials a router, so the only egress the broker
+    # needs beyond this is DNS and the API server, above.)
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lfpweather
+            k8s:sandbox: lfpweather-agent-sandbox
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Agent sandboxes: locked down like the OpenClaw sandbox. Cluster DNS, the
+# public internet (the Anthropic API), and the one in-cluster service they may
+# reach — lfpweather-mcp. Ingress only from the broker.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lfpweather-agent-sandbox
+  labels:
+    app: lfpweather-agent
+spec:
+  endpointSelector:
+    matchLabels:
+      sandbox: lfpweather-agent-sandbox
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lfpweather
+            k8s:app: lfpweather-broker
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    # Cluster DNS, so the agent can resolve api.anthropic.com and the MCP service.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Public internet — the Anthropic API. "world" excludes in-cluster/LAN
+    # endpoints, keeping the agent isolated from internal services.
+    - toEntities:
+        - world
+    # lfpweather-mcp (streamable HTTP at /mcp), reached via its ClusterIP
+    # Service (port 80 -> pod 8080); both ports allowed for Cilium service
+    # translation. The only in-cluster service the agent may reach.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lfpweather
+            k8s:app: lfpweather-mcp
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP

@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lfpweather
+
+resources:
+  - ../base/
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: lfpweather-agent
+
+patches:
+  - path: broker.yaml
+  - path: agent.yaml
+  - path: agent_secret.yaml
+  # The SandboxTemplate image and warm-pool size go in as JSON patches: a
+  # strategic merge on these CRDs would replace the container list instead of
+  # merging by name.
+  - target:
+      group: extensions.agents.x-k8s.io
+      version: v1beta1
+      kind: SandboxTemplate
+      name: lfpweather-agent
+    patch: |
+      - op: add
+        path: /spec/podTemplate/spec/containers/0/image
+        value: ghcr.io/michaelpeterswa/lfpweather-agent:v1.1.0
+  - target:
+      group: extensions.agents.x-k8s.io
+      version: v1beta1
+      kind: SandboxWarmPool
+      name: lfpweather-agent
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
