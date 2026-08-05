@@ -918,6 +918,17 @@ tempo:
       http:
         enabled: true
 
+  # Match the ring replication factor to the single tempo ingester. The chart
+  # default is 3 (sized for a multi-ingester deployment); with one ingester the
+  # querier can never assemble a read quorum, so all trace search failed with
+  # "too many unhealthy instances in the ring". Writes were unaffected -- the
+  # distributor writes best-effort to whatever ingesters exist.
+  structuredConfig:
+    ingester:
+      lifecycler:
+        ring:
+          replication_factor: 1
+
   ingester:
     podAnnotations:
       prometheus.io/path: /metrics
