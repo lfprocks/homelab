@@ -33,7 +33,7 @@ data:
   TRACING_ENABLED: "true"
   TRACING_SAMPLERATE: "1.0"
   TRACING_SERVICE: "lfpweather-broker"
-  TRACING_VERSION: "v1.2.0"
+  TRACING_VERSION: "v1.2.1"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.grafana.svc.cluster.local:4317"
 ---
 apiVersion: apps/v1
@@ -51,8 +51,8 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-broker"
-        k8s.lfp.rocks/version: "v1.2.0"
+        k8s.lfp.rocks/version: "v1.2.1"
     spec:
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.2.0
+          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.2.1
