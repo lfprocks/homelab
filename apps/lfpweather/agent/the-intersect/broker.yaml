@@ -41,8 +41,8 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-broker"
-        k8s.lfp.rocks/version: "v1.1.1"
+        k8s.lfp.rocks/version: "v1.1.2"
     spec:
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.1.1
+          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.1.2
