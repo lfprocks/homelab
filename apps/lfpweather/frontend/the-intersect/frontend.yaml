@@ -34,7 +34,7 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather.com:v1.7.0
+          image: ghcr.io/michaelpeterswa/lfpweather.com:v1.8.0
           env:
             - name: KEEP_ALIVE_TIMEOUT
               value: "70000"
