@@ -24,11 +24,14 @@ data:
   METRICS_ENABLED: "true"
   METRICS_PORT: "8081"
 
-  # tracing
-  TRACING_ENABLED: "false"
+  # tracing — push spans over OTLP gRPC to the cluster Alloy collector so an
+  # agent request continues into the MCP server and onward to lfpweather-api.
+  # The handler already extracts the incoming trace context (otelhttp).
+  TRACING_ENABLED: "true"
   TRACING_SAMPLERATE: "1.0"
   TRACING_SERVICE: "lfpweather-mcp"
   TRACING_VERSION: "1.0.0"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.grafana.svc.cluster.local:4317"
 ---
 apiVersion: apps/v1
 kind: Deployment
