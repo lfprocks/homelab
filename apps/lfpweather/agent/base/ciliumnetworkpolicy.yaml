@@ -45,8 +45,7 @@ spec:
     - toEntities:
         - kube-apiserver
     # The per-session agent pods, reached directly on their HTTP port. (The SDK
-    # runs in direct mode and never dials a router, so the only egress the broker
-    # needs beyond this is DNS and the API server, above.)
+    # runs in direct mode and never dials a router.)
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: lfpweather
@@ -55,10 +54,19 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    # Grafana Alloy (OTLP gRPC), to push metrics and traces.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+            k8s:app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "4317"
+              protocol: TCP
 ---
 # Agent sandboxes: locked down like the OpenClaw sandbox. Cluster DNS, the
-# public internet (the Anthropic API), and the one in-cluster service they may
-# reach — lfpweather-mcp. Ingress only from the broker.
+# public internet (the Anthropic API), lfpweather-mcp, and Grafana Alloy (to
+# push telemetry). Ingress only from the broker.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -112,4 +120,13 @@ spec:
             - port: "80"
               protocol: TCP
             - port: "8080"
+              protocol: TCP
+    # Grafana Alloy (OTLP gRPC), to push metrics and traces.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+            k8s:app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "4317"
               protocol: TCP
