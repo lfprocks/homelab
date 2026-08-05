@@ -338,7 +338,8 @@ alloy:
           endpoint = "0.0.0.0:4318"
         }
         output {
-          traces = [otelcol.processor.batch.default.input]
+          traces  = [otelcol.processor.batch.default.input]
+          metrics = [otelcol.processor.batch.metrics.input]
         }
       }
 
@@ -355,6 +356,20 @@ alloy:
             insecure = true
           }
         }
+      }
+
+      // OTel metrics pipeline: convert pushed OTLP metrics to Prometheus and
+      // remote-write them to Mimir, next to the scraped metrics. Short-lived
+      // pods -- the lfpweather agent sandboxes -- push here instead of exposing
+      // a scrape target that would churn as they come and go.
+      otelcol.processor.batch "metrics" {
+        output {
+          metrics = [otelcol.exporter.prometheus.default.input]
+        }
+      }
+
+      otelcol.exporter.prometheus "default" {
+        forward_to = [prometheus.remote_write.default.receiver]
       }
 
     # -- Name of existing ConfigMap to use. Used when create is false.
