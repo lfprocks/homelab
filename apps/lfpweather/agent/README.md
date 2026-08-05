@@ -33,11 +33,13 @@ frontend ──▶ lfpweather-broker ──▶ Agent Sandbox (agent) ──▶ l
 - [x] **Image pinned** to `:v1.1.0` (broker Deployment + SandboxTemplate patch).
 - [x] **Daily budget set** — `DAILY_TOKEN_BUDGET: "100000"` on the broker,
   sized to spread the workspace's $20/mo cap and degrade gracefully below it.
-- [ ] **Validate the sandbox control path.** `SANDBOX_ROUTER_URL` assumes an
-  in-cluster `sandbox-router-svc` in `agent-sandbox-system`. Confirm the
-  Service name/port, or unset it to use API-server port-forward (which also
-  needs `pods/portforward: create` in the broker Role and is not granted here).
-- [ ] **Confirm RBAC verbs** against the SDK once running (SandboxClaims
-  create/delete/get/list/watch; Sandboxes get).
+- [x] **Sandbox control path validated.** This install runs no router and the
+  agent pods carry no runtime sidecar, so `SANDBOX_ROUTER_URL` is set only to
+  select the SDK's direct mode. The broker reads the pod IP from
+  `Sandbox.status.podIPs` and proxies HTTP to it — the router/runtime and
+  `pods/portforward` are never used.
+- [x] **RBAC confirmed** against the live CRDs (`extensions.agents.x-k8s.io`
+  SandboxClaims create/delete/get/list/watch; `agents.x-k8s.io` Sandboxes
+  get/list/watch).
 - [ ] **Tune** warm-pool size (`replicas: 2`) and the agent `RATE_LIMIT_*` /
   `MAX_TURNS` with real traffic; watch the broker's `GET /usage`.

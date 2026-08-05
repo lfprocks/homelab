@@ -18,10 +18,13 @@ data:
   # the broker degrades gracefully. Sized to spread the workspace's $20/mo cap.
   DAILY_TOKEN_BUDGET: "100000"
 
-  # In-cluster sandbox router (advanced mode) for the SDK's control connection.
-  # TODO(cluster): confirm the router Service name/port on this install; leave
-  # unset to fall back to API-server port-forward instead.
-  SANDBOX_ROUTER_URL: "http://sandbox-router-svc.agent-sandbox-system.svc.cluster.local:8080"
+  # Forces the SDK into "direct" connection mode. This install runs no sandbox
+  # router and the agent pods carry no runtime sidecar, so leaving this unset
+  # would make CreateSandbox try (and fail) to port-forward to a runtime. In
+  # direct mode the URL is never actually dialed — the broker reads the pod IP
+  # from the Sandbox status and proxies HTTP to it. Points at the controller
+  # Service, which exists.
+  SANDBOX_ROUTER_URL: "http://agent-sandbox-controller.agent-sandbox-system.svc.cluster.local:8080"
 ---
 apiVersion: apps/v1
 kind: Deployment

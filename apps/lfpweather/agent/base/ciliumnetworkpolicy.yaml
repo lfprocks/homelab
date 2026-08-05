@@ -44,7 +44,9 @@ spec:
     # Kubernetes API server, for the SandboxClaim create/delete/watch calls.
     - toEntities:
         - kube-apiserver
-    # The per-session agent pods, reached directly on their HTTP port.
+    # The per-session agent pods, reached directly on their HTTP port. (The SDK
+    # runs in direct mode and never dials a router, so the only egress the broker
+    # needs beyond this is DNS and the API server, above.)
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: lfpweather
@@ -53,14 +55,6 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
-    # TODO(cluster): the Agent Sandbox SDK's control connection. If SANDBOX_
-    # ROUTER_URL is set (advanced mode), the broker reaches the sandbox-router
-    # in agent-sandbox-system; if left unset it uses API-server port-forward
-    # (covered by the kube-apiserver rule above, plus pods/portforward RBAC).
-    # Confirm which path this cluster uses and tighten the port.
-    - toEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: agent-sandbox-system
 ---
 # Agent sandboxes: locked down like the OpenClaw sandbox. Cluster DNS, the
 # public internet (the Anthropic API), and the one in-cluster service they may
