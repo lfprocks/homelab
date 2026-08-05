@@ -7,6 +7,10 @@ data:
   FORECAST_INFERENCE_API_BASE_URL: https://${SUB_COMBAT_PILGRIM}.${DOMAIN_COMMON_STAR}
   # The AskBar route handler proxies chat to the broker over in-cluster DNS.
   BROKER_URL: http://lfpweather-broker.lfpweather.svc.cluster.local
+  # @vercel/otel pushes traces over OTLP HTTP (note :4318, not gRPC :4317) to the
+  # cluster Alloy collector, making the browser request the root of the
+  # broker -> agent -> mcp -> api trace.
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy.grafana.svc.cluster.local:4318
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -36,7 +40,7 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather.com:v1.10.1
+          image: ghcr.io/michaelpeterswa/lfpweather.com:v1.11.0
           env:
             - name: KEEP_ALIVE_TIMEOUT
               value: "70000"
