@@ -15,7 +15,14 @@ data:
   # lfpweather-mcp, reached in-cluster via its Service.
   MCP_URL: "http://lfpweather-mcp.lfpweather.svc.cluster.local:80/mcp"
 
-  MAX_TURNS: "8"
+  # Bound the tool-use loop per question. Lower than the default 8 so a question
+  # about data the station does not report (for example battery voltage) fails
+  # fast instead of exploring tools until the request deadline.
+  MAX_TURNS: "6"
+  # One question end to end, across every tool turn and model stream. Raised from
+  # the 90s default: a multi-turn answer over a large session history can pass
+  # 90s and trip "model stream: context deadline exceeded".
+  REQUEST_TIMEOUT: "180s"
   SESSION_TTL: "30m"
 
   # Per-IP limiting: the broker forwards the real client IP.
