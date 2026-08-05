@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lfpweather-agent-env-configmap
+data:
+---
+# Placeholder skeleton; the-intersect/agent_secret.yaml patches in the
+# SOPS-encrypted ANTHROPIC_API_KEY and MCP_BEARER_TOKEN.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lfpweather-agent-env-secret
+---
+# The pod each conversation runs in. The warm pool pre-creates these from this
+# template; the broker claims one per browser session and deletes it when idle.
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxTemplate
+metadata:
+  name: lfpweather-agent
+spec:
+  # We manage isolation with a CiliumNetworkPolicy (the controller's default
+  # policy is unusable on this cluster), so opt out of the managed one.
+  networkPolicyManagement: Unmanaged
+  podTemplate:
+    metadata:
+      labels:
+        # CiliumNetworkPolicy endpointSelector matches this.
+        sandbox: lfpweather-agent-sandbox
+        # Required by the cluster's kyverno require-labels policy.
+        k8s.lfp.rocks/service: lfpweather-agent
+        k8s.lfp.rocks/version: "1"
+    spec:
+      # Run the agent inside a gVisor userspace-kernel sandbox.
+      runtimeClassName: gvisor
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: agent
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - configMapRef:
+                name: lfpweather-agent-env-configmap
+            - secretRef:
+                name: lfpweather-agent-env-secret
+          ports:
+            - name: http
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+---
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxWarmPool
+metadata:
+  name: lfpweather-agent
+spec:
+  # Warm sandboxes kept ready to claim; the-intersect may tune this.
+  replicas: 2
+  sandboxTemplateRef:
+    name: lfpweather-agent
