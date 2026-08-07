@@ -4,6 +4,11 @@ namespace: webcam-scraper
 
 resources:
   - ../base/
+  # Publishes the newest camera frame onto the volume nginx serves. Listed as
+  # a resource rather than a patch because it adds objects the base does not
+  # have.
+  - camera-gcs-credentials.sops.yaml
+  - camera-latest.yaml
 labels:
   - includeSelectors: true
     pairs:

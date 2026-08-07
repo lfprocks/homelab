@@ -1,0 +1,109 @@
+---
+# Publishes the newest frame from the manhattanproject camera.
+#
+# The Pi uploads every frame to a private bucket and never writes anything
+# public. It cannot: its credential is objectCreator on that one bucket, so it
+# can add objects and not read, list, delete, or overwrite them. There is no
+# `latest.jpg` in the bucket either, because an overwrite in GCS is a delete
+# plus a create and that credential has no delete.
+#
+# So "latest" is resolved here instead. This job reads the newest key and
+# copies it onto the volume nginx already serves, which means the archive has
+# no public surface at all -- not a public bucket with one public object, but
+# nothing public whatsoever. The only thing the internet can reach is the
+# single file written below.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: camera-latest
+  namespace: webcam-scraper
+spec:
+  # The Pi captures every 10 minutes and uploads within 5. Running at the same
+  # cadence keeps the published frame under ~15 minutes old without polling the
+  # bucket for changes that cannot have happened.
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  # A run that cannot reach the bucket should give up and let the next one try,
+  # rather than pile up against Forbid.
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: "camera-latest"
+            k8s.lfp.rocks/version: "v1"
+        spec:
+          restartPolicy: OnFailure
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: k8s.lfp.rocks/gpu
+                        operator: NotIn
+                        values:
+                          - enabled
+          containers:
+            - name: camera-latest
+              image: google/cloud-sdk:579.0.0-slim
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+
+                  BUCKET="gs://lfpr-p-gcsb-usw1-camera-manhattanproject-4h7n-92be3e7"
+                  DEST="/images/manhattanproject/camera"
+
+                  gcloud auth activate-service-account \
+                    --key-file=/creds/service-account.json --quiet
+
+                  # Frames are named with a sortable UTC timestamp and stored
+                  # under archive/YYYY/MM/DD/, so the newest is the last key of
+                  # today's prefix. Listing one day bounds this to ~144 objects
+                  # rather than walking a 90 day archive every ten minutes.
+                  #
+                  # Just after UTC midnight today's prefix is empty until the
+                  # first capture lands, so fall back to yesterday rather than
+                  # letting the published frame go stale for ten minutes a day.
+                  newest=""
+                  for day in "$(date -u +%Y/%m/%d)" "$(date -u -d yesterday +%Y/%m/%d)"; do
+                    newest="$(gcloud storage ls "${BUCKET}/archive/${day}/" 2>/dev/null | sort | tail -1)"
+                    [ -n "${newest}" ] && break
+                  done
+
+                  if [ -z "${newest}" ]; then
+                    echo "no frames found in the last two days" >&2
+                    exit 1
+                  fi
+
+                  mkdir -p "${DEST}"
+                  # Written to a temporary name and moved into place, so nginx
+                  # never serves a half-copied file to somebody mid-request.
+                  gcloud storage cp "${newest}" "${DEST}/.latest.jpg.tmp"
+                  mv "${DEST}/.latest.jpg.tmp" "${DEST}/latest.jpg"
+                  echo "published ${newest}"
+              volumeMounts:
+                - mountPath: /images
+                  name: webcam-scraper-pvc-volume
+                  subPath: "webcam-scraper"
+                - mountPath: /creds
+                  name: camera-gcs-credentials
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+          volumes:
+            - name: webcam-scraper-pvc-volume
+              persistentVolumeClaim:
+                claimName: webcam-scraper-pvc
+            - name: camera-gcs-credentials
+              secret:
+                secretName: camera-gcs-credentials
+                defaultMode: 0400
