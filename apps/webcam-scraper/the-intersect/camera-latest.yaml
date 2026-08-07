@@ -53,6 +53,13 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
+                  # Shell variables are written $${VAR}, not ${VAR}.
+                  #
+                  # Flux substitutes every ${...} in a Kustomization's output
+                  # from the cluster-vars Secret, and anything it cannot find
+                  # becomes an empty string. Unescaped, this script reached the
+                  # cluster with `gcloud storage ls /archive//` and failed on
+                  # every run. The doubled form makes Flux emit a single $.
                   set -euo pipefail
 
                   BUCKET="gs://lfpr-p-gcsb-usw1-camera-manhattanproject-4h7n-92be3e7"
@@ -71,21 +78,25 @@ spec:
                   # letting the published frame go stale for ten minutes a day.
                   newest=""
                   for day in "$(date -u +%Y/%m/%d)" "$(date -u -d yesterday +%Y/%m/%d)"; do
-                    newest="$(gcloud storage ls "${BUCKET}/archive/${day}/" 2>/dev/null | sort | tail -1)"
-                    [ -n "${newest}" ] && break
+                    newest="$(gcloud storage ls "$${BUCKET}/archive/$${day}/" 2>/dev/null | sort | tail -1)"
+                    # An `if` rather than `[ ... ] && break`: as the last
+                    # command in the loop body, a failed test returns 1 and
+                    # `set -e` would end the script instead of trying
+                    # yesterday.
+                    if [ -n "$${newest}" ]; then break; fi
                   done
 
-                  if [ -z "${newest}" ]; then
+                  if [ -z "$${newest}" ]; then
                     echo "no frames found in the last two days" >&2
                     exit 1
                   fi
 
-                  mkdir -p "${DEST}"
+                  mkdir -p "$${DEST}"
                   # Written to a temporary name and moved into place, so nginx
                   # never serves a half-copied file to somebody mid-request.
-                  gcloud storage cp "${newest}" "${DEST}/.latest.jpg.tmp"
-                  mv "${DEST}/.latest.jpg.tmp" "${DEST}/latest.jpg"
-                  echo "published ${newest}"
+                  gcloud storage cp "$${newest}" "$${DEST}/.latest.jpg.tmp"
+                  mv "$${DEST}/.latest.jpg.tmp" "$${DEST}/latest.jpg"
+                  echo "published $${newest}"
               volumeMounts:
                 - mountPath: /images
                   name: webcam-scraper-pvc-volume
