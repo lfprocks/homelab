@@ -132,6 +132,16 @@ grafana:
               repeat_interval: 24h
             - receiver: pnp-pushover
               object_matchers:
+                - ["alertname", "=", "CameraUploadStale"]
+              group_by: ["alertname"]
+              group_wait: 30s
+              group_interval: 30m
+              # A camera that has stopped is not urgent the way a dead sensor
+              # is -- the frames are a timelapse, not a control loop -- so this
+              # repeats less often than the others.
+              repeat_interval: 12h
+            - receiver: pnp-pushover
+              object_matchers:
                 - ["alertname", "=", "SensorDataStale"]
               group_by: ["alertname"]
               # Short group_wait: the alert already waited 20 minutes for the
@@ -338,6 +348,67 @@ grafana:
                     expression: latest
                     conditions:
                       - evaluator: {type: gt, params: [20]}
+
+            # The camera is the one collector whose silence is genuinely
+            # invisible: a successful upload run against an empty spool logs
+            # nothing, so "working" and "not running at all" produce identical
+            # journal output. This is the metric that tells them apart.
+            #
+            # Unlike SensorDataStale this reads Mimir rather than Postgres,
+            # because the camera writes to Cloud Storage and never touches the
+            # database. The Pi publishes the timestamp of its last successful
+            # upload through alloy's textfile collector.
+            - uid: camera-upload-stale
+              title: CameraUploadStale
+              condition: fired
+              # Frames are captured every 10 minutes and uploaded every 5, so
+              # 45 minutes is four missed cycles. Long enough to ride out a
+              # reboot or a brief Wi-Fi drop -- both of which this host does --
+              # and short enough to catch a real stall the same hour.
+              for: 15m
+              annotations:
+                title: camera frames have stopped reaching cloud storage
+                summary: >-
+                  No successful camera upload for 45 minutes. The capture timer,
+                  the upload timer, the network, or the write credential has
+                  failed.
+              labels:
+                severity: warning
+              # If the series is absent entirely the Pi is not reporting at all,
+              # which is a worse version of the same problem rather than a
+              # reason to stay quiet.
+              execErrState: Alerting
+              noDataState: Alerting
+              data:
+                - refId: age
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: age
+                    editorMode: code
+                    instant: true
+                    # Minutes since the last successful upload. The metric is a
+                    # unix timestamp rather than a counter precisely so this
+                    # stays true across restarts of alloy and of the Pi.
+                    expr: >-
+                      (time() - camera_upload_last_success_timestamp_seconds) / 60
+                - refId: worst
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: worst
+                    type: reduce
+                    reducer: max
+                    expression: age
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: worst
+                    conditions:
+                      - evaluator: {type: gt, params: [45]}
 
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
