@@ -19,6 +19,33 @@ grafana:
     size: 10Gi
     storageClassName: smb-client
 
+  # Recreate, not RollingUpdate.
+  #
+  # Grafana keeps its state in SQLite on the single ReadWriteOnce volume above,
+  # and SQLite cannot be opened by two processes across two pods. The chart
+  # default is RollingUpdate with maxSurge, so Kubernetes starts the new pod
+  # BEFORE stopping the old one, both mount the same database, and the new pod
+  # blocks in the SQLite resource server. It never binds :3000, the liveness
+  # probe kills it, and the rollout can never complete because RollingUpdate
+  # will not retire the old pod until the new one is ready.
+  #
+  # That is not hypothetical. On 2026-08-03 an upgrade sat in this deadlock for
+  # three and a half hours with the HelmRelease in `failed` and the new pod at
+  # 44 restarts, serving from the old pod the whole time so nothing looked
+  # wrong from outside. It eventually resolved after 53 restarts, by luck
+  # rather than design, and would recur on the next upgrade.
+  #
+  # Recreate stops the old pod first. The trade is a short gap with no Grafana
+  # during an upgrade, which is the honest cost of SQLite on one volume: the
+  # current setting only appears to give zero-downtime upgrades, and actually
+  # gives upgrades that cannot finish.
+  #
+  # The real fix is moving Grafana off SQLite onto Postgres, which would also
+  # rescue the dashboards that exist only on this volume. That is a larger
+  # change than this one.
+  deploymentStrategy:
+    type: Recreate
+
   # Dashboard sidecar. Until now every dashboard was UI-created and lived only on
   # the PVC above, so there was no GitOps path for shipping one -- which is part
   # of why the kyverno policy results went unread for so long. The sidecar
