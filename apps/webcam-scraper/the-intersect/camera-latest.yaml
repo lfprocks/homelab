@@ -53,18 +53,22 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  # Shell variables are written $${VAR}, not ${VAR}.
+                  # Shell variables here are written with a doubled
+                  # leading dollar sign. Flux runs envsubst over this
+                  # Kustomization's output and replaces every dollar-brace
+                  # reference from the cluster-vars Secret, turning anything it
+                  # cannot resolve into an empty string. Unescaped, this script
+                  # reached the cluster with an empty bucket name and failed on
+                  # every run.
                   #
-                  # Flux substitutes every ${...} in a Kustomization's output
-                  # from the cluster-vars Secret, and anything it cannot find
-                  # becomes an empty string. Unescaped, this script reached the
-                  # cluster with `gcloud storage ls /archive//` and failed on
-                  # every run. The doubled form makes Flux emit one literal
-                  # dollar sign. Note there is no bare dollar sign anywhere in
-                  # this file, comments included: envsubst parses one followed
-                  # by punctuation as a malformed variable name and fails the
-                  # whole Kustomization build, which is how this comment broke
-                  # the deploy the first time it was written.
+                  # Nothing in this file may contain a lone dollar sign, or a
+                  # dollar-brace sequence that is not a real variable -- not
+                  # even inside a comment. envsubst parses those as malformed
+                  # variable names and fails the ENTIRE Kustomization build, so
+                  # every resource in the app stops being applied. Two earlier
+                  # attempts at this comment did exactly that.
+                  #
+                  # Check with: kustomize build <dir> | flux envsubst
                   set -euo pipefail
 
                   BUCKET="gs://lfpr-p-gcsb-usw1-camera-manhattanproject-4h7n-92be3e7"
