@@ -11,6 +11,14 @@ metadata:
   name: outline-dragonfly
 spec:
   replicas: 2
+  # Outline drives its job queues with BullMQ, whose Lua scripts touch keys they
+  # never declare in KEYS[]. Dragonfly rejects those by default ("script tried
+  # accessing undeclared key"), which made every OIDC callback 500 with
+  # "Error during authentication" and bounced the browser back to Pocket ID in a
+  # redirect loop. Same flag immich-dragonfly already runs with; it costs a global
+  # lock per script call.
+  args:
+    - "--default_lua_flags=allow-undeclared-keys"
   # The operator owns this StatefulSet's pod template, so `spec.labels` is the
   # supported way to get labels onto the pods (the CRD documents it as
   # "Labels to add to the Dragonfly pods"). The metadata.labels above only
