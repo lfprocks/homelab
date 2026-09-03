@@ -20,7 +20,7 @@ spec:
       labels:
         app: naas-api
         k8s.lfp.rocks/service: naas-api
-        k8s.lfp.rocks/version: v0.1.0
+        k8s.lfp.rocks/version: v0.2.0
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
@@ -36,7 +36,7 @@ spec:
         feature.node.kubernetes.io/usb-ff_0403_6015.present: "true"
       containers:
         - name: naas-api
-          image: ghcr.io/alpineworks/naas-api:v0.1.0
+          image: ghcr.io/alpineworks/naas-api:v0.2.0
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
