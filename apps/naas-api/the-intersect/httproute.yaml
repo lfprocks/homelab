@@ -10,10 +10,25 @@ spec:
       namespace: cilium-ingress
   hostnames: ["${SUB_CRIMSON_RANGER}.${DOMAIN_COBRA_LANTERN}"]
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /api/v1
-      backendRefs:
+    - backendRefs:
+        - name: naas-api
+          port: 8080
+---
+# Public route. naas-api has no auth, per-IP rate limiting, request
+# concurrency cap, or pull timeout (see "Known v1 limitations" in the
+# naas-api repo's INTEGRATION.md). Anyone reaching this hostname shares the
+# single TRNG's ~2.4 MB/s with everyone else.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: naas-api-external-httproute
+  namespace: naas-api
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_CRIMSON_RANGER}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - backendRefs:
         - name: naas-api
           port: 8080
