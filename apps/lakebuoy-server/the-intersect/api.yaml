@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lakebuoy-server-env-configmap
+data:
+  LOG_LEVEL: "info"
+  UDP_HOST: "0.0.0.0"
+  UDP_PORT: "5555"
+  HTTP_PORT: "8080"
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+  TRACING_ENABLED: "false"
+  # TIMESCALE_CONN_STRING will arrive via a SOPS secret (envFrom secretRef)
+  # once internal/ingest gains persistence — the server only logs today.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lakebuoy-server
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "lakebuoy-server"
+        k8s.lfp.rocks/version: "sha-4fe9a7a"
+    spec:
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/lakebuoy/lakebuoy-server:sha-4fe9a7a

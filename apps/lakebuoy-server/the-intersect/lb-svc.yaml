@@ -1,0 +1,24 @@
+---
+# External UDP ingest for buoy uplinks. LoadBalancer is the proven L4
+# exposure in this cluster (cf. zwavejs-ui, wyoming) — Cilium LB-IPAM
+# assigns an IP from main-pool and L2-announces it on the LAN; the site
+# router forwards public UDP:5555 to that address so the buoy on Verizon
+# LTE-M can reach it. See udproute.yaml for the Gateway API alternative.
+apiVersion: v1
+kind: Service
+metadata:
+  name: lakebuoy-server-lb
+  namespace: lakebuoy
+  labels:
+    app: lakebuoy-server
+    service: lakebuoy-server-lb
+spec:
+  type: LoadBalancer
+  selector:
+    app: lakebuoy-server
+  ports:
+    - name: ingest
+      port: 5555
+      protocol: UDP
+      targetPort: 5555
+  sessionAffinity: None
