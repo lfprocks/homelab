@@ -9,7 +9,10 @@ data:
   NAAS_OPS_ADDR: "0.0.0.0:8081"
   NAAS_MULTIPLIER: "100"
   NAAS_POOL_BYTES: "1048576"
-  NAAS_MAX_REQUEST_BYTES: "1048576"
+  # 64 KiB per bounded request. Each in-flight request pre-allocates this much
+  # while it waits on the pool and there is no concurrency cap, so keep it
+  # small now that the API is public. Use /api/v1/random/stream for more.
+  NAAS_MAX_REQUEST_BYTES: "65536"
   # Discard a USB sample if the write+read round trip exceeds this (v0.2.0+).
   # Matches the C driver's MAX_MICROSEC_FOR_SAMPLES. Rejections show up in
   # naas_timing_rejections_total; raise this if that counter climbs while
