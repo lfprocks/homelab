@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lakebuoy
+
+resources:
+  - ../base/
+  - lb-svc.yaml
+  # - udproute.yaml   # Gateway API alternative; see the file header before enabling
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: lakebuoy-server
+patches:
+  - path: api.yaml

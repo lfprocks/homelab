@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lakebuoy-server-env-configmap
+data:
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lakebuoy-server
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - configMapRef:
+                name: lakebuoy-server-env-configmap
+          ports:
+            - name: ingest
+              containerPort: 5555
+              protocol: UDP
+            - name: health
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "128Mi"
+            requests:
+              cpu: "10m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name lakebuoy-server
+  labels:
+    app: *name
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: ingest
+      port: 5555
+      protocol: UDP
+      targetPort: ingest
+    - name: metrics
+      port: 8081
+      targetPort: metrics

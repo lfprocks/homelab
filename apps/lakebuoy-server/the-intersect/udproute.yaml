@@ -1,0 +1,44 @@
+---
+# Gateway API L4 exposure for buoy UDP ingest — the alternative to
+# lb-svc.yaml. NOT wired into kustomization.yaml by default: confirm this
+# Cilium build reconciles UDPRoute before relying on it (Cilium's Gateway
+# API has supported HTTP/TLS/TCP routes ahead of UDPRoute; the CRD being
+# installed does not guarantee the controller acts on it). To switch from
+# the LoadBalancer Service to this: remove lb-svc.yaml from
+# kustomization.yaml, add udproute.yaml, and confirm the Gateway gets an
+# address + the UDPRoute reports Accepted/ResolvedRefs=True.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: buoy-udp-gateway
+  namespace: cilium-ingress
+spec:
+  gatewayClassName: cilium
+  addresses:
+    - type: IPAddress
+      value: "${BUOY_UDP_GATEWAY_IP}"
+  listeners:
+    - name: buoy-ingest-udp
+      port: 5555
+      protocol: UDP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: UDPRoute
+metadata:
+  name: lakebuoy-server-udproute
+  namespace: lakebuoy
+spec:
+  parentRefs:
+    - name: buoy-udp-gateway
+      namespace: cilium-ingress
+      sectionName: buoy-ingest-udp
+  rules:
+    - backendRefs:
+        - name: lakebuoy-server
+          port: 5555
