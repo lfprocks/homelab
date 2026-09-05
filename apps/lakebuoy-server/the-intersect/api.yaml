@@ -30,8 +30,8 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lakebuoy-server"
-        k8s.lfp.rocks/version: "sha-4fe9a7a"
+        k8s.lfp.rocks/version: "sha-1873a45"
     spec:
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lakebuoy/lakebuoy-server:sha-4fe9a7a
+          image: ghcr.io/michaelpeterswa/lakebuoy/lakebuoy-server:sha-1873a45
