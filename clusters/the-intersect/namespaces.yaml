@@ -343,7 +343,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: lakebuoy
+  name: buoy
   labels:
     k8s.lfp.rocks/policy: enforce
     # UDP ingest for the buoy fleet. shared-gateway-access is set so the

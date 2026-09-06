@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: lakebuoy
+namespace: buoy
 
 resources:
   - ../base/
@@ -10,6 +10,6 @@ labels:
   - includeSelectors: true
     pairs:
       env: prod
-      proj: lakebuoy-server
+      proj: buoy-server
 patches:
   - path: api.yaml

@@ -7,15 +7,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: lakebuoy-server-lb
-  namespace: lakebuoy
+  name: buoy-server-lb
+  namespace: buoy
   labels:
-    app: lakebuoy-server
-    service: lakebuoy-server-lb
+    app: buoy-server
+    service: buoy-server-lb
 spec:
   type: LoadBalancer
   selector:
-    app: lakebuoy-server
+    app: buoy-server
   ports:
     - name: ingest
       port: 5555

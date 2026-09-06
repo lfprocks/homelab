@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: lakebuoy-server-env-configmap
+  name: buoy-server-env-configmap
 data:
   LOG_LEVEL: "info"
   UDP_HOST: "0.0.0.0"
@@ -17,7 +17,7 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: &name lakebuoy-server
+  name: &name buoy-server
   labels:
     app: *name
 spec:
@@ -29,9 +29,14 @@ spec:
   template:
     metadata:
       labels:
-        k8s.lfp.rocks/service: "lakebuoy-server"
+        k8s.lfp.rocks/service: "buoy-server"
         k8s.lfp.rocks/version: "sha-1873a45"
     spec:
       containers:
         - name: *name
+          # Still the pre-rename image: the currently-published, working
+          # artifact. Moves to ghcr.io/alpineworks/buoy/buoy-server once the
+          # buoy repo's rename PR merges and CI publishes there (that build
+          # also carries the TimescaleDB persistence + read API, which needs
+          # a DATABASE_URL secret to enable — see the deploy follow-up).
           image: ghcr.io/michaelpeterswa/lakebuoy/lakebuoy-server:sha-1873a45

@@ -31,8 +31,8 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: UDPRoute
 metadata:
-  name: lakebuoy-server-udproute
-  namespace: lakebuoy
+  name: buoy-server-udproute
+  namespace: buoy
 spec:
   parentRefs:
     - name: buoy-udp-gateway
@@ -40,5 +40,5 @@ spec:
       sectionName: buoy-ingest-udp
   rules:
     - backendRefs:
-        - name: lakebuoy-server
+        - name: buoy-server
           port: 5555

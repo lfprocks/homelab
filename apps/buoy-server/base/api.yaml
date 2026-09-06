@@ -2,13 +2,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: lakebuoy-server-env-configmap
+  name: buoy-server-env-configmap
 data:
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: &name lakebuoy-server
+  name: &name buoy-server
   labels:
     app: *name
   annotations:
@@ -44,7 +44,7 @@ spec:
                 - ALL
           envFrom:
             - configMapRef:
-                name: lakebuoy-server-env-configmap
+                name: buoy-server-env-configmap
           ports:
             - name: ingest
               containerPort: 5555
@@ -74,7 +74,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: &name lakebuoy-server
+  name: &name buoy-server
   labels:
     app: *name
 spec:
