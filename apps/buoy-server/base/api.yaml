@@ -27,6 +27,11 @@ spec:
         prometheus.io/port: "8081"
         prometheus.istio.io/merge-metrics: "false"
     spec:
+      # Private image in ghcr.io/alpineworks/buoy — pull cred lives in the
+      # SOPS-encrypted `ghcr-alpineworks` secret (the-intersect overlay).
+      # Harmless while the image is still the public pre-rename one.
+      imagePullSecrets:
+        - name: ghcr-alpineworks
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
