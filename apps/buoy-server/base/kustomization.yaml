@@ -1,4 +1,4 @@
-namespace: lakebuoy
+namespace: alpineworks
 
 resources:
   - api.yaml
@@ -7,4 +7,4 @@ kind: Kustomization
 labels:
   - includeSelectors: true
     pairs:
-      proj: lakebuoy-server
+      proj: buoy-server

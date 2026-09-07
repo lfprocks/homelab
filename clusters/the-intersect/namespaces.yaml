@@ -339,18 +339,3 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: lakebuoy
-  labels:
-    k8s.lfp.rocks/policy: enforce
-    # UDP ingest for the buoy fleet. shared-gateway-access is set so the
-    # optional Gateway API UDPRoute path can attach (the default LoadBalancer
-    # path does not require it). The server is distroless/nonroot/read-only,
-    # so it satisfies the restricted Pod Security Standard.
-    shared-gateway-access: "true"
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted
