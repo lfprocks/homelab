@@ -9,6 +9,11 @@ kind: Service
 metadata:
   name: buoy-server-lb
   namespace: alpineworks
+  annotations:
+    # Pin the LB IP so it survives the lakebuoy->alpineworks namespace move
+    # (Cilium LB-IPAM would otherwise reassign one). The site router forwards
+    # public UDP:5555 to this address, so it must stay stable.
+    lbipam.cilium.io/ips: "10.0.10.101"
   labels:
     app: buoy-server
     service: buoy-server-lb
