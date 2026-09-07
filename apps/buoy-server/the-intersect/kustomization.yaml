@@ -5,7 +5,8 @@ namespace: alpineworks
 resources:
   - ../base/
   - lb-svc.yaml
-  - pull-secret.yaml   # SOPS-encrypted ghcr-alpineworks dockerconfigjson (generate before merge — see PR)
+  - pull-secret.yaml   # SOPS-encrypted ghcr-alpineworks dockerconfigjson
+  - secret.sops.yaml   # SOPS-encrypted buoy-server-env-secret (DATABASE_URL) — generate before merge (see PR)
   # - udproute.yaml   # Gateway API alternative; see the file header before enabling
 labels:
   - includeSelectors: true

@@ -11,8 +11,9 @@ data:
   METRICS_ENABLED: "true"
   METRICS_PORT: "8081"
   TRACING_ENABLED: "false"
-  # TIMESCALE_CONN_STRING will arrive via a SOPS secret (envFrom secretRef)
-  # once internal/ingest gains persistence — the server only logs today.
+  # DATABASE_URL (pgx DSN to the shared TimescaleDB) is provided via the
+  # SOPS-encrypted secret.sops.yaml (envFrom secretRef); its presence
+  # enables persistence + the /api/v0 read API.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -30,13 +31,11 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "buoy-server"
-        k8s.lfp.rocks/version: "sha-1873a45"
+        k8s.lfp.rocks/version: "sha-21abbe3"
     spec:
       containers:
         - name: *name
-          # Still the pre-rename image: the currently-published, working
-          # artifact. Moves to ghcr.io/alpineworks/buoy/buoy-server once the
-          # buoy repo's rename PR merges and CI publishes there (that build
-          # also carries the TimescaleDB persistence + read API, which needs
-          # a DATABASE_URL secret to enable — see the deploy follow-up).
-          image: ghcr.io/michaelpeterswa/lakebuoy/lakebuoy-server:sha-1873a45
+          # Renamed private image (alpineworks/buoy), pulled via the
+          # ghcr-alpineworks secret. This build carries TimescaleDB
+          # persistence + the /api/v0 read API (enabled by DATABASE_URL).
+          image: ghcr.io/alpineworks/buoy/buoy-server:sha-21abbe3
