@@ -31,11 +31,11 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "buoy-server"
-        k8s.lfp.rocks/version: "sha-e78d4a2"
+        k8s.lfp.rocks/version: "sha-21abbe3"
     spec:
       containers:
         - name: *name
           # Renamed private image (alpineworks/buoy), pulled via the
           # ghcr-alpineworks secret. This build carries TimescaleDB
           # persistence + the /api/v0 read API (enabled by DATABASE_URL).
-          image: ghcr.io/alpineworks/buoy/buoy-server:sha-e78d4a2
+          image: ghcr.io/alpineworks/buoy/buoy-server:sha-21abbe3
