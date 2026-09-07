@@ -50,6 +50,11 @@ spec:
           envFrom:
             - configMapRef:
                 name: buoy-server-env-configmap
+            # DATABASE_URL (pgx DSN to the shared TimescaleDB). Its presence
+            # is what enables persistence + the /api/v0 read API; empty/absent
+            # = log-only. SOPS-encrypted in the-intersect overlay.
+            - secretRef:
+                name: buoy-server-env-secret
           ports:
             - name: ingest
               containerPort: 5555
@@ -90,6 +95,10 @@ spec:
       port: 5555
       protocol: UDP
       targetPort: ingest
+    # /healthz + /api/v0 read API (consumed by headwaters in-cluster).
+    - name: api
+      port: 8080
+      targetPort: health
     - name: metrics
       port: 8081
       targetPort: metrics
