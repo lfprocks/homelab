@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name headwaters
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "headwaters"
+    spec:
+      # Private image in ghcr.io/alpineworks — same pull secret as buoy-server.
+      imagePullSecrets:
+        - name: ghcr-alpineworks
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "25m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name headwaters
+  labels:
+    app: *name
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

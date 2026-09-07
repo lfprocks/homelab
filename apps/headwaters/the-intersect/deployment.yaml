@@ -1,0 +1,14 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headwaters
+spec:
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/version: "sha-9b22c4e"
+    spec:
+      containers:
+        - name: headwaters
+          image: ghcr.io/alpineworks/headwaters:sha-9b22c4e

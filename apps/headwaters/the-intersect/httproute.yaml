@@ -1,0 +1,23 @@
+---
+# Internal HTTPS exposure for the headwaters dashboard. Parents the shared
+# internal gateway (wildcard *.${DOMAIN_COBRA_LANTERN}, auto-TLS via
+# cert-manager). The `buoy` subdomain is hardcoded rather than a ${SUB_*}
+# cluster-var — the wildcard cert still covers it; swap to a var if you'd
+# rather keep the subdomain out of git.
+#
+# The dashboard fetches /api/v0 at same-origin; headwaters' Next server
+# proxies that to buoy-server in-cluster, so the API is never exposed here.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: headwaters-httproute
+  namespace: alpineworks
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+  hostnames: ["buoy.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        - name: headwaters
+          port: 3000
