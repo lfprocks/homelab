@@ -11,4 +11,4 @@ spec:
     spec:
       containers:
         - name: headwaters
-          image: ghcr.io/alpineworks/headwaters:sha-1325d53
+          image: ghcr.io/alpineworks/headwaters:sha-6437c32
