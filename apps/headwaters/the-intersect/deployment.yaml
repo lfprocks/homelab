@@ -7,8 +7,8 @@ spec:
   template:
     metadata:
       labels:
-        k8s.lfp.rocks/version: "sha-d64475b"
+        k8s.lfp.rocks/version: "sha-1325d53"
     spec:
       containers:
         - name: headwaters
-          image: ghcr.io/alpineworks/headwaters:sha-d64475b
+          image: ghcr.io/alpineworks/headwaters:sha-1325d53
