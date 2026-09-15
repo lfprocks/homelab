@@ -14,4 +14,4 @@ labels:
 configMapGenerator:
   - name: idrac-cert-script
     files:
-      - push_cert.py
+      - push_cert.sh
