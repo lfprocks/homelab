@@ -15,3 +15,8 @@ configMapGenerator:
   - name: idrac-cert-script
     files:
       - push_cert.sh
+    options:
+      annotations:
+        # The script is full of shell expansions (${var:0:23}, ${VAR:?}) that
+        # Flux's postBuild envsubst would otherwise rewrite before it runs.
+        kustomize.toolkit.fluxcd.io/substitute: disabled
