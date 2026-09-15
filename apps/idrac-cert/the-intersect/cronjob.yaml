@@ -39,8 +39,10 @@ spec:
               type: RuntimeDefault
           containers:
             - name: push
-              image: python:3.12-alpine
-              command: ["python3", "/app/push_cert.py"]
+              # Dell remote RACADM; see github.com/lfprocks/racadm. 9.5.0 is
+              # the OpenManage line that supports iDRAC7 (12G).
+              image: ghcr.io/lfprocks/racadm:9.5.0
+              command: ["/bin/bash", "/app/push_cert.sh"]
               envFrom:
                 - secretRef:
                     name: idrac-cert-idrac
@@ -62,7 +64,11 @@ spec:
                 - name: tls
                   mountPath: /tls
                   readOnly: true
+                - name: home
+                  mountPath: /home/racadm
           volumes:
+            - name: home
+              emptyDir: {}
             - name: script
               configMap:
                 name: idrac-cert-script
