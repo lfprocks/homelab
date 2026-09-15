@@ -1,0 +1,71 @@
+---
+# Daily: push the current olympic-idrac certificate into the iDRAC if it is
+# not already serving it (see push_cert.py). Kick the first run by hand:
+#   kubectl -n idrac-cert create job --from=cronjob/idrac-cert-push first-push
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: idrac-cert-push
+spec:
+  schedule: "17 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: "idrac-cert-push"
+            k8s.lfp.rocks/version: "v1"
+        spec:
+          restartPolicy: OnFailure
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: k8s.lfp.rocks/gpu
+                        operator: NotIn
+                        values:
+                          - enabled
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: push
+              image: python:3.12-alpine
+              command: ["python3", "/app/push_cert.py"]
+              envFrom:
+                - secretRef:
+                    name: idrac-cert-idrac
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /app
+                  readOnly: true
+                - name: tls
+                  mountPath: /tls
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: idrac-cert-script
+            - name: tls
+              secret:
+                secretName: olympic-idrac-tls
