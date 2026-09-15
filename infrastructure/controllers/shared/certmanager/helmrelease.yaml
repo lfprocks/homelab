@@ -15,6 +15,14 @@ spec:
   interval: 1m0s
   values:
     installCRDs: true
+    # The DNS-01 self-check walks SOA/NS through the cluster's resolver before
+    # asking the ACME server. The LAN resolver (Technitium on olympic) is
+    # authoritative for server.lfp.rocks and management.lfp.rocks and has no
+    # _acme-challenge TXT for them, so a Certificate for a name in those zones
+    # would wait forever. Check against public resolvers only, so LAN
+    # split-horizon DNS can never stall issuance.
+    dns01RecursiveNameservers: "1.1.1.1:53,1.0.0.1:53"
+    dns01RecursiveNameserversOnly: true
     config:
       apiVersion: controller.config.cert-manager.io/v1alpha1
       kind: ControllerConfiguration
