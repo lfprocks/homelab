@@ -1,0 +1,19 @@
+---
+# Let's Encrypt certificate for olympic's iDRAC (10.0.0.9). Issued here by
+# cert-manager via Cloudflare DNS-01 and pushed to the iDRAC by the CronJob in
+# cronjob.yaml. RSA 2048: iDRAC7 firmware does not accept ECDSA keys.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: olympic-idrac
+spec:
+  secretName: olympic-idrac-tls
+  dnsNames:
+    - olympic.management.lfp.rocks
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
