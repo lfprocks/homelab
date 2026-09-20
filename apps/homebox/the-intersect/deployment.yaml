@@ -1,0 +1,132 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homebox-env-configmap
+data:
+  # Homebox reads its whole config from HBOX_-prefixed env (ardanlabs/conf);
+  # the image's `CMD [/data/config.yml]` is vestigial and never opened.
+  HBOX_MODE: "production"
+
+  # -- Authentication ------------------------------------------------------
+  # Pocket-ID is the only way in: local password login is off and registration
+  # is closed. OIDC first-login still provisions the user (registerOIDCUser
+  # does not consult ALLOW_REGISTRATION), so this does not lock the app out.
+  HBOX_OPTIONS_ALLOW_LOCAL_LOGIN: "false"
+  HBOX_OPTIONS_ALLOW_REGISTRATION: "false"
+
+  # TRUST_PROXY is REQUIRED, not cosmetic. The gateway terminates TLS, so the
+  # request reaching this pod has no r.TLS and getBaseURL() would build the
+  # OIDC redirect_uri as http:// -- which Pocket-ID rejects as a mismatch.
+  # With it set, X-Forwarded-Proto from the gateway yields the https:// form.
+  HBOX_OPTIONS_TRUST_PROXY: "true"
+  # Bare host, NO scheme: getBaseURL() does scheme + "://" + Hostname.
+  HBOX_OPTIONS_HOSTNAME: "${SUB_BRONZE_TEMPEST}.${DOMAIN_CORONET_SUMMIT}"
+
+  HBOX_OIDC_ENABLED: "true"
+  HBOX_OIDC_ISSUER_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
+  HBOX_OIDC_SCOPE: "openid profile email groups"
+  # Land straight on Pocket-ID rather than an intermediate button; with local
+  # login disabled there is nothing else on the sign-in page anyway.
+  HBOX_OIDC_AUTO_REDIRECT: "true"
+  # Pocket-ID is passkey-based and runs no email-verification flow, so it
+  # issues email_verified=false. Same reasoning as the oauth2-proxy apps.
+  HBOX_OIDC_VERIFY_EMAIL: "false"
+  HBOX_OIDC_BUTTON_TEXT: "Sign in with Pocket-ID"
+  # To restrict beyond "has a Pocket-ID account", set HBOX_OIDC_ALLOWED_GROUPS
+  # to a comma-separated Pocket-ID group list here.
+
+  # -- Misc ----------------------------------------------------------------
+  HBOX_WEB_MAX_UPLOAD_SIZE: "50"
+  HBOX_OPTIONS_GITHUB_RELEASE_CHECK: "false"
+  HBOX_OPTIONS_ALLOW_ANALYTICS: "false"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name homebox
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  # SQLite on a ReadWriteOnce volume: never let two pods mount it at once.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "homebox"
+        k8s.lfp.rocks/version: "0.26.2"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        # The upstream image declares no USER and would run as root; fsGroup
+        # is what makes the freshly provisioned ceph volume writable as 65532.
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          image: ghcr.io/sysadminsmedia/homebox:0.26.2
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          envFrom:
+            - configMapRef:
+                name: homebox-env-configmap
+            - secretRef:
+                name: homebox-env-secret
+          ports:
+            - name: http
+              containerPort: 7745
+          livenessProbe:
+            httpGet:
+              path: /api/v1/status
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/status
+              port: http
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "512Mi"
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+          volumeMounts:
+            # SQLite database plus the attachment blob store (gocloud fileblob
+            # rooted at / with prefix "data", i.e. /data/data/...).
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: homebox-pvc
+        - name: tmp
+          emptyDir: {}

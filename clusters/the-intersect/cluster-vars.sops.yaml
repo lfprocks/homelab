@@ -71,6 +71,7 @@ stringData:
     SUB_LFPWEATHER_MCP: ENC[AES256_GCM,data:Znqw,iv:mMdvVM2bQx42ffKpxWj4LbGDgj8Hz58hQkhOjjDm+fI=,tag:tPTumQSo5UuSG2DZVZsq3w==,type:str]
     GRAFANA_PNP_TOKEN: ENC[AES256_GCM,data:AoVDCnTHbptzUWj4z8B4e88aKc+b6LvuBjNMXz4+FzZN47NtSnUeFPKqSuV0+J6I,iv:kNQbSEYdyXntF3fK4wVvP5crwLSPJ5Q/TZYuQD4+h3o=,tag:4ATV6OPqN5cLvhPc5CtfLw==,type:str]
     GRAFANA_PUSHOVER_USER_KEY: ENC[AES256_GCM,data:ovZOhyhvnQoGZJ1F+b4GLKRkoYWdgc20bGLhNhKZ,iv:5TGbUnK4z4S3nxbFK7mO9Yv/iUwLH2Kt7PqsJ2wMCb4=,tag:mX99HltTfEa/dcL/oZHn1g==,type:str]
+    SUB_BRONZE_TEMPEST: ENC[AES256_GCM,data:rnEZ2tQ2dQ==,iv:tVwwwEHcujAB5sK4NJsviDgowig8ZrQShtctPCJdug4=,tag:TYsOl3PUa7HuwyrsN8q+sA==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -82,7 +83,7 @@ sops:
             NEc5RFlOS2lkTVJBNTU2VW1LUy9yTzgKbghxCeGAw7B6qpQzV5GYuAtoJjZvSoqe
             DRS4G8tSwhojaT29RDfxU5TZvdSGOFUy+uehXyUzRjgRoVxfrs2lMQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-07-30T22:27:37Z"
-    mac: ENC[AES256_GCM,data:x5NK5WEhGFs29CP4El+WpGOBrczHfP1uVm2tfdRuAxDJP7mgfaclKMHFINwzVf4g1YYp3IYukQYBYY4faVHapFgndP7UCvpcHARPWLEJOz8op7J6ZBbmQC92pexLvs5dvAhZwdUwX5+5Ba0KPo+NOt1wB9H2Irm1RF7zu5G+CtY=,iv:zkqzYbNrGOQvF/fYvt5rKQ7gzdfAtK3YlkByLEBF+rY=,tag:stv4OwT8rWvJIrNh/wYCFA==,type:str]
+    lastmodified: "2026-09-20T18:10:08Z"
+    mac: ENC[AES256_GCM,data:Z1b5qVZBg6/zApGRHWTgdUncNEmthSRydGpcZSJvQFyyd25sC+fXUDxSMN+xlPUraxXHYFReN7Zddwj8uYxo7HwnNpAq9Q61pjMBqL0hyUV42C59vveIqF3huefGNjVxaPT7pNUqktq2Gz7JgzwVWddtv/wMmXR3JQW9MmLELNc=,iv:1uMsKkGpkpFm0usbBT6BHNzBFzqgjcYyQiitxKK5Vws=,tag:Cdv0bapxqvHD7pWNMM5w0A==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0
