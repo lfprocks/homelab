@@ -1,0 +1,13 @@
+---
+# ceph-block (the default class), NOT an SMB share from olympic: homebox keeps
+# its state in SQLite with WAL, and SQLite over SMB/NFS corrupts.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: homebox-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

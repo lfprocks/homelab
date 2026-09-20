@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homebox
+  labels:
+    app: homebox
+    service: homebox
+spec:
+  type: ClusterIP
+  selector:
+    app: homebox
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

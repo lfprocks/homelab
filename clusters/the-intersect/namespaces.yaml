@@ -350,3 +350,14 @@ metadata:
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homebox
+  labels:
+    k8s.lfp.rocks/policy: enforce
+    shared-gateway-access: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
