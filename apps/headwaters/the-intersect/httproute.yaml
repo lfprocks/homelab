@@ -1,12 +1,14 @@
 ---
-# Internal HTTPS exposure for the headwaters dashboard. Parents the shared
-# internal gateway (wildcard *.${DOMAIN_COBRA_LANTERN}, auto-TLS via
-# cert-manager). The `buoy` subdomain is hardcoded rather than a ${SUB_*}
-# cluster-var — the wildcard cert still covers it; swap to a var if you'd
-# rather keep the subdomain out of git.
+# Public HTTPS exposure for the headwaters dashboard. Parents the shared
+# external gateway (wildcard *.${DOMAIN_CORONET_SUMMIT}, auto-TLS via
+# cert-manager). The `headwaters` subdomain is hardcoded rather than a
+# ${SUB_*} cluster-var — the wildcard cert still covers it; swap to a var
+# if you'd rather keep the subdomain out of git.
 #
-# The dashboard fetches /api/v0 at same-origin; headwaters' Next server
-# proxies that to buoy-server in-cluster, so the API is never exposed here.
+# Safe to expose publicly: the app gates every page and its /api/v0 proxy
+# behind GitHub sign-in (alpineworks org members only), and the dashboard's
+# Next server proxies /api/v0 to buoy-server in-cluster, so the API itself
+# is never exposed here.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -14,9 +16,9 @@ metadata:
   namespace: alpineworks
 spec:
   parentRefs:
-    - name: internal-gateway-http
+    - name: external-gateway-https
       namespace: cilium-ingress
-  hostnames: ["buoy.${DOMAIN_COBRA_LANTERN}"]
+  hostnames: ["headwaters.${DOMAIN_CORONET_SUMMIT}"]
   rules:
     - backendRefs:
         - name: headwaters
