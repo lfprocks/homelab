@@ -7,8 +7,20 @@ spec:
   template:
     metadata:
       labels:
-        k8s.lfp.rocks/version: "sha-1325d53"
+        k8s.lfp.rocks/version: "sha-7923367"
     spec:
       containers:
         - name: headwaters
-          image: ghcr.io/alpineworks/headwaters:sha-6437c32
+          image: ghcr.io/alpineworks/headwaters:sha-7923367
+          env:
+            # Public origin. Auth.js derives cookie security (__Secure-,
+            # Secure flag) and the OAuth redirect_uri from this rather than
+            # from the plaintext hop behind the TLS-terminating gateway.
+            - name: AUTH_URL
+              value: "https://headwaters.${DOMAIN_CORONET_SUMMIT}"
+          envFrom:
+            # AUTH_SECRET, AUTH_GITHUB_ID, AUTH_GITHUB_SECRET — SOPS-encrypted
+            # in secret.sops.yaml. Sign-in is limited to members of the
+            # alpineworks GitHub org (checked in-app, no proxy in front).
+            - secretRef:
+                name: headwaters-env-secret

@@ -5,6 +5,7 @@ namespace: alpineworks
 resources:
   - ../base/
   - httproute.yaml
+  - secret.sops.yaml   # SOPS-encrypted headwaters-env-secret (Auth.js + GitHub OAuth)
 labels:
   - includeSelectors: true
     pairs:
