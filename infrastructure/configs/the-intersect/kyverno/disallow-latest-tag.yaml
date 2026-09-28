@@ -17,9 +17,9 @@ metadata:
       same exposure, and their `k8s.lfp.rocks/version` labels literally read
       "latest".
 
-      Scope is the same opt-in namespace label used by require-labels. Note that
-      `media` (5 images) and `minecraft` (2) still carry `:latest`; they have no
-      running pods and are deliberately not opted in yet.
+      Scope is the same opt-in namespace label used by require-labels.
+      `minecraft` is not opted in: its images are pinned, but it has no running
+      pods.
 spec:
   rules:
     - name: require-image-tag
