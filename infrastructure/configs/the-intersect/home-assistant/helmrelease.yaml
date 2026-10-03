@@ -11,7 +11,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: pajikos
-      version: 0.3.37
+      version: 0.3.83
   valuesFrom:
     - kind: ConfigMap
       name: home-assistant-values
