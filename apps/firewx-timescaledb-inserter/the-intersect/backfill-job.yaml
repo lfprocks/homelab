@@ -32,7 +32,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backfill
-          image: ghcr.io/michaelpeterswa/firewx-timescaledb-inserter:v1.0.0
+          image: ghcr.io/michaelpeterswa/firewx-timescaledb-inserter:v1.1.0
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

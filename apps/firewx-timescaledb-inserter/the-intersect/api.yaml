@@ -49,4 +49,4 @@ spec:
     spec:
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/firewx-timescaledb-inserter:v1.0.0
+          image: ghcr.io/michaelpeterswa/firewx-timescaledb-inserter:v1.1.0
