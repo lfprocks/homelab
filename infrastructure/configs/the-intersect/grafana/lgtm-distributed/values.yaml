@@ -1179,7 +1179,17 @@ tempo:
       - name: lgtm-distributed-service-account-secret
         mountPath: /etc/service-account
         readOnly: true
+    # The chart hardcodes -mem-ballast-size-mbs=1024 on every Tempo component.
+    # With limits of 100-512Mi, a 1GiB ballast pushes Go's GC target to ~2GiB,
+    # so the heap grows until the container is OOMKilled (the ingester was
+    # restarting hourly). extraArgs come after the chart's args and the last
+    # flag wins, so this disables the ballast; GOMEMLIMIT (~80% of the memory
+    # limit) makes the GC work to the container limit instead.
+    extraArgs:
+      - -mem-ballast-size-mbs=0
     extraEnv:
+      - name: GOMEMLIMIT
+        value: 410MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
@@ -1204,7 +1214,11 @@ tempo:
       - name: lgtm-distributed-service-account-secret
         mountPath: /etc/service-account
         readOnly: true
+    extraArgs:
+      - -mem-ballast-size-mbs=0
     extraEnv:
+      - name: GOMEMLIMIT
+        value: 80MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
@@ -1229,7 +1243,11 @@ tempo:
       - name: lgtm-distributed-service-account-secret
         mountPath: /etc/service-account
         readOnly: true
+    extraArgs:
+      - -mem-ballast-size-mbs=0
     extraEnv:
+      - name: GOMEMLIMIT
+        value: 205MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
@@ -1254,7 +1272,11 @@ tempo:
       - name: lgtm-distributed-service-account-secret
         mountPath: /etc/service-account
         readOnly: true
+    extraArgs:
+      - -mem-ballast-size-mbs=0
     extraEnv:
+      - name: GOMEMLIMIT
+        value: 205MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
@@ -1279,7 +1301,11 @@ tempo:
       - name: lgtm-distributed-service-account-secret
         mountPath: /etc/service-account
         readOnly: true
+    extraArgs:
+      - -mem-ballast-size-mbs=0
     extraEnv:
+      - name: GOMEMLIMIT
+        value: 96MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
