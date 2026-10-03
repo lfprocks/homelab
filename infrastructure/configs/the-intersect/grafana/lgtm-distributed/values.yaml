@@ -697,6 +697,14 @@ loki:
         # retention change can be reverted before data is gone.
         retention_delete_delay: 2h
         retention_delete_worker_count: 150
+      # Sub-queries a single querier runs at once (default 10). Wide queries --
+      # e.g. Logs Drilldown volume over 14d -- split into dozens of sub-queries,
+      # and memory scales with how many run together: 10 at once OOMKilled the
+      # querier at both 150Mi and 512Mi. With a 100m CPU limit, more than a
+      # couple in parallel mostly contend for CPU anyway. Wide queries now
+      # queue at the frontend instead.
+      querier:
+        max_concurrent: 2
 
   ingester:
     podAnnotations:
