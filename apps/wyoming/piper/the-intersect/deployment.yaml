@@ -38,7 +38,7 @@ spec:
           # 2026-07-29. Upstream publishes semver tags (2.3.1 is current) but
           # none in the last 300 matched this digest, so the digest is the only
           # faithful pin. Moving to a semver tag is a deliberate upgrade.
-          image: rhasspy/wyoming-piper@sha256:40670d2ff08562814bbcef1a20369ee22d0197709d78cce9c47c8d9458d0b89e
+          image: rhasspy/wyoming-piper@sha256:7d39aafac409c2b6b09d999ed04d84c311d632e558b35baa60fad6aac722af7a
           imagePullPolicy: IfNotPresent
           args:
             - --voice
