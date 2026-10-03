@@ -26,7 +26,7 @@ spec:
           effect: NoExecute
       initContainers:
         - name: install-cni-plugins
-          image: busybox:1.37
+          image: busybox:1.38
           command:
             - /bin/sh
             - -c
