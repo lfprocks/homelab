@@ -24,7 +24,24 @@ jobs:
       github.event.review.user.login == 'michaelpeterswa'
     runs-on: ubuntu-latest
     steps:
-      - run: gh pr merge --auto --squash "$PR_URL"
+      # Enable auto-merge if validate is still running. If GitHub refuses
+      # (the PR is already mergeable, or "unstable" from an earlier failed
+      # run), merge directly. The main ruleset still requires validate, and
+      # this token can't bypass it.
+      #
+      # Approvals often arrive in a burst ("approve low"), and parallel merges
+      # race on main ("Base branch was modified"), so retry with jitter. No
+      # concurrency group: GitHub keeps only one pending run per group and
+      # cancels the rest, which would drop approvals.
+      - run: |
+          for attempt in 1 2 3 4 5; do
+            gh pr merge --auto --squash "$PR_URL" && exit 0
+            gh pr merge --squash "$PR_URL" && exit 0
+            delay=$((10 + RANDOM % 20))
+            echo "attempt $attempt failed; retrying in ${delay}s"
+            sleep "$delay"
+          done
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
