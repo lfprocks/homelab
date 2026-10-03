@@ -691,9 +691,12 @@ loki:
         # Reject queries that would read more than this, checked against the
         # index at the query-frontend before any querier work. A 14d query over
         # every namespace reads ~6.9GB and OOMKilled the 512Mi querier even at
-        # max_concurrent=2; the whole cluster logs ~0.5GB/day, so 2GB still
-        # allows ~4 days across all namespaces and any single-app search.
-        max_query_bytes_read: 2GB
+        # max_concurrent=2. At 2GB, a ~3d all-namespace query passed the check
+        # but couldn't finish within the 5m query timeout on the querier's
+        # 100m CPU, so cap lower and fail fast instead. 500MB is about a day
+        # across every namespace; single-app searches read MBs (lfpweather
+        # over 14d: <10MiB).
+        max_query_bytes_read: 500MB
       compactor:
         working_directory: /var/loki/compactor
         shared_store: gcs
