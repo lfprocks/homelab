@@ -14,12 +14,11 @@ components:
 
 configMapGenerator:
   - name: glance-web-config
+    # Left open to Flux postBuild substitution so the service links can use
+    # cluster-vars codenames. Do not use glance's own ${ENV} syntax in glance.yml:
+    # Flux would replace it first.
     files:
       - glance.yml
-    options:
-      annotations:
-        # glance expands ${ENV} in its own config; keep Flux from blanking those.
-        kustomize.toolkit.fluxcd.io/substitute: disabled
 
 labels:
   - includeSelectors: true
