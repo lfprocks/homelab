@@ -135,9 +135,8 @@ pages:
                   - title: Technitium
                     url: https://${SUB_PEWTER_KESTREL}.${DOMAIN_EMBER_GROVE}
                     icon: di:technitium
-                  # plain http: this proxy host's HTTPS listener fails the TLS handshake
                   - title: Nginx Proxy Manager
-                    url: http://${SUB_WOVEN_MESA}.${DOMAIN_GILDED_KESTREL}
+                    url: https://${SUB_WOVEN_MESA}.${DOMAIN_GILDED_KESTREL}
                     icon: di:nginx-proxy-manager
                   - title: olympic iDRAC
                     url: https://${SUB_AMBER_BADGER}.${DOMAIN_IVORY_ESTUARY}
