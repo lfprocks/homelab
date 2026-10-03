@@ -43,6 +43,114 @@ pages:
 
       - size: full
         widgets:
+          # Hostnames are cluster-vars codenames, filled in by Flux postBuild
+          # substitution. Health checks run from the glance pod.
+          - type: group
+            widgets:
+              - type: monitor
+                title: Apps
+                cache: 1m
+                sites:
+                  - title: Forgejo
+                    url: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:forgejo
+                  - title: Immich
+                    url: https://${SUB_COPPER_ANCHOR}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:immich
+                  - title: Paperless
+                    url: https://${SUB_PRAIRIE_ABLE}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:paperless-ngx
+                  - title: Outline
+                    url: https://${SUB_SILENT_HARBOR}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:outline
+                  - title: Homebox
+                    url: https://${SUB_BRONZE_TEMPEST}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:homebox
+                  - title: CookCLI
+                    url: https://${SUB_RUGGED_COMET}.${DOMAIN_CORONET_SUMMIT}
+                    icon: sh:cookcli
+                  - title: Open WebUI
+                    url: https://${SUB_PAVE_SOLO}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:open-webui
+                  - title: Grafana
+                    url: https://${SUB_SENIOR_ABLE}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:grafana
+                  - title: Invidious
+                    url: https://${SUB_PAVE_LEDGER}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:invidious
+                  - title: Wastebin
+                    url: https://${SUB_LOOKING_QUARRY}.${DOMAIN_CORONET_SUMMIT}
+                    icon: sh:wastebin
+                  - title: Pocket-ID
+                    url: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}
+                    icon: di:pocket-id
+              - type: monitor
+                title: Internal
+                cache: 1m
+                sites:
+                  - title: Home Assistant
+                    url: http://${SUB_RUGGED_RESOLVE}.${DOMAIN_COBRA_LANTERN}
+                    icon: di:home-assistant
+                  - title: Jellyfin
+                    url: http://${SUB_ABSOLUTE_STAR}.${DOMAIN_COBRA_LANTERN}
+                    icon: di:jellyfin
+                  - title: Z-Wave JS
+                    url: http://${SUB_IRON_REACH}.${DOMAIN_COBRA_LANTERN}
+                    icon: di:z-wave-js-ui
+                  - title: pgAdmin
+                    url: http://${SUB_STEEL_KEYSTONE}.${DOMAIN_COBRA_LANTERN}
+                    icon: di:pgadmin
+                  - title: Hubble
+                    url: http://${SUB_COBRA_BALL}.${DOMAIN_COBRA_LANTERN}
+                    icon: di:cilium
+                  - title: EMQX
+                    url: http://${SUB_GRANITE_KEYSTONE}.${DOMAIN_COBRA_LANTERN}
+                    icon: di:emqx
+                  - title: OpenClaw
+                    url: http://openclaw.${DOMAIN_COBRA_LANTERN}
+                    icon: di:openclaw
+                  - title: Stable Diffusion
+                    url: http://${SUB_COBRA_ORCHARD}.${DOMAIN_COBRA_LANTERN}
+                    icon: mdi:palette
+              - type: monitor
+                title: Media
+                cache: 1m
+                sites:
+                  - title: Sonarr
+                    url: https://${SUB_MOSSY_PINNACLE}.${DOMAIN_EMBER_GROVE}
+                    icon: di:sonarr
+                  - title: Radarr
+                    url: https://${SUB_FABLE_CANYON}.${DOMAIN_EMBER_GROVE}
+                    icon: di:radarr
+                  - title: Lidarr
+                    url: https://${SUB_QUIET_FERN}.${DOMAIN_EMBER_GROVE}
+                    icon: di:lidarr
+                  - title: Prowlarr
+                    url: https://${SUB_FABLE_QUILL}.${DOMAIN_EMBER_GROVE}
+                    icon: di:prowlarr
+                  - title: Deluge
+                    url: https://${SUB_NOBLE_CAIRN}.${DOMAIN_EMBER_GROVE}
+                    icon: di:deluge
+              - type: monitor
+                title: Infra
+                cache: 1m
+                sites:
+                  - title: TrueNAS
+                    url: https://${SUB_EMBER_MESA}.${DOMAIN_EMBER_GROVE}
+                    icon: di:truenas-scale
+                  - title: Technitium
+                    url: https://${SUB_PEWTER_KESTREL}.${DOMAIN_EMBER_GROVE}
+                    icon: di:technitium
+                  # plain http: this proxy host's HTTPS listener fails the TLS handshake
+                  - title: Nginx Proxy Manager
+                    url: http://${SUB_WOVEN_MESA}.${DOMAIN_GILDED_KESTREL}
+                    icon: di:nginx-proxy-manager
+                  - title: olympic iDRAC
+                    url: https://${SUB_AMBER_BADGER}.${DOMAIN_IVORY_ESTUARY}
+                    icon: di:idrac
+                  - title: BirdNET
+                    url: https://${SUB_EMBER_QUILL}.${DOMAIN_NOBLE_NOOK}
+                    icon: mdi:bird
           - type: hacker-news
           - type: videos
             channels:
