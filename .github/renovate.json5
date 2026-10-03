@@ -107,6 +107,21 @@
       overridePackageName: "outlinewiki/outline",
     },
     {
+      // Rook's operator and cluster charts are released together and should
+      // stay on the same version.
+      matchDepNames: ["rook-ceph", "rook-ceph-cluster"],
+      groupName: "rook-ceph",
+    },
+    {
+      // ARC requires the controller and runner scale set charts to match.
+      matchDepNames: ["gha-runner-scale-set-controller", "gha-runner-scale-set"],
+      groupName: "actions-runner-controller",
+    },
+    {
+      matchDepNames: ["busybox", "docker.io/library/busybox"],
+      groupName: "busybox",
+    },
+    {
       // openclaw runs as an agent-sandbox Sandbox: merging a bump does not
       // roll the pod. See apps/openclaw/the-intersect/README.md.
       matchDepNames: ["ghcr.io/openclaw/openclaw"],
