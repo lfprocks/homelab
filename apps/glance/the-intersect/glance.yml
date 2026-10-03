@@ -141,6 +141,10 @@ pages:
                   - title: olympic iDRAC
                     url: https://${SUB_AMBER_BADGER}.${DOMAIN_IVORY_ESTUARY}
                     icon: di:idrac
+                    # iDRAC7 firmware serves only the leaf, never the LE intermediate,
+                    # even when uploaded the full chain; Go can't verify it. Affects
+                    # this status check only, not the link.
+                    allow-insecure: true
                   - title: BirdNET
                     url: https://${SUB_EMBER_QUILL}.${DOMAIN_NOBLE_NOOK}
                     icon: mdi:bird
