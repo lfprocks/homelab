@@ -112,8 +112,10 @@ Telegram user ID in `channels.telegram.allowFrom`.
 
 Renovate (`.github/renovate.json5`) opens a PR per version bump. Every morning
 at 07:00 Pacific openclaw sends a Telegram digest of the open ones, grouped by
-the `risk/*` label Renovate sets. Reply `approve 131 132` (or `approve low`) and
-openclaw submits an approving review as you. The
+the `risk/*` label Renovate sets. Tap a PR's ✅ button (or reply `approve 131 132` /
+`approve low`) and openclaw submits an approving review as you. Buttons need
+`channels.telegram.capabilities.inlineButtons: "dm"` in the ConfigMap; taps reach
+the agent as `callback_data: renovate:approve:<n>`. The
 `.github/workflows/renovate-approved.yaml` workflow then enables auto-merge, and
 GitHub merges once `validate` passes. The behaviour lives in
 `skills/renovate-updates/SKILL.md`.
