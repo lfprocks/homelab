@@ -167,6 +167,18 @@ grafana:
               # is -- the frames are a timelapse, not a control loop -- so this
               # repeats less often than the others.
               repeat_interval: 12h
+            # Both Victron rules, matched by pattern so the pair shares one
+            # policy. Grouped by alertname rather than merged into it: the two
+            # devices fail together often enough to want one notification when
+            # the radio dies, and separately often enough to want to be told
+            # which one when only one does.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["alertname", "=~", "Victron(Solar|Shunt)DataStale"]
+              group_by: ["alertname"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 6h
             - receiver: pnp-pushover
               object_matchers:
                 - ["alertname", "=", "SensorDataStale"]
@@ -317,11 +329,19 @@ grafana:
             # reported it. It was found by a human at 13:47, 6h47m later. At
             # 09:00 this query would already have returned 120.
             #
-            # sensors.litime is the liveness signal because it is written every
-            # few seconds by the same container that writes the Victron tables:
-            # if the host is offline, the container is dead, or the database is
-            # unreachable, this goes stale. It does NOT cover BirdNET, which
-            # runs in its own container and writes on its own schedule.
+            # This covers sensors.litime and nothing else. It used to be
+            # described as covering the Victron tables too, on the grounds that
+            # the same container writes all three -- and on 2026-08-07 that
+            # assumption cost 17 hours. The adapter stopped hearing
+            # advertisements while established connections kept working, so both
+            # Victron devices and one of the two batteries went silent while the
+            # other battery held its connection and kept this query fresh. Host
+            # online, container up, database reachable, alert green, half the
+            # sensors dead.
+            #
+            # One table is a liveness signal for one writer. The Victron tables
+            # have their own rules below; BirdNET, which runs in its own
+            # container on its own schedule, still has none.
             - uid: sensor-data-stale
               title: SensorDataStale
               condition: fired
@@ -358,6 +378,117 @@ grafana:
                       SELECT now() AS time,
                              extract(epoch from (now() - max(time))) / 60 AS value
                       FROM sensors.litime
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: staleness
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [20]}
+
+            # The two Victron devices, watched separately from the batteries
+            # and from each other.
+            #
+            # They are the most sensitive indicator of the receive path being
+            # broken, and the reason is that they are passive broadcasters.
+            # A battery is connected: once a GATT link is up it survives a
+            # radio that can no longer hear advertisements, which is precisely
+            # how the 2026-08-07 outage stayed invisible. A Victron device has
+            # no link to survive on. If discovery stops working, these two go
+            # quiet immediately.
+            #
+            # Two rules rather than one query over both tables. Grouping them
+            # would rebuild the same blind spot one level down -- the shunt
+            # could die while the charger kept the pair looking alive.
+            #
+            # 20 minutes matches SensorDataStale and is roughly twenty times
+            # the observed arrival rate of about one decoded advertisement per
+            # device per minute.
+            - uid: victron-solar-stale
+              title: VictronSolarDataStale
+              condition: fired
+              for: 5m
+              annotations:
+                title: solar charger readings have stopped
+                summary: >-
+                  No new rows in sensors.victron. The SmartSolar charger is not
+                  being heard: the Bluetooth adapter has stopped receiving
+                  advertisements, or the charger is off.
+              labels:
+                severity: warning
+                device: smartsolar
+              execErrState: Alerting
+              noDataState: Alerting
+              data:
+                - refId: staleness
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: staleness
+                    format: time_series
+                    rawQuery: true
+                    # Unbounded by $__timeFilter for the same reason as
+                    # SensorDataStale: a windowed query returns nothing once
+                    # the outage outlasts the window, which is when it matters.
+                    rawSql: >-
+                      SELECT now() AS time,
+                             extract(epoch from (now() - max(time))) / 60 AS value
+                      FROM sensors.victron
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: staleness
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [20]}
+
+            - uid: victron-shunt-stale
+              title: VictronShuntDataStale
+              condition: fired
+              for: 5m
+              annotations:
+                title: battery monitor readings have stopped
+                summary: >-
+                  No new rows in sensors.victron_battery_monitor. The SmartShunt
+                  is not being heard: the Bluetooth adapter has stopped
+                  receiving advertisements, or the shunt is unpowered.
+              labels:
+                severity: warning
+                device: shunt
+              execErrState: Alerting
+              noDataState: Alerting
+              data:
+                - refId: staleness
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: staleness
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time,
+                             extract(epoch from (now() - max(time))) / 60 AS value
+                      FROM sensors.victron_battery_monitor
                 - refId: latest
                   relativeTimeRange: {from: 3600, to: 0}
                   datasourceUid: __expr__
