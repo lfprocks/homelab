@@ -53,7 +53,7 @@ spec:
       spec:
         containers:
           - name: runner
-            image: ghcr.io/actions/actions-runner:latest
+            image: ghcr.io/actions/actions-runner:2.337.0
             command: ["/home/runner/run.sh"]
             # dind previously ran as an unlimited sidecar, so anything it
             # started was invisible to the kubelet. With one container and a

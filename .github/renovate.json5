@@ -1,0 +1,111 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", ":semanticCommits"],
+
+  // Renovate opens PRs; it never merges on its own. Merging happens only after
+  // the owner approves a PR (in the GitHub UI, or from Telegram through
+  // openclaw), at which point .github/workflows/renovate-approved.yaml enables
+  // auto-merge and GitHub merges once `validate` passes.
+  automerge: false,
+
+  timezone: "America/Los_Angeles",
+  // Run overnight so the openclaw digest at 07:00 sees a settled set of PRs.
+  schedule: ["before 6am"],
+  prConcurrentLimit: 15,
+  prHourlyLimit: 0,
+  labels: ["renovate"],
+  dependencyDashboard: true,
+
+  ignorePaths: [
+    "**/.claude/**",
+    "clusters/_archive/**",
+    // Overlays for retired clusters; only the-intersect is reconciled.
+    "**/libvirt-unraid/**",
+    "**/solar-pi/**",
+    "**/values.example.yaml",
+  ],
+
+  flux: {
+    // Default only scans gotk-components.yaml. HelmRelease/HelmRepository/
+    // OCIRepository live throughout apps/ and infrastructure/.
+    managerFilePatterns: ["/(^|/)(apps|infrastructure|clusters)/.+\\.ya?ml$/"],
+  },
+  kubernetes: {
+    // Default is empty; raw Deployment/StatefulSet/Sandbox image: lines.
+    managerFilePatterns: ["/(^|/)(apps|infrastructure)/.+\\.ya?ml$/"],
+  },
+  "helm-values": {
+    // values.yaml files fed to HelmReleases through configMapGenerator.
+    managerFilePatterns: ["/(^|/)values[^/]*\\.ya?ml$/"],
+  },
+
+  packageRules: [
+    {
+      // Don't rewrite apiVersions: a newer API (e.g. OCIRepository v1) may not
+      // exist in the Flux/Kubernetes version actually running.
+      matchDatasources: ["kubernetes-api"],
+      enabled: false,
+    },
+    {
+      // gotk-components.yaml is regenerated as a whole by the flux manager
+      // (dep fluxcd/flux2). Don't also bump its controller images one by one.
+      matchFileNames: ["clusters/**/flux-system/gotk-components.yaml"],
+      matchManagers: ["kubernetes"],
+      enabled: false,
+    },
+    {
+      // Risk labels drive the openclaw digest: risk/low may be approved in a
+      // batch, risk/high is always called out individually with its changelog.
+      matchUpdateTypes: ["patch", "digest", "pin", "pinDigest"],
+      addLabels: ["risk/low"],
+    },
+    {
+      matchUpdateTypes: ["minor"],
+      addLabels: ["risk/medium"],
+    },
+    {
+      matchUpdateTypes: ["major"],
+      addLabels: ["risk/high"],
+    },
+    {
+      // Cluster plumbing: a bad upgrade here takes out networking, storage,
+      // admission, certificates, or GitOps itself -- high risk at any size.
+      matchDepNames: [
+        "fluxcd/flux2",
+        "cilium",
+        "rook-ceph",
+        "rook-ceph-cluster",
+        "quay.io/ceph/ceph",
+        "kyverno",
+        "cert-manager",
+        "csi-driver-nfs",
+        "csi-driver-smb",
+        "ghcr.io/cloudnative-pg/cloudnative-pg",
+        "ghcr.io/k8snetworkplumbingwg/multus-cni",
+        "registry.k8s.io/agent-sandbox/agent-sandbox-controller",
+      ],
+      addLabels: ["risk/high"],
+    },
+    {
+      // Postgres images back live databases (immich, cloudnative-pg clusters);
+      // a major is a data migration, not an upgrade.
+      matchDepNames: ["/postgres/"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      // Invidious publishes date-sha tags (2026.09.30-1454ead) that default
+      // docker versioning can't order.
+      matchDepNames: ["quay.io/invidious/invidious"],
+      versioning: "regex:^(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d{2})-[0-9a-f]+$",
+    },
+    {
+      // openclaw runs as an agent-sandbox Sandbox: merging a bump does not
+      // roll the pod. See apps/openclaw/the-intersect/README.md.
+      matchDepNames: ["ghcr.io/openclaw/openclaw"],
+      prBodyNotes: [
+        "⚠️ Merging does not restart openclaw. After Flux reconciles, regenerate it: `kubectl -n openclaw delete sandbox openclaw`.",
+      ],
+    },
+  ],
+}

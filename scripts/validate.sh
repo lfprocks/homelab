@@ -1,66 +1,78 @@
 #!/usr/bin/env bash
-
-# This script downloads the Flux OpenAPI schemas, then it validates the
-# Flux custom resources and the kustomize overlays using kubeconform.
-# This script is meant to be run locally and in CI before the changes
-# are merged on the main branch that's synced by Flux.
-
-# Copyright 2023 The Flux authors. All rights reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Validates what Flux will actually apply, locally and in CI
+# (.github/workflows/validate.yaml):
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#   1. every YAML file parses
+#   2. every path referenced by a Flux Kustomization in clusters/the-intersect
+#      builds with kustomize
+#   3. the built output passes kubeconform, using the Kubernetes schemas, the
+#      Flux CRD schemas, and the datreeio CRD catalog for everything else
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# Prerequisites
-# - yq v4.34
-# - kustomize v5.3
-# - kubeconform v0.6
+# Step 3 runs on the output after a stand-in for Flux's postBuild substitution:
+# real ${DOMAIN_*}/${SUB_*}/IP values live only in the encrypted cluster-vars
+# Secret, and the unsubstituted tokens fail hostname/IP schema patterns.
+#
+# Prerequisites: yq v4, kustomize v5, kubeconform v0.7, perl, curl.
 
 set -o errexit
+set -o nounset
 set -o pipefail
 
-# mirror kustomize-controller build options
-kustomize_flags=("--load-restrictor=LoadRestrictionsNone")
-kustomize_config="kustomization.yaml"
+cd "$(dirname "$0")/.."
 
-# skip Kubernetes Secrets due to SOPS fields failing validation
-kubeconform_flags=("-skip=Secret")
-kubeconform_config=("-strict" "-ignore-missing-schemas" "-schema-location" "default" "-schema-location" "/tmp/flux-crd-schemas" "-verbose")
+cluster_dir=clusters/the-intersect
+kubernetes_version=${KUBERNETES_VERSION:-1.33.0}
+schema_dir=${TMPDIR:-/tmp}/flux-crd-schemas
+
+# Secrets are skipped: their sops metadata fails strict validation.
+kubeconform_flags=(
+  -strict
+  -summary
+  -skip=Secret
+  -ignore-missing-schemas
+  -kubernetes-version "$kubernetes_version"
+  -schema-location default
+  -schema-location "$schema_dir"
+  -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+)
+
+# Stand-in for Flux postBuild substitution. Only ${UPPER_CASE} tokens are
+# touched, matching what Flux substitutes from cluster-vars.
+substitute() {
+  perl -pe '
+    s/\$\{(DOMAIN_[A-Z0-9_]+)\}/example.com/g;
+    s/\$\{(SUB_[A-Z0-9_]+)\}/sub/g;
+    s/\$\{([A-Z0-9_]*(?:_IP|_START|_STOP|_END|_GATEWAY))\}/192.0.2.10/g;
+    s/\$\{([A-Z0-9_]*(?:_SUBNET|_RANGE))\}/192.0.2.0\/24/g;
+    s/\$\{([A-Z][A-Z0-9_]*)\}/placeholder/g;
+  '
+}
 
 echo "INFO - Downloading Flux OpenAPI schemas"
-mkdir -p /tmp/flux-crd-schemas/master-standalone-strict
-curl -sL https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
+mkdir -p "$schema_dir/master-standalone-strict"
+curl -sfL https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz |
+  tar zxf - -C "$schema_dir/master-standalone-strict"
 
-find . -type f -name '*.yaml' -print0 | while IFS= read -r -d $'\0' file;
-  do
-    echo "INFO - Validating $file"
-    yq e 'true' "$file" > /dev/null
+echo "INFO - Parsing YAML"
+find . -path ./.git -prune -o -path ./.claude -prune -o -type f -name '*.yaml' -print0 |
+  while IFS= read -r -d $'\0' file; do
+    yq e 'true' "$file" >/dev/null || { echo "ERROR - $file does not parse"; exit 1; }
+  done
+
+echo "INFO - Validating $cluster_dir"
+for file in "$cluster_dir"/*.yaml; do
+  kubeconform "${kubeconform_flags[@]}" "$file"
 done
 
-echo "INFO - Validating clusters"
-find ./clusters -maxdepth 2 -type f -name '*.yaml' -print0 | while IFS= read -r -d $'\0' file;
-  do
-    kubeconform "${kubeconform_flags[@]}" "${kubeconform_config[@]}" "${file}"
-    if [[ ${PIPESTATUS[0]} != 0 ]]; then
-      exit 1
-    fi
+failed=0
+paths=$(yq e -N 'select(.kind == "Kustomization" and .apiVersion == "kustomize.toolkit.fluxcd.io/*") | .spec.path' "$cluster_dir"/*.yaml | sort -u)
+for path in $paths; do
+  echo "INFO - Validating $path"
+  if ! kustomize build --load-restrictor=LoadRestrictionsNone "$path" | substitute | kubeconform "${kubeconform_flags[@]}"; then
+    echo "ERROR - $path failed validation"
+    failed=1
+  fi
 done
 
-echo "INFO - Validating kustomize overlays"
-find . -type f -name $kustomize_config -print0 | while IFS= read -r -d $'\0' file;
-  do
-    echo "INFO - Validating kustomization ${file/%$kustomize_config}"
-    kustomize build "${file/%$kustomize_config}" "${kustomize_flags[@]}" | \
-      kubeconform "${kubeconform_flags[@]}" "${kubeconform_config[@]}"
-    if [[ ${PIPESTATUS[0]} != 0 ]]; then
-      exit 1
-    fi
-done
+exit "$failed"
