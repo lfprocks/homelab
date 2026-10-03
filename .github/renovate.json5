@@ -57,16 +57,18 @@
     {
       // Risk labels drive the openclaw digest: risk/low may be approved in a
       // batch, risk/high is always called out individually with its changelog.
+      // `labels` (not addLabels) so a later rule replaces an earlier one: an
+      // infra patch ends up risk/high only, not risk/low + risk/high.
       matchUpdateTypes: ["patch", "digest", "pin", "pinDigest"],
-      addLabels: ["risk/low"],
+      labels: ["renovate", "risk/low"],
     },
     {
       matchUpdateTypes: ["minor"],
-      addLabels: ["risk/medium"],
+      labels: ["renovate", "risk/medium"],
     },
     {
       matchUpdateTypes: ["major"],
-      addLabels: ["risk/high"],
+      labels: ["renovate", "risk/high"],
     },
     {
       // Cluster plumbing: a bad upgrade here takes out networking, storage,
@@ -85,7 +87,7 @@
         "ghcr.io/k8snetworkplumbingwg/multus-cni",
         "registry.k8s.io/agent-sandbox/agent-sandbox-controller",
       ],
-      addLabels: ["risk/high"],
+      labels: ["renovate", "risk/high"],
     },
     {
       // Postgres images back live databases (immich, cloudnative-pg clusters);
