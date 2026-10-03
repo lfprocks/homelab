@@ -100,6 +100,13 @@
       versioning: "regex:^(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d{2})-[0-9a-f]+$",
     },
     {
+      // docker.getoutline.com is a vanity host that 302s to Docker Hub, which
+      // Renovate's lookup doesn't follow. Look the tags up on Docker Hub; the
+      // image reference in the manifests stays as-is.
+      matchDepNames: ["docker.getoutline.com/outlinewiki/outline"],
+      overridePackageName: "outlinewiki/outline",
+    },
+    {
       // openclaw runs as an agent-sandbox Sandbox: merging a bump does not
       // roll the pod. See apps/openclaw/the-intersect/README.md.
       matchDepNames: ["ghcr.io/openclaw/openclaw"],
