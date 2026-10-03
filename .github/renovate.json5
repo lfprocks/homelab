@@ -9,8 +9,9 @@
   automerge: false,
 
   timezone: "America/Los_Angeles",
-  // Run overnight so the openclaw digest at 07:00 sees a settled set of PRs.
-  schedule: ["before 6am"],
+  // TEMPORARY: any time, to work through the initial backlog. Restore
+  // ["before 6am"] afterwards so the 07:00 openclaw digest sees a settled set.
+  schedule: ["at any time"],
   prConcurrentLimit: 15,
   prHourlyLimit: 0,
   labels: ["renovate"],
