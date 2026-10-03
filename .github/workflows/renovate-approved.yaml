@@ -5,7 +5,8 @@ name: renovate-approved
 # fine-grained PAT that cannot push or merge). This turns on auto-merge, and
 # GitHub merges once the required `validate` check passes.
 #
-# PRs from anyone other than Renovate are untouched and merged by hand.
+# Only Renovate's PRs, and only the owner's approval, count. Other
+# collaborators' approvals and everyone else's PRs are untouched.
 
 on:
   pull_request_review:
@@ -20,7 +21,7 @@ jobs:
     if: >-
       github.event.review.state == 'approved' &&
       github.event.pull_request.user.login == 'renovate[bot]' &&
-      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association)
+      github.event.review.user.login == 'michaelpeterswa'
     runs-on: ubuntu-latest
     steps:
       - run: gh pr merge --auto --squash "$PR_URL"
