@@ -23,7 +23,7 @@ spec:
         kind: HelmRepository
         name: actions-runner-controller
         namespace: arc-systems
-      version: 0.14.2
+      version: 0.15.0
   interval: 1m0s
   # The workflow's "runs-on" must match this.
   releaseName: timescale-migrations
