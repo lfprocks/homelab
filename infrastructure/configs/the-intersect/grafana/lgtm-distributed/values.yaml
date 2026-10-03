@@ -815,9 +815,12 @@ loki:
       requests:
         cpu: 10m
         memory: 100Mi
+      # 150Mi was below the querier's working set: it idles at ~130Mi RSS and
+      # was OOMKilled whenever a wide query (e.g. a Logs Drilldown 14d volume
+      # query) fanned out into querier.max_concurrent=10 parallel sub-queries.
       limits:
         cpu: 100m
-        memory: 150Mi
+        memory: 512Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -827,6 +830,9 @@ loki:
         mountPath: /etc/service-account
         readOnly: true
     extraEnv:
+      # ~80% of the limit, so the GC works to the container limit.
+      - name: GOMEMLIMIT
+        value: 410MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
