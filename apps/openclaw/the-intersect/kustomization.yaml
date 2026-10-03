@@ -9,3 +9,15 @@ resources:
   - service.yaml
   - ciliumnetworkpolicy.yaml
   - httproute.yaml
+configMapGenerator:
+  # Custom skills, one key per skill, copied into /etc/openclaw/skills/<key>/
+  # by the init-config container.
+  - name: openclaw-skills
+    files:
+      - renovate-updates=skills/renovate-updates/SKILL.md
+    options:
+      disableNameSuffixHash: true
+      labels:
+        app: openclaw
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
