@@ -32,7 +32,7 @@ spec:
       initContainers:
         # Outline does not auto-migrate on boot; run migrations once before start.
         - name: migrate
-          image: docker.getoutline.com/outlinewiki/outline:1.8.1
+          image: docker.getoutline.com/outlinewiki/outline:1.10.1
           workingDir: /opt/outline
           # Invoke the sequelize binary directly via node. The image's global yarn
           # is 1.x while package.json pins yarn@4 via corepack, so "yarn db:migrate"
@@ -61,7 +61,7 @@ spec:
                   key: uri
       containers:
         - name: outline
-          image: docker.getoutline.com/outlinewiki/outline:1.8.1
+          image: docker.getoutline.com/outlinewiki/outline:1.10.1
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
