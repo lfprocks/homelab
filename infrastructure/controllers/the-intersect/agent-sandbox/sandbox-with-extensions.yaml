@@ -17172,7 +17172,7 @@ spec:
       - args:
         - --leader-elect=true
         - --extensions
-        image: registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.5.2
+        image: registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.5.6
         name: agent-sandbox-controller
         ports:
         - containerPort: 8080
