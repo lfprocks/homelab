@@ -10,11 +10,16 @@
 # The certificate goes up as the full chain from tls.crt, so the iDRAC can
 # serve the Let's Encrypt intermediate; clients that don't fetch missing
 # intermediates themselves (Go, curl on Linux) reject a leaf-only chain. If
-# racadm doesn't report success for the chain, it falls back to the leaf alone,
-# which is what earlier versions uploaded.
+# racadm doesn't accept the chain, it falls back to the leaf alone, which is
+# what earlier versions uploaded. iDRAC7 confirms an accepted upload with
+# "DH010: Reset iDRAC to apply new certificate", not the word "success".
+#
+# The root filesystem is read-only: no here-strings or heredocs (bash needs a
+# temp file for them), and TMPDIR points at the writable $HOME emptyDir.
 #
 # Env: IDRAC_HOST, IDRAC_USER, IDRAC_PASSWORD. Files: /tls/tls.crt, /tls/tls.key.
 set -euo pipefail
+export TMPDIR="$HOME"
 
 : "${IDRAC_HOST:?}" "${IDRAC_USER:?}" "${IDRAC_PASSWORD:?}"
 if [[ "$IDRAC_PASSWORD" == "REPLACE_ME" ]]; then
@@ -38,12 +43,14 @@ openssl x509 -in /tls/tls.crt -out "$work/leaf.pem"
 echo "uploading private key"
 rac sslkeyupload -t 1 -f /tls/tls.key
 echo "uploading certificate chain"
-if out="$(rac sslcertupload -t 1 -f /tls/tls.crt 2>&1)" && grep -qi success <<<"$out"; then
-  echo "$out"
-else
-  echo "$out"
-  echo "chain upload not accepted; uploading the leaf certificate alone"
-  rac sslcertupload -t 1 -f "$work/leaf.pem"
-fi
+out="$(rac sslcertupload -t 1 -f /tls/tls.crt 2>&1)" || true
+echo "$out"
+case "$out" in
+  *DH010* | *[Ss]uccess*) ;;
+  *)
+    echo "chain upload not accepted; uploading the leaf certificate alone"
+    rac sslcertupload -t 1 -f "$work/leaf.pem"
+    ;;
+esac
 echo "resetting the iDRAC so it serves the new certificate (unreachable for a minute or two)"
 rac racreset
