@@ -1217,9 +1217,12 @@ tempo:
       requests:
         cpu: 5m
         memory: 60Mi
+      # Compacting vParquet3 blocks needs more than 100Mi: the compactor was
+      # OOMKilled mid-compaction on every restart, and 3209 uncompacted blocks
+      # had piled up in the tenant index.
       limits:
         cpu: 50m
-        memory: 100Mi
+        memory: 512Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -1232,7 +1235,7 @@ tempo:
       - -mem-ballast-size-mbs=0
     extraEnv:
       - name: GOMEMLIMIT
-        value: 80MiB
+        value: 410MiB
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
