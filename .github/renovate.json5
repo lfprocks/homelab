@@ -125,6 +125,13 @@
       groupName: "busybox",
     },
     {
+      // TEMPORARY: Flux 2.7+ drops the v1beta2 APIs that Bucket and
+      // OCIRepository are still stored as. Hold at 2.6.x until `flux migrate`
+      // has run against the cluster, then remove this rule.
+      matchDepNames: ["fluxcd/flux2"],
+      allowedVersions: "<2.7.0",
+    },
+    {
       // openclaw runs as an agent-sandbox Sandbox: merging a bump does not
       // roll the pod. See apps/openclaw/the-intersect/README.md.
       matchDepNames: ["ghcr.io/openclaw/openclaw"],
