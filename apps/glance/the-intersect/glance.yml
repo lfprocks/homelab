@@ -144,6 +144,9 @@ pages:
                   - title: BirdNET
                     url: https://${SUB_EMBER_QUILL}.${DOMAIN_NOBLE_NOOK}
                     icon: mdi:bird
+                  - title: Pi-Star
+                    url: https://${SUB_IVORY_RIDGE}.${DOMAIN_TAWNY_ARROW}
+                    icon: mdi:radio-tower
           - type: hacker-news
           - type: videos
             channels:
