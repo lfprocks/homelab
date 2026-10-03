@@ -17,7 +17,7 @@ spec:
   interval: 1m0s
   url: https://helm.ngc.nvidia.com/nvidia
 # ---
-# apiVersion: source.toolkit.fluxcd.io/v1beta2
+# apiVersion: source.toolkit.fluxcd.io/v1
 # kind: HelmRepository
 # metadata:
 #   name: dcgm-exporter
@@ -26,7 +26,7 @@ spec:
 #   interval: 1m0s
 #   url: https://nvidia.github.io/dcgm-exporter/helm-charts
 # ---
-# apiVersion: source.toolkit.fluxcd.io/v1beta2
+# apiVersion: source.toolkit.fluxcd.io/v1
 # kind: HelmRepository
 # metadata:
 #   name: utkuozdemir
