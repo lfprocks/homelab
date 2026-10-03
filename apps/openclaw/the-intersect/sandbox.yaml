@@ -179,7 +179,7 @@ spec:
                   --name "Homelab update digest" \
                   --cron "0 7 * * *" --tz America/Los_Angeles \
                   --session isolated \
-                  --message "Send the daily homelab update digest using the renovate-updates skill, to Telegram chat $TELEGRAM_OWNER_ID." \
+                  --message "Send the daily homelab update digest using the renovate-updates skill." \
                   --announce --channel telegram --to "$TELEGRAM_OWNER_ID"; do
                 echo "gateway not ready; retrying in 15s"
                 sleep 15
