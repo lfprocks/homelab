@@ -57,7 +57,7 @@ spec:
               mountPath: /etc/trunk-recorder
               readOnly: true
         - name: cleanup
-          image: alpine:3.24.1
+          image: alpine:3.24.2
           command: ["/bin/sh"]
           args: ["-c", "while true; do find /app/psernlfp -type f -delete 2>/dev/null || true; sleep 600; done"]
       volumes:
