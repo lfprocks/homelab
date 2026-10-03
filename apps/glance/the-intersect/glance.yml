@@ -75,9 +75,6 @@ pages:
                   - title: Grafana
                     url: https://${SUB_SENIOR_ABLE}.${DOMAIN_CORONET_SUMMIT}
                     icon: di:grafana
-                  - title: Invidious
-                    url: https://${SUB_PAVE_LEDGER}.${DOMAIN_CORONET_SUMMIT}
-                    icon: di:invidious
                   - title: Wastebin
                     url: https://${SUB_LOOKING_QUARRY}.${DOMAIN_CORONET_SUMMIT}
                     icon: sh:wastebin
@@ -109,9 +106,6 @@ pages:
                   - title: OpenClaw
                     url: http://openclaw.${DOMAIN_COBRA_LANTERN}
                     icon: di:openclaw
-                  - title: Stable Diffusion
-                    url: http://${SUB_COBRA_ORCHARD}.${DOMAIN_COBRA_LANTERN}
-                    icon: mdi:palette
               - type: monitor
                 title: Media
                 cache: 1m
