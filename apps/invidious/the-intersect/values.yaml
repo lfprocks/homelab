@@ -2,8 +2,8 @@ name: invidious
 
 image:
   repository: quay.io/invidious/invidious
-  tag: latest
-  pullPolicy: Always
+  tag: 2026.09.30-1454ead
+  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
@@ -115,5 +115,7 @@ sighelper:
     port: 12999
   image:
     repository: quay.io/invidious/inv-sig-helper
-    tag: latest
-    pullPolicy: Always
+    # No releases; master-<sha> tags aren't orderable, so Renovate can't bump
+    # this one. Upstream has been quiet since 2025-07.
+    tag: master-dcda9f1
+    pullPolicy: IfNotPresent

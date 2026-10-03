@@ -1,0 +1,32 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Required status check on main: renovate-approved.yaml's auto-merge waits
+  # for this to pass.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        env:
+          KUSTOMIZE_VERSION: v5.7.1
+          KUBECONFORM_VERSION: v0.7.0
+          YQ_VERSION: v4.47.1
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -sfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar xz -C "$HOME/bin" kustomize
+          curl -sfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz -C "$HOME/bin" kubeconform
+          curl -sfL -o "$HOME/bin/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          chmod +x "$HOME/bin/yq"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - run: scripts/validate.sh

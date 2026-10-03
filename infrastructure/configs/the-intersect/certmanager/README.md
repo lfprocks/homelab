@@ -22,7 +22,7 @@ ClusterIssuers + the DNS-01 provider credentials.
 ## Adding a new internal HTTPS host
 
 `internal-gateway-http` (`../gateways.yaml`) has a `default-https` listener for
-`*.${DOMAIN_COBRA_LANTERN}` (= `*.intersect.k8s.lfp.rocks`) with the
+`*.${DOMAIN_COBRA_LANTERN}` with the
 `cert-manager.io/cluster-issuer: letsencrypt-prod` gateway-shim annotation — so
 the wildcard cert (`cobra-lantern-tls`) is issued automatically via Cloudflare.
 Any internal app under that domain just needs an `HTTPRoute` on

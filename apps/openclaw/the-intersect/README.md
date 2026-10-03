@@ -10,7 +10,7 @@ SandboxTemplate + WarmPool + Claim) so its state can live on an
 
 ## Access
 
-- **URL:** `https://openclaw.intersect.k8s.lfp.rocks` (LAN-only, via
+- **URL:** `https://openclaw.${DOMAIN_COBRA_LANTERN}` (LAN-only, via
   `internal-gateway-http`'s HTTPS listener; real Let's Encrypt cert).
 - **Auth:** the `OPENCLAW_GATEWAY_TOKEN` (in the `openclaw-provider-keys` secret)
   **plus** per-device pairing (below). Read the token with:
@@ -40,7 +40,8 @@ SandboxTemplate + WarmPool + Claim) so its state can live on an
 | `service.yaml` | ClusterIP `openclaw-gateway:18789`, selects the pod label `sandbox: openclaw-template-sandbox`. |
 | `httproute.yaml` | `HTTPRoute` on `internal-gateway-http` → `openclaw-gateway:18789`, host `openclaw.${DOMAIN_COBRA_LANTERN}`. |
 | `ciliumnetworkpolicy.yaml` | Replacement for the controller's default policy — see *Networking*. Also allows egress to the two in-cluster MCP servers. |
-| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `WSDOT_MCP_TOKEN`, `HA_MCP_TOKEN`. |
+| `openclaw-secret.yaml` | SOPS-encrypted `openclaw-provider-keys` (`data`/base64): `OPENCLAW_GATEWAY_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `WSDOT_MCP_TOKEN`, `HA_MCP_TOKEN`, `LFP_MCP_TOKEN`, and optionally `GITHUB_MCP_TOKEN` + `TELEGRAM_OWNER_ID` (see *Renovate approvals*). |
+| `skills/` | Custom skills, packed into the `openclaw-skills` ConfigMap and copied to `/etc/openclaw/skills` by `init-config` (`skills.load.extraDirs`). |
 
 Namespace: `clusters/the-intersect/namespaces.yaml`. Flux Kustomization
 `apps-openclaw`: `clusters/the-intersect/apps.yaml`. The internal HTTPS listener +
@@ -106,6 +107,46 @@ kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js pairing app
 Codes expire after 1 hour. Pairing state lives on the durable PVC. For a
 one-owner bot you can tighten this to `dmPolicy: "allowlist"` with your numeric
 Telegram user ID in `channels.telegram.allowFrom`.
+
+## Renovate approvals
+
+Renovate (`.github/renovate.json5`) opens a PR per version bump. Every morning
+at 07:00 Pacific openclaw sends a Telegram digest of the open ones, grouped by
+the `risk/*` label Renovate sets. Reply `approve 131 132` (or `approve low`) and
+openclaw submits an approving review as you. The
+`.github/workflows/renovate-approved.yaml` workflow then enables auto-merge, and
+GitHub merges once `validate` passes. The behaviour lives in
+`skills/renovate-updates/SKILL.md`.
+
+Pieces:
+
+- **`github` MCP server**, set by `init-mcp` from `GITHUB_MCP_TOKEN`: a
+  fine-grained PAT for `lfprocks/homelab` only, with **Pull requests:
+  read/write** and **Contents, Issues, Commit statuses, Metadata: read**. No
+  Contents write, so it can approve but can't push or merge, whatever a
+  malicious release note talks it into.
+- **`declare-cron` sidecar**: `cron add` needs the running gateway, so a native
+  sidecar waits for it and upserts the `renovate-digest` job by declaration key.
+  Re-running on every boot is a no-op. It skips the job, and just idles, while
+  `GITHUB_MCP_TOKEN` or `TELEGRAM_OWNER_ID` is missing.
+- **`TELEGRAM_OWNER_ID`**: your numeric Telegram user ID, where the digest is
+  delivered.
+
+Add both keys (they're optional, so the pod runs without them):
+
+```bash
+export SOPS_AGE_KEY_FILE=$PWD/age.agekey
+f=apps/openclaw/the-intersect/openclaw-secret.yaml
+sops set "$f" '["data"]["GITHUB_MCP_TOKEN"]' "\"$(printf %s "$PAT" | base64)\""
+sops set "$f" '["data"]["TELEGRAM_OWNER_ID"]' "\"$(printf %s "$TG_ID" | base64)\""
+```
+
+Check after regenerating the Sandbox:
+
+```bash
+kubectl -n openclaw logs $POD -c declare-cron
+kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js cron list
+```
 
 ## OpenAI
 

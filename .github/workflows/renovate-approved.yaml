@@ -1,0 +1,30 @@
+name: renovate-approved
+
+# Approving a Renovate PR is the merge decision. The approval can come from the
+# GitHub UI or from openclaw over Telegram (it reviews as the owner through a
+# fine-grained PAT that cannot push or merge). This turns on auto-merge, and
+# GitHub merges once the required `validate` check passes.
+#
+# Only Renovate's PRs, and only the owner's approval, count. Other
+# collaborators' approvals and everyone else's PRs are untouched.
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: >-
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.review.user.login == 'michaelpeterswa'
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}

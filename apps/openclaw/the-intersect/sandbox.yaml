@@ -40,7 +40,10 @@ spec:
           type: RuntimeDefault
       initContainers:
         # 1) Seed the non-secret base config (gateway/model/origins) from the
-        #    ConfigMap into the writable /etc/openclaw emptyDir.
+        #    ConfigMap into the writable /etc/openclaw emptyDir, plus the custom
+        #    skills (loaded via skills.load.extraDirs). Skills are copied rather
+        #    than mounted: OpenClaw rejects skill paths that resolve outside
+        #    their root, and ConfigMap mounts are symlinks.
         - name: init-config
           image: ghcr.io/openclaw/openclaw:2026.7.1
           securityContext:
@@ -52,10 +55,19 @@ spec:
           command:
             - sh
             - -c
-            - cp /etc/openclaw-readonly/openclaw.json /etc/openclaw/openclaw.json
+            - |
+              set -e
+              cp /etc/openclaw-readonly/openclaw.json /etc/openclaw/openclaw.json
+              for skill in /etc/openclaw-skills-readonly/*; do
+                name=$(basename "$skill")
+                mkdir -p "/etc/openclaw/skills/$name"
+                cp -L "$skill" "/etc/openclaw/skills/$name/SKILL.md"
+              done
           volumeMounts:
             - name: cm-volume
               mountPath: /etc/openclaw-readonly
+            - name: skills-volume
+              mountPath: /etc/openclaw-skills-readonly
             - name: openclaw-etc-writable
               mountPath: /etc/openclaw
         # 2) Materialize the MCP servers into that config. OpenClaw does NOT
@@ -89,6 +101,16 @@ spec:
                 secretKeyRef:
                   name: openclaw-provider-keys
                   key: LFP_MCP_TOKEN
+            # Fine-grained PAT for lfprocks/homelab: Pull requests read/write,
+            # Contents + Issues + Commit statuses read. No Contents write, so
+            # it can approve Renovate PRs but never push or merge. Optional:
+            # without it the github server is simply not configured.
+            - name: GITHUB_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: GITHUB_MCP_TOKEN
+                  optional: true
           command:
             - sh
             - -c
@@ -97,9 +119,72 @@ spec:
               node /app/dist/index.js mcp set wsdot "$(printf '{"url":"http://mcp-wsdot.mcp-wsdot.svc.cluster.local:8080/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$WSDOT_MCP_TOKEN")"
               node /app/dist/index.js mcp set homeassistant "$(printf '{"url":"http://home-assistant.home-assistant.svc.cluster.local:8080/api/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$HA_MCP_TOKEN")"
               node /app/dist/index.js mcp set lfpweather "$(printf '{"url":"http://lfpweather-mcp.lfpweather.svc.cluster.local:80/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer %s"}}' "$LFP_MCP_TOKEN")"
+              if [ -n "$GITHUB_MCP_TOKEN" ]; then
+                node /app/dist/index.js mcp set github "$(printf '{"url":"https://api.githubcopilot.com/mcp/","transport":"streamable-http","headers":{"Authorization":"Bearer %s","X-MCP-Toolsets":"pull_requests,repos,issues"}}' "$GITHUB_MCP_TOKEN")"
+              fi
           volumeMounts:
             - name: openclaw-etc-writable
               mountPath: /etc/openclaw
+        # 3) Declare the cron jobs. `cron add` talks to the running gateway (it
+        #    can't write state offline like `mcp set`), so this is a native
+        #    sidecar: it waits for the gateway, upserts each job by
+        #    --declaration-key (re-running is a no-op), then idles. Jobs live in
+        #    the gateway's SQLite state on the durable PVC.
+        - name: declare-cron
+          image: ghcr.io/openclaw/openclaw:2026.7.1
+          restartPolicy: Always
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+          env:
+            - name: HOME
+              value: "/workspace"
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: OPENCLAW_GATEWAY_TOKEN
+            # Owner's numeric Telegram user ID, where digests are delivered.
+            - name: TELEGRAM_OWNER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: TELEGRAM_OWNER_ID
+                  optional: true
+            - name: GITHUB_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-provider-keys
+                  key: GITHUB_MCP_TOKEN
+                  optional: true
+          command:
+            - sh
+            - -c
+            - |
+              idle() { while true; do sleep 86400; done; }
+              if [ -z "$TELEGRAM_OWNER_ID" ] || [ -z "$GITHUB_MCP_TOKEN" ]; then
+                echo "TELEGRAM_OWNER_ID or GITHUB_MCP_TOKEN unset; not declaring renovate-digest"
+                idle
+              fi
+              until node /app/dist/index.js cron add \
+                  --url ws://127.0.0.1:18789 --token "$OPENCLAW_GATEWAY_TOKEN" \
+                  --declaration-key renovate-digest \
+                  --name "Homelab update digest" \
+                  --cron "0 7 * * *" --tz America/Los_Angeles \
+                  --session isolated \
+                  --message "Send the daily homelab update digest using the renovate-updates skill." \
+                  --announce --channel telegram --to "$TELEGRAM_OWNER_ID"; do
+                echo "gateway not ready; retrying in 15s"
+                sleep 15
+              done
+              idle
       containers:
         - name: openclaw
           image: ghcr.io/openclaw/openclaw:2026.7.1
@@ -170,6 +255,9 @@ spec:
         - name: cm-volume
           configMap:
             name: openclaw-config
+        - name: skills-volume
+          configMap:
+            name: openclaw-skills
         - name: openclaw-etc-writable
           emptyDir: {}
         - name: home-dir
