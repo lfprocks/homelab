@@ -9,8 +9,9 @@
   automerge: false,
 
   timezone: "America/Los_Angeles",
-  // Run overnight so the openclaw digest at 07:00 sees a settled set of PRs.
-  schedule: ["before 6am"],
+  // TEMPORARY: any time, to work through the initial backlog. Restore
+  // ["before 6am"] afterwards so the 07:00 openclaw digest sees a settled set.
+  schedule: ["at any time"],
   prConcurrentLimit: 15,
   prHourlyLimit: 0,
   labels: ["renovate"],
@@ -105,6 +106,21 @@
       // image reference in the manifests stays as-is.
       matchDepNames: ["docker.getoutline.com/outlinewiki/outline"],
       overridePackageName: "outlinewiki/outline",
+    },
+    {
+      // Rook's operator and cluster charts are released together and should
+      // stay on the same version.
+      matchDepNames: ["rook-ceph", "rook-ceph-cluster"],
+      groupName: "rook-ceph",
+    },
+    {
+      // ARC requires the controller and runner scale set charts to match.
+      matchDepNames: ["gha-runner-scale-set-controller", "gha-runner-scale-set"],
+      groupName: "actions-runner-controller",
+    },
+    {
+      matchDepNames: ["busybox", "docker.io/library/busybox"],
+      groupName: "busybox",
     },
     {
       // openclaw runs as an agent-sandbox Sandbox: merging a bump does not
