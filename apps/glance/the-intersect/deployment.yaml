@@ -21,7 +21,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "glance"
-        k8s.lfp.rocks/version: "v0.8.4"
+        k8s.lfp.rocks/version: "v0.8.6"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: glance
-          image: glanceapp/glance:v0.8.4
+          image: glanceapp/glance:v0.8.6
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
