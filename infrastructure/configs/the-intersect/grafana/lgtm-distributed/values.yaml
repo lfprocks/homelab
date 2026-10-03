@@ -688,6 +688,12 @@ loki:
       # the logs explaining them expire together.
       limits_config:
         retention_period: 720h
+        # Reject queries that would read more than this, checked against the
+        # index at the query-frontend before any querier work. A 14d query over
+        # every namespace reads ~6.9GB and OOMKilled the 512Mi querier even at
+        # max_concurrent=2; the whole cluster logs ~0.5GB/day, so 2GB still
+        # allows ~4 days across all namespaces and any single-app search.
+        max_query_bytes_read: 2GB
       compactor:
         working_directory: /var/loki/compactor
         shared_store: gcs
