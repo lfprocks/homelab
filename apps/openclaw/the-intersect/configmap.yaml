@@ -31,8 +31,7 @@ data:
         "telegram": {
           "enabled": true,
           "dmPolicy": "pairing",
-          "groups": { "*": { "requireMention": true } },
-          "capabilities": { "inlineButtons": "dm" }
+          "groups": { "*": { "requireMention": true } }
         }
       },
       "skills": {
