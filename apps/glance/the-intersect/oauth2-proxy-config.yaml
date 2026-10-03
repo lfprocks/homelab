@@ -1,0 +1,18 @@
+---
+# Per-app config for the shared oauth2-proxy component. glance authenticates via
+# Pocket-ID (OIDC); the sidecar reverse-proxies authenticated requests to glance
+# on the pod's loopback. ${SUB_AMBER_MERIDIAN}/${DOMAIN_CORONET_SUMMIT} are
+# resolved by Flux postBuild substitution from cluster-vars.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+data:
+  OAUTH2_PROXY_PROVIDER: "oidc"
+  OAUTH2_PROXY_OIDC_ISSUER_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
+  OAUTH2_PROXY_SCOPE: "openid email profile groups"
+  OAUTH2_PROXY_UPSTREAMS: "http://127.0.0.1:8080"
+  # Pocket-ID is passkey-based and never runs an email-verification flow, so it
+  # issues email_verified=false. Trust it (admin-set emails, not self-asserted);
+  # the authenticated-emails allowlist still applies. Required for Pocket-ID apps.
+  OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"
