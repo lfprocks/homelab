@@ -1,0 +1,84 @@
+---
+# Named glance-web (not glance) so the old Helm release's uninstall, which
+# deletes the chart's glance Deployment/Service by name, cannot take these with it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name glance-web
+  labels:
+    app: *name
+    oauth2.lfp.rocks/inject: "true"
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "glance"
+        k8s.lfp.rocks/version: "v0.8.4"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: glance
+          image: glanceapp/glance:v0.8.4
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: config
+              mountPath: /app/config/glance.yml
+              subPath: glance.yml
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: glance-web-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glance-web
+  labels:
+    app: glance-web
+    oauth2.lfp.rocks/inject: "true"
+spec:
+  type: ClusterIP
+  selector:
+    app: glance-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

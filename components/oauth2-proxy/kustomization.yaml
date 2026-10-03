@@ -39,6 +39,15 @@ patches:
         value:
           name: oauth2-proxy
           image: quay.io/oauth2-proxy/oauth2-proxy:v7.9.0
+          # satisfies Pod Security `restricted`; the image already runs as 65532.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           args:
             # provider + upstream + (for oidc) issuer/scope come from the
             # per-app oauth2-proxy-config ConfigMap via envFrom below.
