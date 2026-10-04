@@ -1,4 +1,5 @@
-namespace: gatewayapi-system
+# No `namespace:` transform: everything here is cluster-scoped, and it would
+# stamp a namespace onto the ValidatingAdmissionPolicy and its binding.
 
 resources:
   - namespace.yaml
