@@ -24,7 +24,7 @@ data:
       },
       "agents": {
         "defaults": {
-          "model": { "primary": "anthropic/claude-opus-4-8" }
+          "model": { "primary": "anthropic/claude-sonnet-5-5" }
         }
       },
       "channels": {
@@ -36,6 +36,9 @@ data:
       },
       "skills": {
         "load": { "extraDirs": ["/etc/openclaw/skills"] }
+      },
+      "plugins": {
+        "entries": { "duckduckgo": { "enabled": true } }
       },
       "tools": {
         "web": {

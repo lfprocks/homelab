@@ -152,7 +152,7 @@ kubectl -n openclaw exec $POD -c openclaw -- node /app/dist/index.js cron list
 
 `OPENAI_API_KEY` is injected for the non-agent OpenAI surfaces (images,
 embeddings, speech). It does **not** change the agent model — `agents.defaults.
-model.primary` stays pinned to `anthropic/claude-opus-4-8` in the ConfigMap.
+model.primary` stays pinned to `anthropic/claude-sonnet-5-5` in the ConfigMap.
 
 ## Networking (the tricky part)
 
