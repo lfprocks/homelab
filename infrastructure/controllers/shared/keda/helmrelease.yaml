@@ -11,7 +11,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: kedacore
-      version: 2.16.0
+      version: 2.21.0
   interval: 1m0s
   values:
     installCRDs: true
