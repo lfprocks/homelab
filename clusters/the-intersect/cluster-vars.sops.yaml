@@ -81,7 +81,7 @@ stringData:
     SUB_EMBER_QUILL: ENC[AES256_GCM,data:2ujk6Fw5fw==,iv:qOhkaVr3p04oNiv5/nk8zu0VDlqjhWjw3EVD0t6WYdQ=,tag:8JJkhMWb/MBtAFxgFYB7hA==,type:str]
     SUB_AMBER_BADGER: ENC[AES256_GCM,data:1M3jKNZlLg==,iv:wQ0Y7HHUnbuBQ8BR3jZRFTLMag6M84pdiEaj42T80lg=,tag:qLOTWmwZgYGuIOHmCW0L9Q==,type:str]
     SUB_WOVEN_MESA: ENC[AES256_GCM,data:9+wX,iv:Bdr+rmnLWAycHSSKdHLjxIqdjnggjDdPPzcPfqT5uOA=,tag:Zlw9NPeI8+1ui/sBJzqnwA==,type:str]
-    DOMAIN_TAWNY_ARROW: ENC[AES256_GCM,data:L6cPBBycVc5Sgqi/NFAxYV4/gbXpQ2A=,iv:ZgM6IcxCtNI2ouwOF3VU8A/f39lbph6kQR+WFh+qmZA=,tag:Dmcu/zhOw1ZZ2Ba+37cBCA==,type:str]
+    DOMAIN_TAWNY_ARROW: ENC[AES256_GCM,data:Dcf9MZ+FneRBTFGUl0TDE03yolFXms5p,iv:/BKDBUHooUVeIjrcrCHsurFa4HOZ3Ylmy+VSqgMIg0o=,tag:NQQZ4s2v52c7LrRkirI1Bw==,type:str]
     SUB_IVORY_RIDGE: ENC[AES256_GCM,data:+fUvfucQ8iQX,iv:tUr0PRkf3tW2eJdXQQENkl6dFbDk6kamW60DXtnPuZ0=,tag:SBSgjVV2DPsNqaQIyt6zPQ==,type:str]
 sops:
     age:
@@ -94,7 +94,7 @@ sops:
             NEc5RFlOS2lkTVJBNTU2VW1LUy9yTzgKbghxCeGAw7B6qpQzV5GYuAtoJjZvSoqe
             DRS4G8tSwhojaT29RDfxU5TZvdSGOFUy+uehXyUzRjgRoVxfrs2lMQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-10-03T04:54:42Z"
-    mac: ENC[AES256_GCM,data:fXJ584KRNHRekNz1/LGznZNR7xLHCoewbOy/eqt1XIPsptY24xZKd5zo5nGpuR+UYj6Ec5ts/2TgtTUGN3G5fUcQy17JleC18m5a7k0ltBmM6oStHgJXAxNLgaUbOAKIO/gYzrkegFWvm8e06svt9GYL661qsC4hsjZlQpQ3xpA=,iv:8dkxptXjTSk+5XYB4WO6jcsaNj+CxJvq+LjVgOX9ip8=,tag:W/euM1f3sbPDOq25EGhKlQ==,type:str]
+    lastmodified: "2026-10-04T06:21:28Z"
+    mac: ENC[AES256_GCM,data:NWQjLWO2jOkllgaYVtNBZkyTTcQhG2pOwNTf6vIUurVekShit0cewlEytnfLFPorD5YgkXU7ppPSlzuKL9iIFY9jzZkDPN9o+qVbgTQwsPDuy4bA5VvDFk0m/AUmHfC6adPMh/KuJYll0fAvIHfQLntnw/PQysnmjxftZaHWL/g=,iv:BVvKG0CgdCYdRx12r9vvA0UZqmt3ealjaRNkLNo9O3k=,tag:soQdEQTfu3iZFP6ViE6l/Q==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0
