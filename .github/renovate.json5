@@ -127,6 +127,11 @@
       // openclaw runs as an agent-sandbox Sandbox: merging a bump does not
       // roll the pod. See apps/openclaw/the-intersect/README.md.
       matchDepNames: ["ghcr.io/openclaw/openclaw"],
+      // HOLD: 2026.8+ can't run in this Sandbox yet. DuckDuckGo search became
+      // a plugin (installs fail as non-root), and 2026.9.x's state migration
+      // needs a no-replace rename gVisor doesn't support, so the gateway
+      // refuses to start. See #197, #210-#212. Lift once both are solved.
+      allowedVersions: "<2026.8.0",
       prBodyNotes: [
         "⚠️ Merging does not restart openclaw. After Flux reconciles, regenerate it: `kubectl -n openclaw delete sandbox openclaw`.",
       ],
