@@ -18,7 +18,9 @@ affinity:
 nodeSelector: []
 
 httpRoute:
-  enabled: true
+  # Off while the StatefulSet is scaled to 0: with no backend the route only
+  # answered 503. Turn back on together with replicas.
+  enabled: false
   parentRefs:
     - name: internal-gateway-http
       namespace: cilium-ingress

@@ -5,5 +5,4 @@ resources:
   - statefulset.yaml
   - pvc.yaml
   - service.yaml
-  - httproute.yaml
   - configmap.yaml
