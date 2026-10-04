@@ -24,7 +24,7 @@ data:
       },
       "agents": {
         "defaults": {
-          "model": { "primary": "anthropic/claude-sonnet-5-5" }
+          "model": { "primary": "anthropic/claude-opus-4-8" }
         }
       },
       "channels": {
