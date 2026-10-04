@@ -174,6 +174,37 @@ spec:
           volumeMounts:
             - name: openclaw-etc-writable
               mountPath: /etc/openclaw
+        # 2b) Migrate the state database before the gateway starts. 2026.9.x
+        #     refuses to start while a schema migration is pending ("state
+        #     database schema migration required ... run openclaw doctor --fix")
+        #     and won't run it itself while the gateway is up. --non-interactive
+        #     applies safe migrations only; it is a no-op when nothing is due.
+        #     A non-zero exit doesn't block start: if a migration really is
+        #     still needed, the gateway says so itself.
+        - name: migrate-state
+          image: ghcr.io/openclaw/openclaw:2026.9.8
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: HOME
+              value: "/workspace"
+            - name: OPENCLAW_CONFIG_PATH
+              value: "/etc/openclaw/openclaw.json"
+          command:
+            - sh
+            - -c
+            - node /app/dist/index.js doctor --fix --non-interactive || echo "doctor exited $?"
+          volumeMounts:
+            - mountPath: /workspace/.openclaw
+              name: workspaces-pvc
+            - mountPath: /etc/openclaw
+              name: openclaw-etc-writable
+            - mountPath: /workspace
+              name: home-dir
         # 3) Declare the cron jobs. `cron add` talks to the running gateway (it
         #    can't write state offline like `mcp set`), so this is a native
         #    sidecar: it waits for the gateway, upserts each job by
