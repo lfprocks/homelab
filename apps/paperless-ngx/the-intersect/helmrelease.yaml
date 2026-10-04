@@ -12,7 +12,7 @@ spec:
         kind: HelmRepository
         name: gabe565
         namespace: paperless-ngx
-      version: 0.22.0
+      version: 0.24.1
   valuesFrom:
     - kind: ConfigMap
       name: paperless-ngx-values
