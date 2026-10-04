@@ -39,13 +39,60 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       initContainers:
+        # 0) Install plugins that are no longer bundled. Since 2026.8.1 the
+        #    DuckDuckGo web_search provider is a separate plugin, and the config
+        #    (tools.web.search.provider) fails validation without it. Plugins
+        #    install into <config dir>/extensions, i.e. this emptyDir, so this
+        #    runs on every start (pinned version, from ClawHub).
+        #
+        #    Why root: `plugins install` links the openclaw peer dependency
+        #    under /app (root-owned) and fchmods there, which fails as uid 1000.
+        #    Kept narrow: only CHOWN added, no privilege escalation, a throwaway
+        #    HOME so it never writes state to the PVC, and only the config
+        #    emptyDir mounted. It ends by handing /etc/openclaw to uid 1000:
+        #    2026.9.x also tightens the config dir's mode on every config write,
+        #    which fails unless openclaw owns the directory.
+        - name: install-plugins
+          image: ghcr.io/openclaw/openclaw:2026.9.8
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          env:
+            - name: HOME
+              value: /tmp/plugin-install-home
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /tmp/plugin-install-home
+              echo '{}' > /etc/openclaw/install.json
+              OPENCLAW_CONFIG_PATH=/etc/openclaw/install.json \
+                node /app/dist/index.js plugins install @openclaw/duckduckgo-plugin@2026.9.7
+              test -d /etc/openclaw/extensions/duckduckgo
+              rm -f /etc/openclaw/install.json /etc/openclaw/install.json.*
+              # Open up while root still owns everything, then hand over.
+              chmod -R u+rwX,go+rX /etc/openclaw
+              chown -R 1000:1000 /etc/openclaw
+          volumeMounts:
+            - name: openclaw-etc-writable
+              mountPath: /etc/openclaw
         # 1) Seed the non-secret base config (gateway/model/origins) from the
         #    ConfigMap into the writable /etc/openclaw emptyDir, plus the custom
         #    skills (loaded via skills.load.extraDirs). Skills are copied rather
         #    than mounted: OpenClaw rejects skill paths that resolve outside
         #    their root, and ConfigMap mounts are symlinks.
         - name: init-config
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.9.8
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -76,7 +123,7 @@ spec:
         #    not connect to the target — safe at boot). URLs/transports stay
         #    readable here; only the tokens come from the SOPS secret.
         - name: init-mcp
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.9.8
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -131,7 +178,7 @@ spec:
         #    --declaration-key (re-running is a no-op), then idles. Jobs live in
         #    the gateway's SQLite state on the durable PVC.
         - name: declare-cron
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.9.8
           restartPolicy: Always
           securityContext:
             runAsUser: 1000
@@ -187,7 +234,7 @@ spec:
               idle
       containers:
         - name: openclaw
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.9.8
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
