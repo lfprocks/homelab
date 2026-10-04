@@ -19,7 +19,7 @@ spec:
         prometheus.io/port: "9090"
       labels:
         k8s.lfp.rocks/service: "llama-cpp"
-        k8s.lfp.rocks/version: "server-cuda"
+        k8s.lfp.rocks/version: "server-cuda12-b9010"
     spec:
       containers:
         - name: *name

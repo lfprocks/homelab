@@ -38,7 +38,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-api"
-        k8s.lfp.rocks/version: "v1.2.0"
+        k8s.lfp.rocks/version: "v1.8.1"
     spec:
       affinity:
         nodeAffinity:

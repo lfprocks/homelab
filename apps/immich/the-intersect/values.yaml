@@ -91,6 +91,11 @@ immich:
 
 valkey:
   enabled: true
+  # Overrides the root defaultPodOptions so valkey carries its own version.
+  defaultPodOptions:
+    labels:
+      k8s.lfp.rocks/service: "immich"
+      k8s.lfp.rocks/version: "9.2-alpine"
   controllers:
     main:
       containers:

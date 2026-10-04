@@ -22,7 +22,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "wastebin"
-        k8s.lfp.rocks/version: "latest"
+        k8s.lfp.rocks/version: "3.3.0"
     spec:
       affinity:
         nodeAffinity:

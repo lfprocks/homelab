@@ -27,6 +27,9 @@ patches:
       - op: add
         path: /spec/podTemplate/spec/containers/0/image
         value: ghcr.io/michaelpeterswa/lfpweather-agent:v1.2.1
+      - op: replace
+        path: /spec/podTemplate/metadata/labels/k8s.lfp.rocks~1version
+        value: "v1.2.1"
   - target:
       group: extensions.agents.x-k8s.io
       version: v1beta1

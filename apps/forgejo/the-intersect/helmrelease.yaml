@@ -43,4 +43,4 @@ spec:
                 value: "forgejo"
               - op: add
                 path: /spec/template/metadata/labels/k8s.lfp.rocks~1version
-                value: "13.0.2"
+                value: "13.0.4-rootless"

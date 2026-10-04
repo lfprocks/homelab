@@ -35,7 +35,7 @@ spec:
         metadata:
           labels:
             k8s.lfp.rocks/service: "camera-latest"
-            k8s.lfp.rocks/version: "v1"
+            k8s.lfp.rocks/version: "579.0.0-slim"
         spec:
           restartPolicy: OnFailure
           affinity:

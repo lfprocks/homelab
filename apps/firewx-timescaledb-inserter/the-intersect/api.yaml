@@ -45,7 +45,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "firewx-timescaledb-inserter"
-        k8s.lfp.rocks/version: "v1.0.0"
+        k8s.lfp.rocks/version: "v1.1.0"
     spec:
       containers:
         - name: *name

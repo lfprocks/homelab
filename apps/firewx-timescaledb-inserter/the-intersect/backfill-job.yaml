@@ -21,7 +21,7 @@ spec:
       labels:
         app: firewx-timescaledb-inserter-backfill
         k8s.lfp.rocks/service: "firewx-timescaledb-inserter"
-        k8s.lfp.rocks/version: "v1.0.0"
+        k8s.lfp.rocks/version: "v1.1.0"
     spec:
       restartPolicy: Never
       securityContext:

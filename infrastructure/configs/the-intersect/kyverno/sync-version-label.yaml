@@ -1,0 +1,65 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sync-version-label
+  annotations:
+    policies.kyverno.io/title: Set k8s.lfp.rocks/version from the image
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Overwrites the `k8s.lfp.rocks/version` label on new pods with the tag of
+      the pod's first container image, or `sha-<first 8 hex of digest>` when
+      the image is pinned by digest only.
+
+      The label used to be maintained by hand next to each image. Renovate
+      bumps the image but not the label, so 19 workloads had drifted (e.g.
+      paperless labelled 2.13.5 while running 2.20.15). Labels in the repo
+      still have to be present for `require-labels`, but this makes the value
+      that reaches the cluster always match what is running.
+
+      CREATE only, so it never fights an operator (CNPG, dragonfly) that later
+      patches its pods' labels. Same opt-in namespace scope as
+      `require-labels`. failurePolicy Ignore: if Kyverno is down the pod keeps
+      its hand-written label rather than failing to schedule.
+spec:
+  failurePolicy: Ignore
+  rules:
+    - name: set-version-label-from-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/policy: enforce
+      context:
+        - name: image
+          variable:
+            jmesPath: request.object.spec.containers[0].image
+        # Tag: text after the last ':' of the final path segment, before any
+        # '@digest'. Empty for digest-only or untagged images.
+        - name: tag
+          variable:
+            jmesPath: >-
+              regex_replace_all('^(?:.*/)?[^/:@]+(?::([^@]*))?(?:@.*)?$', image, '$1')
+        - name: digest8
+          variable:
+            jmesPath: >-
+              regex_replace_all('^[^@]*(?:@[a-z0-9]+:([0-9a-f]{8})[0-9a-f]*)?$', image, '$1')
+        - name: version
+          variable:
+            jmesPath: "tag || (digest8 && join('', ['sha-', digest8])) || ''"
+      preconditions:
+        all:
+          # Only values that are valid label values (tags may be up to 128
+          # chars and start with '_' or '.', labels may not).
+          - key: "{{ regex_match('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$', version) }}"
+            operator: Equals
+            value: true
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            labels:
+              k8s.lfp.rocks/version: "{{ version }}"

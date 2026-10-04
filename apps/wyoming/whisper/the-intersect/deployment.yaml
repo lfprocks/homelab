@@ -17,7 +17,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "whisper"
-        k8s.lfp.rocks/version: "sha-f0345691"
+        k8s.lfp.rocks/version: "sha-ba6fcb60"
       annotations:
         prometheus.io/scrape: "false"
         prometheus.istio.io/merge-metrics: "false"
