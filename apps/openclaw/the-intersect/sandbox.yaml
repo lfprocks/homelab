@@ -43,7 +43,9 @@ spec:
         #    DuckDuckGo web_search provider is a separate plugin, and the config
         #    (tools.web.search.provider) fails validation without it. Plugins
         #    install into <config dir>/extensions, i.e. this emptyDir, so this
-        #    runs on every start (pinned version, from ClawHub).
+        #    runs on every start (from ClawHub). Don't pin a version: an
+        #    explicit @version installs via npm into <config dir>/npm/projects
+        #    instead, a different layout from the one validated here.
         #
         #    Why root: `plugins install` links the openclaw peer dependency
         #    under /app (root-owned) and fchmods there, which fails as uid 1000.
@@ -77,7 +79,7 @@ spec:
               mkdir -p /tmp/plugin-install-home
               echo '{}' > /etc/openclaw/install.json
               OPENCLAW_CONFIG_PATH=/etc/openclaw/install.json \
-                node /app/dist/index.js plugins install @openclaw/duckduckgo-plugin@2026.9.7
+                node /app/dist/index.js plugins install @openclaw/duckduckgo-plugin
               test -d /etc/openclaw/extensions/duckduckgo
               rm -f /etc/openclaw/install.json /etc/openclaw/install.json.*
               # Open up while root still owns everything, then hand over.
