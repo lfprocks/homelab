@@ -43,7 +43,10 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
-      # lfp.rocks is on Cloudflare — use a Cloudflare DNS-01 solver for it.
+      # Zones whose nameservers are Cloudflare use the Cloudflare DNS-01 solver.
+      # A zone moved to Cloudflare MUST be added here: otherwise cert-manager
+      # writes the challenge TXT into the stale Route53 zone and the renewal
+      # sits in "not yet propagated" forever.
       - dns01:
           cloudflare:
             apiTokenSecretRef:
@@ -52,7 +55,9 @@ spec:
         selector:
           dnsZones:
             - "lfp.rocks"
-      # Everything else stays on Route53 (default solver, no selector).
+            - "${DOMAIN_COMMON_STAR}"
+            - "${DOMAIN_CORONET_SUMMIT}"
+      # Everything else is on Route53 (default solver, no selector).
       - dns01:
           route53:
             region: us-west-2
