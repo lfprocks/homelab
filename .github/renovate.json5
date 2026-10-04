@@ -89,6 +89,16 @@
       labels: ["renovate", "risk/high"],
     },
     {
+      // HOLD: Cilium 1.20 requires Gateway API v1 TLSRoute, ReferenceGrant and
+      // BackendTLSPolicy. With the v1.3.0 CRDs installed, its operator turns
+      // off the Gateway API controller, stops syncing TLS secrets, and every
+      // HTTPS route resets (#181 -> outage, reverted in #215). Upgrade the
+      // Gateway API CRDs (infrastructure/controllers/shared/gatewayapi) first,
+      // then lift this.
+      matchDepNames: ["cilium"],
+      allowedVersions: "<1.20.0",
+    },
+    {
       // Postgres images back live databases (immich, cloudnative-pg clusters);
       // a major is a data migration, not an upgrade.
       matchDepNames: ["/postgres/"],
