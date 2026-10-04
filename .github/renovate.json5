@@ -114,6 +114,15 @@
       allowedVersions: "<0.11.0",
     },
     {
+      // HOLD: operator.yaml is a hand-copied release manifest; bumping only
+      // the image left 1.30.1 without its new CRDs ("no matches for kind
+      // DatabaseRole in version postgresql.cnpg.io/v1", CrashLoopBackOff, #170
+      // -> reverted). Upgrade by regenerating the manifest (CRDs + RBAC) from
+      // the release, one minor at a time, then lift this.
+      matchDepNames: ["ghcr.io/cloudnative-pg/cloudnative-pg"],
+      allowedVersions: "<1.26.0",
+    },
+    {
       // Postgres images back live databases (immich, cloudnative-pg clusters);
       // a major is a data migration, not an upgrade.
       matchDepNames: ["/postgres/"],
