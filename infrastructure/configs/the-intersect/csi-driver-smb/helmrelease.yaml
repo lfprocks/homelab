@@ -11,7 +11,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: csi-driver-smb
-      version: 1.16.0
+      version: 1.20.3
   valuesFrom:
     - kind: ConfigMap
       name: csi-driver-smb-values
