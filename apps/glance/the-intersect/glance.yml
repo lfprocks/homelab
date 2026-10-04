@@ -148,12 +148,9 @@ pages:
                   - title: BirdNET
                     url: https://${SUB_EMBER_QUILL}.${DOMAIN_NOBLE_NOOK}
                     icon: mdi:bird
-                  - title: Pi-Star
+                  - title: WPSD
                     url: https://${SUB_IVORY_RIDGE}.${DOMAIN_TAWNY_ARROW}
                     icon: mdi:radio-tower
-                    # the dashboard page takes ~4s to render on the Pi (direct or proxied);
-                    # the default 3s monitor timeout marks it Timed Out.
-                    timeout: 10s
           - type: hacker-news
           - type: videos
             channels:
