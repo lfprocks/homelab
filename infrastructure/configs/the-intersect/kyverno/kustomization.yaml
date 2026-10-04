@@ -4,3 +4,4 @@ resources:
   - clusterpolicy.yaml
   - disallow-latest-tag.yaml
   - require-resource-requests.yaml
+  - sync-version-label.yaml

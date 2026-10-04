@@ -17,7 +17,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "piper"
-        k8s.lfp.rocks/version: "sha-40670d2f"
+        k8s.lfp.rocks/version: "sha-7d39aafa"
       annotations:
         prometheus.io/scrape: "false"
         prometheus.istio.io/merge-metrics: "false"

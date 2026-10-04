@@ -19,7 +19,7 @@ spec:
         metadata:
           labels:
             k8s.lfp.rocks/service: "idrac-cert-push"
-            k8s.lfp.rocks/version: "v1"
+            k8s.lfp.rocks/version: "9.5.0"
         spec:
           restartPolicy: OnFailure
           affinity:

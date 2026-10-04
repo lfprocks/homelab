@@ -79,7 +79,7 @@ postgresql:
   primary:
     podLabels:
       k8s.lfp.rocks/service: "paperless-ngx-postgresql"
-      k8s.lfp.rocks/version: "16.6.0"
+      k8s.lfp.rocks/version: "16.6.0-debian-12-r2"
     persistence:
       enabled: true
       storageClass: "smb-client"
@@ -104,7 +104,7 @@ redis:
   master:
     podLabels:
       k8s.lfp.rocks/service: "paperless-ngx-redis"
-      k8s.lfp.rocks/version: "7.4.2"
+      k8s.lfp.rocks/version: "7.4.2-debian-12-r2"
   # The chart also renders a paperless-ngx-redis-replicas StatefulSet. It sits at
   # replicas=0 here so it has no pods to be non-compliant today, but its template
   # would produce unlabeled pods the moment it scaled up -- which under Enforce
@@ -113,4 +113,4 @@ redis:
   replica:
     podLabels:
       k8s.lfp.rocks/service: "paperless-ngx-redis"
-      k8s.lfp.rocks/version: "7.4.2"
+      k8s.lfp.rocks/version: "7.4.2-debian-12-r2"

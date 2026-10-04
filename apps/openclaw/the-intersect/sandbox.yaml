@@ -25,7 +25,7 @@ spec:
         sandbox: openclaw-template-sandbox
         # Required by the cluster's kyverno require-labels policy.
         k8s.lfp.rocks/service: openclaw
-        k8s.lfp.rocks/version: "1"
+        k8s.lfp.rocks/version: "2026.7.1"
     spec:
       # Run the agent inside a gVisor userspace-kernel sandbox.
       runtimeClassName: gvisor

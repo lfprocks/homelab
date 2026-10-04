@@ -32,7 +32,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "pocket-id"
-        k8s.lfp.rocks/version: "v2.8.0"
+        k8s.lfp.rocks/version: "v2.17.0"
     spec:
       affinity:
         nodeAffinity:

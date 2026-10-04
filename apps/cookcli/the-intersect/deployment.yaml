@@ -25,7 +25,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "cookcli"
-        k8s.lfp.rocks/version: "v0.30.0"
+        k8s.lfp.rocks/version: "0.37.0"
     spec:
       affinity:
         nodeAffinity:
