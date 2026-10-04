@@ -3,7 +3,6 @@ kind: Kustomization
 namespace: invidious
 resources:
   - helmrelease.yaml
-  - httproute.yaml
 configMapGenerator:
   - name: invidious-values
     files:
