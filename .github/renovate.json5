@@ -99,6 +99,21 @@
       allowedVersions: "<1.20.0",
     },
     {
+      // HOLD: operator.yaml is a hand-copied release manifest; bumping only
+      // the image left v1.7.0 without the RBAC it needs (cache sync timeout on
+      // Pods, CrashLoopBackOff, #167 -> reverted). Upgrade by regenerating the
+      // manifest from the release, then lift this.
+      matchDepNames: ["docker.dragonflydb.io/dragonflydb/operator"],
+      allowedVersions: "<1.2.0",
+    },
+    {
+      // HOLD: chart 0.11+ changed the values schema (persistence keys), so the
+      // 0.13.2 upgrade failed validation (#172 -> reverted). Migrate
+      // apps/immich values to the new schema, then lift this.
+      matchDepNames: ["ghcr.io/immich-app/immich-charts/immich"],
+      allowedVersions: "<0.11.0",
+    },
+    {
       // Postgres images back live databases (immich, cloudnative-pg clusters);
       // a major is a data migration, not an upgrade.
       matchDepNames: ["/postgres/"],
