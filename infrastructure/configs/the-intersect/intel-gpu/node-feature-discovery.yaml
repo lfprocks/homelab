@@ -12,7 +12,7 @@ spec:
         kind: HelmRepository
         name: node-feature-discovery
         namespace: intel
-      version: 0.17.3
+      version: 0.19.0
   interval: 1m0s
   values:
     worker:
