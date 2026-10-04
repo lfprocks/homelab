@@ -85,6 +85,15 @@ postgresql:
       storageClass: "smb-client"
       size: 8Gi
 
+# Bitnami subcharts newer than the ones chart 0.22 bundled refuse to render
+# with images outside their recognised list, failing with "Original containers
+# have been substituted for unrecognized ones". The bitnamilegacy images above
+# and below are the same images, moved after Bitnami pulled the free tags, so
+# skip that check. Applies to every Bitnami subchart (redis, postgresql).
+global:
+  security:
+    allowInsecureImages: true
+
 redis:
   enabled: true
   # Bitnami removed legacy free tags from docker.io/bitnami; use the bitnamilegacy
