@@ -26,4 +26,6 @@ spec:
     config:
       apiVersion: controller.config.cert-manager.io/v1alpha1
       kind: ControllerConfiguration
-      enableGatewayAPI: true
+      # enableGatewayAPI was deprecated in 1.21 in favour of this sub-struct.
+      gatewayAPI:
+        enabled: true
