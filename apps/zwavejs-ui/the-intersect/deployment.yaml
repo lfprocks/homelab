@@ -34,7 +34,7 @@ spec:
           # 2026-07-29. Note `latest` has since moved to 11.22.x, so a restart
           # under the old `:latest` would have silently pulled three minor
           # versions into the Z-Wave controller. Bumping is a separate change.
-          image: zwavejs/zwave-js-ui:11.19.1
+          image: zwavejs/zwave-js-ui:11.24.2
           ports:
             - containerPort: 8091
               name: zwavejs
