@@ -35,7 +35,7 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: quxfoo/wastebin:3.3.0
+          image: quxfoo/wastebin:3.8.0
           volumeMounts:
             - mountPath: /pastes
               name: wastebin-pvc-volume
