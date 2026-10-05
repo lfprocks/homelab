@@ -49,7 +49,7 @@ spec:
             privileged: true
       containers:
         - name: pause
-          image: registry.k8s.io/pause:3.9
+          image: registry.k8s.io/pause:3.10
           resources:
             requests:
               cpu: "10m"
