@@ -1,0 +1,59 @@
+---
+# Rook >= 1.20 no longer deploys CSI drivers itself: the ceph-csi-operator
+# (installed by the rook-ceph chart) deploys them from Driver/OperatorConfig
+# CRs, and those CRs - plus the driver ServiceAccounts - come from this chart.
+# Without it the old Rook-deployed CSI pods lose their ServiceAccounts and
+# provisioning fails with "Unauthorized". Install order per Rook's upgrade
+# guide: rook-ceph -> ceph-csi-drivers -> rook-ceph-cluster.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: ceph-csi-operator
+  namespace: rook-ceph
+spec:
+  interval: 1h0m0s
+  url: https://ceph.github.io/ceph-csi-operator
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ceph-csi-drivers
+  namespace: rook-ceph
+spec:
+  dependsOn:
+    - name: rook-ceph
+  chart:
+    spec:
+      chart: ceph-csi-drivers
+      sourceRef:
+        kind: HelmRepository
+        name: ceph-csi-operator
+      # Keep in step with the ceph-csi-operator subchart bundled by rook-ceph.
+      version: 1.0.4
+  interval: 1h0m0s
+  # Rook's recommended values (deploy/charts/ceph-csi-drivers/values.yaml at
+  # v1.20.8). Driver names MUST stay <operator namespace>.<type>.csi.ceph.com:
+  # every existing PV and StorageClass references them.
+  values:
+    operatorConfig:
+      namespace: rook-ceph
+      driverSpecDefaults:
+        imageSet:
+          name: rook-csi-operator-image-set-configmap
+        nodePlugin:
+          priorityClassName: system-node-critical
+        controllerPlugin:
+          priorityClassName: system-cluster-critical
+    drivers:
+      rbd:
+        enabled: true
+        name: rook-ceph.rbd.csi.ceph.com
+      cephfs:
+        enabled: true
+        name: rook-ceph.cephfs.csi.ceph.com
+      nfs:
+        enabled: false
+        name: rook-ceph.nfs.csi.ceph.com
+      nvmeof:
+        enabled: false
+        name: rook-ceph.nvmeof.csi.ceph.com
