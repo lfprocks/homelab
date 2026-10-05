@@ -45,7 +45,7 @@ spec:
         #    than mounted: OpenClaw rejects skill paths that resolve outside
         #    their root, and ConfigMap mounts are symlinks.
         - name: init-config
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.7.35
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -76,7 +76,7 @@ spec:
         #    not connect to the target — safe at boot). URLs/transports stay
         #    readable here; only the tokens come from the SOPS secret.
         - name: init-mcp
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.7.35
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -131,7 +131,7 @@ spec:
         #    --declaration-key (re-running is a no-op), then idles. Jobs live in
         #    the gateway's SQLite state on the durable PVC.
         - name: declare-cron
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.7.35
           restartPolicy: Always
           securityContext:
             runAsUser: 1000
@@ -187,7 +187,7 @@ spec:
               idle
       containers:
         - name: openclaw
-          image: ghcr.io/openclaw/openclaw:2026.7.1
+          image: ghcr.io/openclaw/openclaw:2026.7.35
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
