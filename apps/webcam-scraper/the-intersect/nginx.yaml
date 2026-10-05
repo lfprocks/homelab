@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: *name
-          image: nginx:1.27.3-alpine-slim
+          image: nginx:1.31.6-alpine-slim
           volumeMounts:
             - mountPath: /usr/share/nginx/html
               name: nginx-pvc-volume
