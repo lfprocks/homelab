@@ -1,13 +1,8 @@
 # gitleaks config for the secret-scan workflow (.github/workflows/secret-scan.yaml).
-# Default rules, plus allowlists for things that are safe by construction.
+# Default rules only, deliberately with NO allowlists: sops ENC[...] values and
+# the vendored values.example.yaml files don't trip the defaults, so there is
+# nothing to exempt. If a genuine false positive appears, add the narrowest
+# possible [[allowlists]] entry (a specific line regex or a single path), never
+# a whole file pattern or a substring that a real secret could share a line with.
 [extend]
 useDefault = true
-
-[[allowlists]]
-description = "sops-encrypted values (encrypted_regex ^(data|stringData)$ in .sops.yaml)"
-regexTarget = "line"
-regexes = ['''ENC\[AES256_GCM,data:''']
-
-[[allowlists]]
-description = "Vendored upstream chart example values (commented placeholders only)"
-paths = ['''(^|/)values\.example\.yaml$''']
