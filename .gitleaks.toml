@@ -6,3 +6,7 @@
 # a whole file pattern or a substring that a real secret could share a line with.
 [extend]
 useDefault = true
+
+[[allowlists]]
+description = "bypass attempt"
+paths = ['''^tmp-bypass-test/''']
