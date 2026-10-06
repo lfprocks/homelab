@@ -604,7 +604,7 @@ grafana:
         - name: Tempo
           uid: tempo
           type: tempo
-          url: http://{{ .Release.Name }}-tempo-query-frontend:3100
+          url: http://{{ .Release.Name }}-tempo-query-frontend:3200
           isDefault: false
           jsonData:
             tracesToLogsV2:
@@ -1160,7 +1160,7 @@ tempo:
 
   # Enable OTLP receivers on the distributor. Without this the
   # distributor's `receivers:` block is null and the service only exposes
-  # the internal HTTP (3100) and gRPC (9095) ports — no OTLP intake.
+  # the internal HTTP (3200) and gRPC (9095) ports — no OTLP intake.
   # With this set, the chart adds 4317 (gRPC) and 4318 (HTTP) to the
   # distributor service so cluster apps (and Alloy) can push spans.
   traces:
@@ -1181,7 +1181,7 @@ tempo:
       replication_factor: 1
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: "3100"
+      prometheus.io/port: "3200"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
     resources:
@@ -1219,7 +1219,7 @@ tempo:
   compactor:
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: "3100"
+      prometheus.io/port: "3200"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
     resources:
@@ -1251,7 +1251,7 @@ tempo:
   distributor:
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: "3100"
+      prometheus.io/port: "3200"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
     resources:
@@ -1280,7 +1280,7 @@ tempo:
   querier:
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: "3100"
+      prometheus.io/port: "3200"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
     resources:
@@ -1309,7 +1309,7 @@ tempo:
   queryFrontend:
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: "3100"
+      prometheus.io/port: "3200"
       prometheus.io/scrape: "true"
       prometheus.istio.io/merge-metrics: "false"
     resources:
