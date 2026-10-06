@@ -100,7 +100,7 @@ redis:
   # archive (same image the chart pulled before). Matches the postgresql fix above.
   image:
     repository: bitnamilegacy/redis
-    tag: "7.4.2-debian-12-r2"
+    tag: "8.0.3-debian-12-r2"
   master:
     podLabels:
       k8s.lfp.rocks/service: "paperless-ngx-redis"
