@@ -12,7 +12,7 @@ spec:
         kind: HelmRepository
         name: openwebui
         namespace: openwebui
-      version: 12.13.0
+      version: 16.6.0
   interval: 1m0s
   values:
     ollama:
