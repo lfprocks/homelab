@@ -41,6 +41,23 @@
     managerFilePatterns: ["/(^|/)values[^/]*\\.ya?ml$/"],
   },
 
+  // CI tool binaries pinned in workflow env blocks (gitleaks, zizmor, trivy).
+  // Each is a `# renovate:` comment, then <TOOL>_VERSION (the release tag) and
+  // <TOOL>_SHA256. The github-release-attachments datasource updates BOTH: it
+  // finds the asset matching the current checksum and returns the new
+  // release's checksum for the same asset, so a bump never leaves a stale
+  // checksum (which would fail the now-required checks).
+  customManagers: [
+    {
+      customType: "regex",
+      description: "CI tool binaries (version + sha256) in GitHub workflows",
+      managerFilePatterns: ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      matchStrings: [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s*\\n\\s*[A-Z0-9_]+_VERSION:\\s*(?<currentValue>\\S+)\\s*\\n\\s*[A-Z0-9_]+_SHA256:\\s*(?<currentDigest>[a-f0-9]{64})",
+      ],
+    },
+  ],
+
   packageRules: [
     {
       // Don't rewrite apiVersions: a newer API (e.g. OCIRepository v1) may not

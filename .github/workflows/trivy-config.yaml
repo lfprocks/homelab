@@ -31,11 +31,12 @@ jobs:
 
       - name: Install trivy
         env:
-          TRIVY_VERSION: 0.75.0
+          # renovate: datasource=github-release-attachments depName=aquasecurity/trivy
+          TRIVY_VERSION: v0.75.0
           TRIVY_SHA256: c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f
         run: |
-          f="trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
-          curl -sfLO "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${f}"
+          f="trivy_${TRIVY_VERSION#v}_Linux-64bit.tar.gz"
+          curl -sfLO "https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/${f}"
           echo "${TRIVY_SHA256}  ${f}" | sha256sum -c -
           mkdir -p "$HOME/bin" && tar xzf "$f" -C "$HOME/bin" trivy
           echo "$HOME/bin" >> "$GITHUB_PATH"
