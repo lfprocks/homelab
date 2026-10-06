@@ -1,0 +1,13 @@
+# gitleaks config for the secret-scan workflow (.github/workflows/secret-scan.yaml).
+# Default rules, plus allowlists for things that are safe by construction.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "sops-encrypted values (encrypted_regex ^(data|stringData)$ in .sops.yaml)"
+regexTarget = "line"
+regexes = ['''ENC\[AES256_GCM,data:''']
+
+[[allowlists]]
+description = "Vendored upstream chart example values (commented placeholders only)"
+paths = ['''(^|/)values\.example\.yaml$''']
