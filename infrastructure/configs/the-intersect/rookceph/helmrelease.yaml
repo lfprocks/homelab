@@ -53,3 +53,34 @@ spec:
           requests:
             memory: "1Gi"
             cpu: "500m"
+      # Ceph Tentacle (20.x) flags cephx keys of the legacy `aes` type
+      # (CVE-2025-30156: tamperable service tickets). Rotate the daemon keys
+      # (mon/mgr/osd/mds/rgw, client.admin, crash, exporter) to the secure type.
+      # Rook picks the type itself; bump keyGeneration to rotate again.
+      # Rotated keys can't be un-rotated: the old key material is gone.
+      security:
+        cephx:
+          daemon:
+            keyRotationPolicy: KeyGeneration
+            keyGeneration: 2
+          # CSI client keys stay `aes`: aes256k needs node kernel >= 7.0
+          # (Talos is on 6.18). Rotate these once the kernel allows it.
+          csi:
+            keyType: aes
+          # No RBD mirror peers exist, so this key can move now.
+          rbdMirrorPeer:
+            keyRotationPolicy: KeyGeneration
+            keyGeneration: 2
+            keyType: aes256k
+      # Warnings that cannot clear until the CSI keys are rotated (kernel 7.0+).
+      # Unmute them together with that rotation. AUTH_INSECURE_SERVICE_KEY_TYPE
+      # and AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE are NOT muted: they clear
+      # once the daemon keys are rotated.
+      healthCheck:
+        muteHealthWarning:
+          AUTH_INSECURE_CLIENT_KEY_TYPE:
+            policy: mute
+          AUTH_INSECURE_KEYS_ALLOWED:
+            policy: mute
+          AUTH_INSECURE_KEYS_CREATABLE:
+            policy: mute
