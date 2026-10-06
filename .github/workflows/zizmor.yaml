@@ -1,0 +1,47 @@
+name: zizmor
+
+# Static security analysis of this repo's GitHub Actions workflows: template
+# injection, over-broad token permissions, risky triggers, unpinned actions,
+# persisted credentials. Required status check on main.
+# Pinned, digest-verified binary (same approach as secret-scan).
+
+# No `paths:` filter on purpose: this is a REQUIRED check, and a required
+# check that never starts (filtered out) leaves every other PR pending forever.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # read the workflow files
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install zizmor
+        env:
+          ZIZMOR_VERSION: 1.30.1
+          ZIZMOR_SHA256: e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a
+        run: |
+          f="zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          curl -sfLO "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/${f}"
+          echo "${ZIZMOR_SHA256}  ${f}" | sha256sum -c -
+          mkdir -p "$HOME/bin" && tar xzf "$f" -C "$HOME/bin" zizmor
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      # Online audits (known-vulnerable actions, impostor commits) use the
+      # read-only job token.
+      - name: Audit workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --format=github .github/workflows/

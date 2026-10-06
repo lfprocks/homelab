@@ -8,13 +8,21 @@ on:
 permissions:
   contents: read
 
+# One run per PR/branch; a newer push supersedes an older PR run. Runs on main
+# are never cancelled, so every merged commit gets a result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Required status check on main: renovate-approved.yaml's auto-merge waits
   # for this to pass.
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install tools
         env:

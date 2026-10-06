@@ -1,6 +1,8 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: ["config:recommended", ":semanticCommits"],
+  // helpers:pinGitHubActionDigests: workflow `uses:` are pinned to commit SHAs
+  // (a tag can be moved to malicious code); Renovate keeps the SHAs current.
+  extends: ["config:recommended", ":semanticCommits", "helpers:pinGitHubActionDigests"],
 
   // Renovate opens PRs; it never merges on its own. Merging happens only after
   // the owner approves a PR (in the GitHub UI, or from Telegram through
