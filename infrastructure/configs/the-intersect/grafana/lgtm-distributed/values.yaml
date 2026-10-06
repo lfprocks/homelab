@@ -1187,13 +1187,16 @@ tempo:
     resources:
       requests:
         cpu: 5m
-        memory: 128Mi
+        memory: 256Mi
       limits:
         cpu: 200m
         # 192Mi still OOMKilled the ingester while completing/flushing a
         # parquet block, which made it UNHEALTHY in the ring and broke all
-        # trace search. Give the block build real headroom.
-        memory: 512Mi
+        # trace search. 512Mi then ran with ~450MiB spikes at every ~30min
+        # block flush, and after Tempo 2.9 (lgtm-distributed 3.x, #257) those
+        # spikes crossed it: OOMKilled ~2x/hour. Idle is ~75MiB; 1Gi gives the
+        # flush real headroom.
+        memory: 1Gi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -1212,7 +1215,7 @@ tempo:
       - -mem-ballast-size-mbs=0
     extraEnv:
       - name: GOMEMLIMIT
-        value: 410MiB
+        value: "820MiB"
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
 
