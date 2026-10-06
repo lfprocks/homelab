@@ -113,6 +113,13 @@
       allowedVersions: "<1.26.0",
     },
     {
+      // HOLD: lfprocks/racadm tags are parallel OpenManage variants, not
+      // successive releases. 9.5.0 is the line that supports iDRAC7 (olympic,
+      // fw 2.65.65.65); 11.0.1 targets iDRAC9 (#252, closed).
+      matchDepNames: ["ghcr.io/lfprocks/racadm"],
+      allowedVersions: "<10",
+    },
+    {
       // Postgres images back live databases (immich, cloudnative-pg clusters);
       // a major is a data migration, not an upgrade.
       matchDepNames: ["/postgres/"],
