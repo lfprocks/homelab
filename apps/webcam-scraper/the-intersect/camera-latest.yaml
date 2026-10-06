@@ -49,7 +49,7 @@ spec:
                           - enabled
           containers:
             - name: camera-latest
-              image: google/cloud-sdk:579.0.0-slim
+              image: google/cloud-sdk:587.0.0-slim
               command: ["/bin/bash", "-c"]
               args:
                 - |
