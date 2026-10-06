@@ -21,12 +21,16 @@ on:
   pull_request:
     types: [synchronize]
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   enable-auto-merge:
+    # Scoped to this job only: `gh pr merge` needs contents:write (to merge)
+    # and pull-requests:write (to enable auto-merge). The main ruleset still
+    # requires the status checks; this token cannot bypass it.
+    permissions:
+      contents: write
+      pull-requests: write
     if: >-
       github.event.pull_request.user.login == 'renovate[bot]' && (
         (github.event_name == 'pull_request_review' &&
