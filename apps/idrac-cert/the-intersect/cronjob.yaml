@@ -41,7 +41,7 @@ spec:
             - name: push
               # Dell remote RACADM; see github.com/lfprocks/racadm. 9.5.0 is
               # the OpenManage line that supports iDRAC7 (12G).
-              image: ghcr.io/lfprocks/racadm:9.5.0
+              image: ghcr.io/lfprocks/racadm:11.0.1
               command: ["/bin/bash", "/app/push_cert.sh"]
               envFrom:
                 - secretRef:
