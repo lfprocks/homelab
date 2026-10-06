@@ -21,6 +21,14 @@ spec:
       enabled: true
     persistence:
       storageClass: smb-client
+    # webui.db lives on SMB (CIFS). SQLite WAL (shared-memory -shm file) and
+    # mmap are unsafe on network filesystems; open-webui 0.9+ turns both on by
+    # default, so pin them off.
+    extraEnvVars:
+      - name: DATABASE_ENABLE_SQLITE_WAL
+        value: "False"
+      - name: DATABASE_SQLITE_PRAGMA_MMAP_SIZE
+        value: "0"
   postRenderers:
     - kustomize:
         patches:
