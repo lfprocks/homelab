@@ -104,7 +104,9 @@ config:
   channel_threads: 1
   full_refresh: false
   feed_threads: 1
-  hmac_key: c0825ea7c172f4d20de7c0fcda06fee52f0209ed
+  # hmac_key: removed from this public file (it was committed in plaintext).
+  # If invidious is re-enabled, generate a NEW one (e.g. `pwgen 20 1` or
+  # `openssl rand -hex 20`) into a sops-encrypted values Secret via valuesFrom.
   registration_enabled: false
   admins: ["michael"]
 
