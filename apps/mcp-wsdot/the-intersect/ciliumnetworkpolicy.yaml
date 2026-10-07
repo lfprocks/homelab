@@ -48,10 +48,13 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
-    # WSDOT API over HTTPS (public internet). "world" excludes in-cluster / LAN
-    # endpoints, so the server cannot reach other internal services.
-    - toEntities:
-        - world
+    # Public internet only. Cilium's `world` entity INCLUDES the LAN (anything
+    # outside the cluster, e.g. olympic 10.0.0.10 and the router were reachable),
+    # so private ranges are excepted explicitly. Cluster DNS and the in-cluster
+    # services this pod needs are allowed by their own rules.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
       toPorts:
         - ports:
             - port: "443"
