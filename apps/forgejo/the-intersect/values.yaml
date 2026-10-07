@@ -151,6 +151,10 @@ gitea:
 
   config:
     APP_NAME: "Intersect Computer Git"
+    # Registration was open to the internet (Forgejo default). Closed; accounts
+    # will come only from Pocket-ID SSO once that is set up.
+    service:
+      DISABLE_REGISTRATION: true
     server:
       DOMAIN: ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
       ROOT_URL: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
