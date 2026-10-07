@@ -48,6 +48,9 @@ spec:
       rbd:
         enabled: true
         name: rook-ceph.rbd.csi.ceph.com
+        # VolumeSnapshots for RBD (VolSync backups). CephFS already defaults
+        # to volumeSnapshot.
+        snapshotPolicy: volumeSnapshot
       cephfs:
         enabled: true
         name: rook-ceph.cephfs.csi.ceph.com
