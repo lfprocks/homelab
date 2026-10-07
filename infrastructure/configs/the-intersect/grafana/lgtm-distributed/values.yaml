@@ -197,7 +197,7 @@ grafana:
               object_matchers:
                 - ["category", "=", "cluster-health"]
                 - ["alertname", "!=", "AlertingHeartbeat"]
-              group_by: ["alertname", "namespace", "exported_namespace", "name", "pod", "container", "persistentvolumeclaim", "node", "instance", "mountpoint"]
+              group_by: ["alertname", "namespace", "exported_namespace", "name", "pod", "container", "persistentvolumeclaim", "node", "instance", "mountpoint", "obj_namespace", "obj_name"]
               group_wait: 30s
               group_interval: 5m
               repeat_interval: 12h
@@ -988,6 +988,40 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [36]}
+            # VolSync PVC backups (restic -> GCS). out_of_sync=1 when a source
+            # missed its schedule or its last run failed. Unfiltered (10
+            # series) so NoData still fires if the VolSync metrics vanish.
+            - uid: volsync-backup-out-of-sync
+              title: VolSyncBackupOutOfSync
+              condition: fired
+              noDataState: NoData
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: PVC backup failing
+                summary: '{{ `VolSync backup of {{ $labels.obj_namespace }}/{{ $labels.obj_name }} is out of sync (missed its schedule or failed) for 1h. Check: kubectl -n {{ $labels.obj_namespace }} get replicationsource {{ $labels.obj_name }} -o yaml` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (obj_namespace, obj_name) (volsync_volume_out_of_sync)
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
             - uid: alerting-heartbeat
               title: AlertingHeartbeat
               condition: fired
