@@ -36,6 +36,8 @@ spec:
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        fsGroup: 1000  # state PVC writable by rootless buildkitd (uid 1000)
       containers:
         - name: buildkitd
           image: docker.io/moby/buildkit:v0.33.1-rootless

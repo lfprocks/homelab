@@ -37,6 +37,8 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       terminationGracePeriodSeconds: 120
+      securityContext:
+        fsGroup: 1000  # registration Secret (0440) + data readable by the runner (uid 1000)
       initContainers:
         - name: render-config
           image: code.forgejo.org/forgejo/runner:13.2.0
@@ -75,6 +77,12 @@ spec:
             - {name: registration, mountPath: /registration, readOnly: true}
         - name: dind
           image: docker.io/library/docker:29.8.2-dind
+          # Bypass dockerd-entrypoint.sh: with TLS off it ALSO listens on
+          # tcp://0.0.0.0:2375, an unauthenticated Docker API that job
+          # containers could reach via the bridge gateway (= node root).
+          # `dind` is the image's privileged-setup wrapper; dockerd then
+          # listens only on the socket shared with the runner container.
+          command: ["dind", "dockerd"]
           args:
             - --host=unix:///var/run/dind/docker.sock
             - --group=1000  # socket readable by the runner (uid/gid 1000) only
