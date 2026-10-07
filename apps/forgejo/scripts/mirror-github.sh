@@ -32,21 +32,32 @@ GH_TOKEN=""
 
 fj()  { kubectl -n forgejo exec deploy/forgejo -c forgejo -- forgejo "$@"; }
 sql() { kubectl -n forgejo exec forgejo-postgres-1 -c postgres -- psql -U postgres -d forgejo -tAc "$1"; }
-HOST=$(kubectl -n forgejo get httproute -o jsonpath='{.items[0].spec.hostnames[0]}')
 ADMIN_TOKEN_NAME="mirror-github-$$"
 BODY=$(mktemp); LIST=$(mktemp)
+# The migrate API is synchronous. Through the public gateway a slow clone hits
+# Envoy's stream timeout (504) and the dropped request cancels the migration,
+# so talk to the Forgejo Service directly through a port-forward instead.
+PF_PORT=$((20000 + RANDOM % 20000))
+kubectl -n forgejo port-forward svc/forgejo-http "$PF_PORT:3000" >/dev/null 2>&1 &
+PF_PID=$!
 cleanup() {
   sql "DELETE FROM access_token WHERE name='${ADMIN_TOKEN_NAME}'" >/dev/null || true
+  kill "$PF_PID" 2>/dev/null || true
   rm -f "$BODY" "$LIST"
   GH_TOKEN=""
 }
 trap cleanup EXIT
+for _ in $(seq 1 30); do curl -s -o /dev/null "http://127.0.0.1:$PF_PORT/api/healthz" && break; sleep 1; done
+API="http://127.0.0.1:$PF_PORT/api/v1"
 ADMIN_TOKEN=$(fj admin user generate-access-token --username intersect-admin \
   --token-name "$ADMIN_TOKEN_NAME" --scopes write:admin,write:organization,write:repository,write:user --raw 2>/dev/null | tail -1)
 
-fapi() { # METHOD PATH [JSON] -> HTTP code; body in $BODY
-  curl -s -m 1800 -o "$BODY" -w '%{http_code}' -X "$1" -H "Authorization: token $ADMIN_TOKEN" \
-    -H 'Content-Type: application/json' ${3:+-d "$3"} "https://$HOST/api/v1$2"
+fapi() { # METHOD PATH [JSON] -> HTTP code ("000" if the request itself failed); body in $BODY
+  curl -s -m 3600 -o "$BODY" -w '%{http_code}' -X "$1" -H "Authorization: token $ADMIN_TOKEN" \
+    -H 'Content-Type: application/json' ${3:+-d "$3"} "$API$2" || true
+}
+repo_status() { # owner name -> Forgejo repository.status (0 ready, 1 being migrated, ...), empty if absent
+  sql "SELECT status FROM repository WHERE lower_name=lower('$2') AND owner_name ILIKE '$1'" 2>/dev/null | head -1
 }
 
 # Fields are separated by ASCII 0x1f (unit separator), not tabs: `read` treats
@@ -73,7 +84,12 @@ mirror_owner() { # gh_owner kind forgejo_owner
   fi
   while IFS="$SEP" read -r name private archived desc url; do
     if [ "$private" = true ] && [ -z "$GH_TOKEN" ]; then skipped_priv=$((skipped_priv+1)); continue; fi
-    if [ "$(fapi GET "/repos/$3/$name")" = 200 ]; then skipped=$((skipped+1)); continue; fi
+    st=$(repo_status "$3" "$name")
+    if [ "$st" = 0 ]; then skipped=$((skipped+1)); continue; fi
+    if [ -n "$st" ]; then  # left half-migrated by an interrupted run: remove and redo
+      fapi DELETE "/repos/$3/$name" >/dev/null
+      printf '  ~ %s/%s: removed half-migrated copy (status %s), retrying\n' "$3" "$name" "$st"
+    fi
     payload=$(NAME="$name" PRIV="$private" DESC="$desc" URL="$url" OWNER="$3" TOK="$GH_TOKEN" INT="$INTERVAL" python3 -c '
 import json, os
 p = {"clone_addr": os.environ["URL"], "repo_owner": os.environ["OWNER"], "repo_name": os.environ["NAME"],
