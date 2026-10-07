@@ -14,6 +14,8 @@ resources:
 - flippydrive-flippydrive-data-pvc.restic.sops.yaml
 - forgejo-gitea-shared-storage.replicationsource.yaml
 - forgejo-gitea-shared-storage.restic.sops.yaml
+- grafana-grafana-data.replicationsource.yaml
+- grafana-grafana-data.restic.sops.yaml
 - home-assistant-home-assistant-home-assistant-0.replicationsource.yaml
 - home-assistant-home-assistant-home-assistant-0.restic.sops.yaml
 - homebox-homebox-pvc.replicationsource.yaml
