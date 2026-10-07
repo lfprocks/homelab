@@ -193,6 +193,24 @@ grafana:
               # missed overnight is repeated in the morning.
               repeat_interval: 6h
 
+            # Cluster-health rules: one notification per affected object.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["category", "=", "cluster-health"]
+                - ["alertname", "!=", "AlertingHeartbeat"]
+              group_by: ["alertname", "namespace", "exported_namespace", "name", "pod", "container", "persistentvolumeclaim", "node", "instance", "mountpoint"]
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+            # Daily proof that rules -> Grafana -> pnp -> Pushover still works.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["alertname", "=", "AlertingHeartbeat"]
+              group_by: ["alertname"]
+              group_wait: 30s
+              group_interval: 1h
+              repeat_interval: 24h
+
     rules.yaml:
       apiVersion: 1
       groups:
@@ -571,6 +589,396 @@ grafana:
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
+
+        - orgId: 1
+          name: cluster-health
+          folder: alerts
+          interval: 1m
+          rules:
+            # Cluster-health alerts (plan item 1). Each fired at least once
+            # this week while nobody was looking: FluxNotReady (failed rook /
+            # csi-smb / cilium HelmReleases), CertificateExpiringSoon (a
+            # wildcard stuck 6 days on a moved DNS zone), PodOOMKilled (Tempo
+            # ingester, 2x/hour), PVCPending (Ceph CSI broken after Rook 1.20).
+            # Summaries name the object: the backtick form escapes the
+            # Grafana template from Helm's tpl, as the contact point does.
+            - uid: flux-not-ready
+              title: FluxNotReady
+              condition: fired
+              for: 15m
+              annotations:
+                title: Flux resource not ready
+                summary: '{{ `Flux {{ $labels.customresource_kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} not Ready for 15m (reason: {{ $labels.reason }})` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (customresource_kind, exported_namespace, name, reason) (gotk_resource_info{ready="False", suspended!="true"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: certificate-expiring
+              title: CertificateExpiringSoon
+              condition: fired
+              for: 1h
+              annotations:
+                title: certificate expiring soon
+                summary: '{{ `Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires in {{ humanize $values.q.Value }} days; renewal is not happening` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      min by (exported_namespace, name) ((certmanager_certificate_expiration_timestamp_seconds - time()) / 86400)
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: lt, params: [21]}
+            - uid: certificate-not-ready
+              title: CertificateNotReady
+              condition: fired
+              for: 1h
+              annotations:
+                title: certificate not ready
+                summary: '{{ `Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} has not been Ready for 1h` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (exported_namespace, name) (certmanager_certificate_ready_status{condition!="True"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: pod-crashlooping
+              title: PodCrashLooping
+              condition: fired
+              for: 5m
+              annotations:
+                title: pod crash-looping
+                summary: '{{ `{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) restarted {{ humanize $values.q.Value }} times in the last hour` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h]))
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [3]}
+            - uid: pod-oomkilled
+              title: PodOOMKilled
+              condition: fired
+              for: 0m
+              annotations:
+                title: container OOMKilled repeatedly
+                summary: '{{ `{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) was OOMKilled and restarted {{ humanize $values.q.Value }} times in the last hour: raise its memory limit` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) * on (namespace, pod, container) group_left () max by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"})
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: ge, params: [2]}
+            - uid: pvc-pending
+              title: PVCPending
+              condition: fired
+              for: 15m
+              annotations:
+                title: volume claim stuck Pending
+                summary: '{{ `PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been Pending for 15m: check the storage provisioner` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{phase="Pending"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: volume-almost-full
+              title: VolumeAlmostFull
+              condition: fired
+              for: 30m
+              annotations:
+                title: volume almost full
+                summary: '{{ `PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ humanizePercentage $values.q.Value }} full` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes)
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0.85]}
+            - uid: ceph-health
+              title: CephHealthNotOK
+              condition: fired
+              for: 15m
+              annotations:
+                title: ceph health not OK
+                summary: '{{ `Ceph has reported HEALTH_WARN/ERR for 15m (status {{ $values.q.Value }}; 1=WARN 2=ERR). Run ceph health detail in the toolbox` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max(ceph_health_status)
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: ceph-osd-down
+              title: CephOSDDown
+              condition: fired
+              for: 5m
+              annotations:
+                title: ceph OSD down
+                summary: '{{ `{{ $values.q.Value }} Ceph OSD(s) down for 5m` }}'
+              labels:
+                severity: critical
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      count(ceph_osd_up == 0)
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: node-not-ready
+              title: NodeNotReady
+              condition: fired
+              for: 5m
+              annotations:
+                title: node not ready
+                summary: '{{ `Node {{ $labels.node }} has not been Ready for 5m` }}'
+              labels:
+                severity: critical
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (node) (kube_node_status_condition{condition="Ready", status!="true"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: node-disk-almost-full
+              title: NodeDiskAlmostFull
+              condition: fired
+              for: 30m
+              annotations:
+                title: node disk almost full
+                summary: '{{ `{{ $labels.instance }} {{ $labels.mountpoint }} has {{ humanizePercentage $values.q.Value }} free` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      min by (instance, mountpoint) (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: lt, params: [0.15]}
+            - uid: cnpg-backup-stale
+              title: BackupStale
+              condition: fired
+              for: 30m
+              annotations:
+                title: database backup stale
+                summary: '{{ `CNPG cluster in {{ $labels.namespace }}: last successful backup is {{ humanize $values.q.Value }}h old (daily schedule)` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      (time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp)) / 3600
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [36]}
+            - uid: alerting-heartbeat
+              title: AlertingHeartbeat
+              condition: fired
+              for: 0m
+              annotations:
+                title: alerting heartbeat
+                summary: '{{ `Cluster alerting is alive. One of these a day; if it stops arriving, the alert pipeline is broken` }}'
+              labels:
+                severity: info
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      vector(1)
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
 
   plugins:
     - https://grafana.com/api/plugins/operato-windrose-panel/versions/1.2.0/download;operato-windrose-panel
