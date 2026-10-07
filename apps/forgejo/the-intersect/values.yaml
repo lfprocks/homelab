@@ -115,6 +115,7 @@ gitea:
   admin:
     username: intersect-admin
     # password is provided via the SOPS-encrypted forgejo-values-secret (valuesFrom).
+    # Break-glass only: password login is disabled (see ACCESS.md).
     email: "admin@${DOMAIN_CORONET_SUMMIT}"
     passwordMode: keepUpdated
 
@@ -176,6 +177,12 @@ gitea:
     service:
       DISABLE_REGISTRATION: true
       REQUIRE_SIGNIN_VIEW: true
+      # Pocket-ID only. No password sign-in on the web (403 for everyone,
+      # admins included) and no password over HTTP Basic auth (API, git over
+      # HTTPS, registry): access tokens still work as the Basic-auth password.
+      # Break-glass for intersect-admin: see ACCESS.md.
+      ENABLE_INTERNAL_SIGNIN: false
+      ENABLE_BASIC_AUTHENTICATION: false
       DEFAULT_KEEP_EMAIL_PRIVATE: true
     # First Pocket-ID login creates the account, or links an existing local
     # account whose email/username matches.
