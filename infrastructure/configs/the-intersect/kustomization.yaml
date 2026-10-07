@@ -15,6 +15,7 @@ resources:
   # - akri/
   - node-feature-discovery/
   - rookceph/
+  - volsync-backups/
   - home-assistant/
   - emqx/
   - kube-state-metrics/

@@ -1,0 +1,30 @@
+# VolSync restic backups of Tier-1 PVCs to GCS
+# (lfpr-p-gcsb-usw1-volsync-backups-szog-ea82375). One sops Secret
+# (restic-<pvc>: repository gs:<bucket>:/<ns>/<pvc>, shared restic password,
+# GCS key) + one ReplicationSource per PVC. Daily, staggered 02:00-03:30;
+# keep 7 daily / 4 weekly / 6 monthly. Movers run as the app's own uid
+# (root only for the four root-owned volumes) with no added capabilities.
+# Restore: create a ReplicationDestination pointing at the same Secret.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- emqx-emqx-data-emqx-0.replicationsource.yaml
+- emqx-emqx-data-emqx-0.restic.sops.yaml
+- flippydrive-flippydrive-data-pvc.replicationsource.yaml
+- flippydrive-flippydrive-data-pvc.restic.sops.yaml
+- forgejo-gitea-shared-storage.replicationsource.yaml
+- forgejo-gitea-shared-storage.restic.sops.yaml
+- home-assistant-home-assistant-home-assistant-0.replicationsource.yaml
+- home-assistant-home-assistant-home-assistant-0.restic.sops.yaml
+- homebox-homebox-pvc.replicationsource.yaml
+- homebox-homebox-pvc.restic.sops.yaml
+- immich-immich-ceph-pvc.replicationsource.yaml
+- immich-immich-ceph-pvc.restic.sops.yaml
+- openclaw-openclaw-data.replicationsource.yaml
+- openclaw-openclaw-data.restic.sops.yaml
+- outline-outline-data.replicationsource.yaml
+- outline-outline-data.restic.sops.yaml
+- pocket-id-pocket-id-pvc.replicationsource.yaml
+- pocket-id-pocket-id-pvc.restic.sops.yaml
+- zwavejs-ui-zwavejs-ui-store.replicationsource.yaml
+- zwavejs-ui-zwavejs-ui-store.restic.sops.yaml

@@ -1,0 +1,39 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: homebox-pvc
+  namespace: homebox
+spec:
+  sourcePVC: homebox-pvc
+  trigger:
+    schedule: 20 2 * * *
+  restic:
+    repository: restic-homebox-pvc
+    copyMethod: Snapshot
+    volumeSnapshotClassName: ceph-block
+    storageClassName: ceph-block
+    accessModes:
+    - ReadWriteOnce
+    cacheCapacity: 1Gi
+    cacheStorageClassName: ceph-block
+    pruneIntervalDays: 7
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 6
+    moverSecurityContext:
+      runAsUser: 65532
+      runAsGroup: 65532
+      fsGroup: 65532
+      seccompProfile:
+        type: RuntimeDefault
+      runAsNonRoot: true
+    moverPodLabels:
+      k8s.lfp.rocks/service: volsync-mover
+      k8s.lfp.rocks/version: 0.16.0
+    moverResources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi

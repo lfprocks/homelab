@@ -1,0 +1,39 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: emqx-data-emqx-0
+  namespace: emqx
+spec:
+  sourcePVC: emqx-data-emqx-0
+  trigger:
+    schedule: 20 3 * * *
+  restic:
+    repository: restic-emqx-data-emqx-0
+    copyMethod: Snapshot
+    volumeSnapshotClassName: ceph-block
+    storageClassName: ceph-block
+    accessModes:
+    - ReadWriteOnce
+    cacheCapacity: 1Gi
+    cacheStorageClassName: ceph-block
+    pruneIntervalDays: 7
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 6
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      runAsNonRoot: true
+    moverPodLabels:
+      k8s.lfp.rocks/service: volsync-mover
+      k8s.lfp.rocks/version: 0.16.0
+    moverResources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi

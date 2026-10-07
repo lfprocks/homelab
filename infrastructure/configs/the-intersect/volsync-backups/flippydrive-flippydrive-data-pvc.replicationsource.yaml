@@ -1,0 +1,38 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: flippydrive-data-pvc
+  namespace: flippydrive
+spec:
+  sourcePVC: flippydrive-data-pvc
+  trigger:
+    schedule: 10 3 * * *
+  restic:
+    repository: restic-flippydrive-data-pvc
+    copyMethod: Snapshot
+    volumeSnapshotClassName: ceph-block
+    storageClassName: ceph-block
+    accessModes:
+    - ReadWriteOnce
+    cacheCapacity: 1Gi
+    cacheStorageClassName: ceph-block
+    pruneIntervalDays: 7
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 6
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+      seccompProfile:
+        type: RuntimeDefault
+    moverPodLabels:
+      k8s.lfp.rocks/service: volsync-mover
+      k8s.lfp.rocks/version: 0.16.0
+    moverResources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi
