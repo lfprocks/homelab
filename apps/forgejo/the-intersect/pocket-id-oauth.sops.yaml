@@ -1,0 +1,26 @@
+# Pocket-ID OIDC client for Forgejo (gitea.oauth existingSecret; keys
+# 'key' and 'secret' are what the chart reads).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-pocket-id
+    namespace: forgejo
+type: Opaque
+stringData:
+    key: ENC[AES256_GCM,data:WfMyLbLAi6kaSqSS72M1oIolegq8KWx6h2USbo/vV/PqHMfh,iv:819JU2n2vwy7g8+j2Ebw+alLm3pYwgt7iHKENwelTL0=,tag:21Z40QEOiAH3920EO6KNDw==,type:str]
+    secret: ENC[AES256_GCM,data:RiSJYkHN4SpqKhaEWhqubFxdyx68opsU22IP1vHW+Mw=,iv:onNo7pnnIHKJ1BjPUUmVqK8CdVphpllnevpXJb7dWw0=,tag:C4Yx9IOZ85rggAx8UTr91Q==,type:str]
+sops:
+    age:
+        - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBGMjNXdDByY3JXZzNTMzZr
+            NkpsOUdaenR3S0kxUTVvd0RTcHpxbFFwVmk4CmtJYWdCOXVoNUVyVlZZT3lDNlpP
+            VDlBM1ByeEpzTUNydC9tajRUM1ZtZlUKLS0tIHMxRlBRT2lVTy9EYmNpZXA1NWs2
+            a2t6TXNNUWNDQTFNdXoxQ29iM21DZmcKWN+K26TyZJqkPdEdZ3uy5C4Tc02e9OGH
+            KgivFWxqWWv50jY1ksBYBR9OKgWJVGY94HdW9YpuHmN9OnO6sBcaKQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-10-07T18:10:04Z"
+    mac: ENC[AES256_GCM,data:2HSYJ+RcrDUdPKF8+RXP+ZACPvQMqAFS9GpCFwCeYRmrR9Rqp2kGTi3Z2quI863ShVH7H+/hUMRNMElqACvlQd3lh7exAqbC/mPOZckVPCkV7k5DhIt/BEWmh+pbRI/5aEbaXMtShnYgu1H0LRMBUyvsGGkmKEFE6MtRs1s1okw=,iv:pmrdWDdkpcduLmYYbTtGolsiycqGR75C9bA32A5xAqc=,tag:+IRrantGwDsGkkCK9UZSbQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
