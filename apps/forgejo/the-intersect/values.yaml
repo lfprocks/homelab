@@ -91,6 +91,9 @@ resources:
 persistence:
   enabled: true
   storageClass: ceph-block
+  # Grown online from 10Gi (2026-10-07) for the GitHub mirrors (~1.3 GB of
+  # non-fork repos at the time, plus history growth and LFS).
+  size: 50Gi
 
 # Configure commit/action signing prerequisites
 ## @section Signing
@@ -200,6 +203,10 @@ gitea:
     actions:
       ENABLED: true
       DEFAULT_ACTIONS_URL: github
+    # Pull mirrors of the GitHub orgs (scripts/mirror-github.sh): GitHub stays
+    # the source of truth until a repo is moved to Forgejo-primary.
+    mirror:
+      DEFAULT_INTERVAL: 1h
     server:
       DOMAIN: ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
       ROOT_URL: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
