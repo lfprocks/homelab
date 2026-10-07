@@ -23,6 +23,12 @@ spec:
         requests:
           memory: "128Mi"
           cpu: "50m"
+    # VolumeSnapshotClasses for VolSync backups (needs the snapshot-controller
+    # CRDs from infrastructure/controllers/.../snapshot-controller).
+    cephBlockPoolsVolumeSnapshotClass:
+      enabled: true
+    cephFileSystemVolumeSnapshotClass:
+      enabled: true
     cephClusterSpec:
       resources:
         mon:
