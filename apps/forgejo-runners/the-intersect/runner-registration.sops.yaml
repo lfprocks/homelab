@@ -1,0 +1,28 @@
+# Offline registration of the forgejo-runner (one shared secret drives both
+# sides). secret: 40 hex for `forgejo forgejo-cli actions register --secret`;
+# uuid: hex of its first 16 chars; token: the full secret. See README.md.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: runner-registration
+    namespace: forgejo-runners
+type: Opaque
+stringData:
+    secret: ENC[AES256_GCM,data:uyyMWp0Od9z+e+UAfTe1txVywF8My4l/DcnhL1r0bvC8UvboCjKHew==,iv:6gSvOnp1lOGBcD/J/cT14hcqZg20hsV+StFOG3wzA8Q=,tag:S1jjHHSJ4jQNiSKE8fJ5iQ==,type:str]
+    uuid: ENC[AES256_GCM,data:94kn650+nbkaJOB8wIdy0FMbHqSYHIUQnUudPOtIZFoKOyFn,iv:G6+Rv7IBIJKRp62KKh9N1Pb8pmXgS1JaJ31BQjZkSYI=,tag:b7j1l/7ivUk7VWqBPgMtdA==,type:str]
+    token: ENC[AES256_GCM,data:v27zxHdV5s0Lve1iron2rqRwvDkUUtpXD7UFqks/VQ7hQ3gp1iDaTQ==,iv:BAjFhVKbYFm6S+wBej6JdiBPrgJY9QWUhJep4QoKU3M=,tag:/Y5GBaBLAZ7eMhllVgSx7g==,type:str]
+sops:
+    age:
+        - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjTFQ4RGt2TytENWhOS3Q2
+            SmdFdGJKZDdKcFYzdDhtKy93UFUySXZLMkFJCmJWdC9sOURGekVibVJYNFEyTUMz
+            azFRQnkxbDRweW5Wc3dqbmp2c09TbGMKLS0tIG54RFJZT1RkWXRhYkN3YmMySVZI
+            amZOajZ1NTJkcDZqSU05Q2s0Sks0K1EK8/Zy+b4+H9cnsPT7X31Pz7930fPHhExy
+            9Djp0UvP+XD7egp/TEV2l4LGW7Rpvi1VXWR+wy2XQb5ZlmrRVJcmzg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-10-07T19:50:53Z"
+    mac: ENC[AES256_GCM,data:GDM4x/WofRZCThSJegnB2uCKj969j6yyGKCzj/o9EvOXWfmIVYiSDDs4IFcH9vprrebaXattx0xk57FcO7RPX8x31FoJPWLxRPy9Na1WPyqO5XqjLRHi5LW8QzrkqAHYt0XOPEA/cVCPx3zMTGzuSlSrf244WXAapPqzvQ4QdTs=,iv:6lb4j6R0e5FTzLtE3abw/Cgnm4QuUarWB3OWPlr9xLw=,tag:Vzfh10gbIS++YneurzmezA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

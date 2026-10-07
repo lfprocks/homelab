@@ -1,0 +1,82 @@
+# Rootless BuildKit: how workflows build images without a Docker socket.
+# Unprivileged (upstream's rootless deployment): seccomp/AppArmor Unconfined
+# and --oci-worker-no-process-sandbox are what rootless BuildKit needs on
+# Kubernetes. Plain TCP without mTLS: network-policy.yaml admits only the
+# runner pod, and every job is meant to be able to build anyway.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: buildkit-state
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 40Gi  # layer/build cache
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildkitd
+  labels:
+    app: buildkitd
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: buildkitd
+  template:
+    metadata:
+      labels:
+        app: buildkitd
+        k8s.lfp.rocks/service: buildkitd
+        k8s.lfp.rocks/version: v0.33.1-rootless
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: buildkitd
+          image: docker.io/moby/buildkit:v0.33.1-rootless
+          args:
+            - --addr
+            - unix:///run/user/1000/buildkit/buildkitd.sock
+            - --addr
+            - tcp://0.0.0.0:1234
+            - --oci-worker-no-process-sandbox
+          ports:
+            - {name: buildkit, containerPort: 1234}
+          readinessProbe:
+            exec: {command: [buildctl, debug, workers]}
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          livenessProbe:
+            exec: {command: [buildctl, debug, workers]}
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {memory: 8Gi}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile: {type: Unconfined}
+            appArmorProfile: {type: Unconfined}
+          volumeMounts:
+            - {name: state, mountPath: /home/user/.local/share/buildkit}
+      volumes:
+        - name: state
+          persistentVolumeClaim: {claimName: buildkit-state}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: buildkitd
+  labels:
+    app: buildkitd
+spec:
+  selector:
+    app: buildkitd
+  ports:
+    - {name: buildkit, port: 1234, targetPort: buildkit}

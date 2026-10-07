@@ -340,3 +340,16 @@ metadata:
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: forgejo-runners
+  labels:
+    k8s.lfp.rocks/policy: enforce
+    # privileged: the Docker-in-Docker sidecar needs it, and rootless
+    # buildkitd needs Unconfined seccomp. Jobs themselves are unprivileged;
+    # see apps/forgejo-runners/the-intersect/README.md.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
