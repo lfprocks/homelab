@@ -602,6 +602,10 @@ grafana:
             # ingester, 2x/hour), PVCPending (Ceph CSI broken after Rook 1.20).
             # Summaries name the object: the backtick form escapes the
             # Grafana template from Helm's tpl, as the contact point does.
+            # FluxNotReady skips reason=DependencyNotReady: when one infra
+            # Kustomization is slow or broken, every app downstream reports
+            # that reason too. Alert on the object that actually failed, not
+            # its ~40 dependents.
             - uid: flux-not-ready
               title: FluxNotReady
               condition: fired
@@ -621,7 +625,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (customresource_kind, exported_namespace, name, reason) (gotk_resource_info{ready="False", suspended!="true"})
+                      max by (customresource_kind, exported_namespace, name, reason) (gotk_resource_info{ready="False", suspended!="true", reason!="DependencyNotReady"})
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
@@ -746,7 +750,7 @@ grafana:
                     type: threshold
                     expression: q
                     conditions:
-                      - evaluator: {type: ge, params: [2]}
+                      - evaluator: {type: gt, params: [1]}
             - uid: pvc-pending
               title: PVCPending
               condition: fired
