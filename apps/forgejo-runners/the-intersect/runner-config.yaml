@@ -1,0 +1,47 @@
+# forgejo-runner configuration. __RUNNER_UUID__ is filled in at start from the
+# runner-registration Secret (it derives from the registration secret, so it
+# stays out of git); the token is read from the Secret file directly.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: runner-config
+data:
+  config.yml: |
+    log:
+      level: info
+      job_level: info
+    runner:
+      # Concurrent jobs on this one runner (one registration, one pod).
+      capacity: 3
+      timeout: 3h
+      shutdown_timeout: 30m
+      fetch_timeout: 30s
+      fetch_interval: 5s
+      # runs-on: label -> job image. ubuntu-* are catthehacker's act images
+      # (GitHub-runner-like tooling, incl. docker CLI + buildx), so mirrored
+      # GitHub workflows run unchanged.
+      labels:
+        - ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-24.04
+        - ubuntu-24.04:docker://ghcr.io/catthehacker/ubuntu:act-24.04
+        - ubuntu-22.04:docker://ghcr.io/catthehacker/ubuntu:act-22.04
+        - docker:docker://docker.io/library/node:22-bookworm
+    cache:
+      enabled: true
+      dir: /data/cache
+    container:
+      # Security (Forgejo's guide calls each of these unsafe otherwise):
+      # unprivileged jobs, NO docker socket in jobs (docker_host "-"), no
+      # host network, no volume mounts. Images are built through the rootless
+      # buildkitd service instead (README.md).
+      network: ""
+      privileged: false
+      docker_host: "-"
+      valid_volumes: []
+      options: --cpus=2 --memory=4g --pids-limit=4096
+      force_pull: false
+    server:
+      connections:
+        forgejo:
+          url: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}/
+          uuid: __RUNNER_UUID__
+          token_url: file:/registration/token

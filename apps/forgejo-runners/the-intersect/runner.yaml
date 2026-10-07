@@ -1,0 +1,104 @@
+# One forgejo-runner (capacity 3) with a privileged Docker-in-Docker sidecar.
+# DinD must be privileged; the jobs it runs are not (runner-config.yaml), have
+# no access to its socket, and the pod's egress is limited to the internet
+# (network-policy.yaml). Residual risk: a container-escape exploit in a job
+# would be root on this node.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: docker-data
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 60Gi  # DinD image/layer cache, survives restarts
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-runner
+  labels:
+    app: forgejo-runner
+spec:
+  replicas: 1  # one registration = one runner; scale with runner.capacity
+  strategy:
+    type: Recreate  # RWO docker-data
+  selector:
+    matchLabels:
+      app: forgejo-runner
+  template:
+    metadata:
+      labels:
+        app: forgejo-runner
+        k8s.lfp.rocks/service: forgejo-runner
+        k8s.lfp.rocks/version: "13.2.0"
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 120
+      initContainers:
+        - name: render-config
+          image: code.forgejo.org/forgejo/runner:13.2.0
+          command: ["sh", "-ec"]
+          args:
+            - sed "s/__RUNNER_UUID__/$(cat /registration/uuid)/" /config-template/config.yml > /data/config.yml
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+          securityContext: &restricted
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+            seccompProfile: {type: RuntimeDefault}
+          volumeMounts:
+            - {name: config-template, mountPath: /config-template, readOnly: true}
+            - {name: registration, mountPath: /registration, readOnly: true}
+            - {name: data, mountPath: /data}
+      containers:
+        - name: runner
+          image: code.forgejo.org/forgejo/runner:13.2.0
+          command: ["forgejo-runner", "daemon", "--config", "/data/config.yml"]
+          env:
+            - {name: DOCKER_HOST, value: unix:///var/run/dind/docker.sock}
+            - {name: HOME, value: /data}
+          workingDir: /data
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 1Gi}
+          securityContext: *restricted
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: dind-sock, mountPath: /var/run/dind}
+            - {name: registration, mountPath: /registration, readOnly: true}
+        - name: dind
+          image: docker.io/library/docker:29.8.2-dind
+          args:
+            - --host=unix:///var/run/dind/docker.sock
+            - --group=1000  # socket readable by the runner (uid/gid 1000) only
+          env:
+            - {name: DOCKER_TLS_CERTDIR, value: ""}
+          resources:
+            # Jobs run inside this container's cgroup: 3 x (2 CPU / 4 GiB).
+            requests: {cpu: 500m, memory: 1Gi}
+            limits: {memory: 14Gi}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - {name: docker-data, mountPath: /var/lib/docker}
+            - {name: dind-sock, mountPath: /var/run/dind}
+      volumes:
+        - name: config-template
+          configMap: {name: runner-config}
+        - name: registration
+          secret:
+            secretName: runner-registration
+            defaultMode: 0440
+        - name: data
+          emptyDir: {}
+        - name: dind-sock
+          emptyDir: {}
+        - name: docker-data
+          persistentVolumeClaim: {claimName: docker-data}

@@ -195,6 +195,11 @@ gitea:
       ENABLE_OPENID_SIGNUP: false
     api:
       ENABLE_SWAGGER: false
+    # Runners: apps/forgejo-runners. `uses: actions/checkout@v4` resolves on
+    # github.com, so mirrored GitHub workflows run unchanged.
+    actions:
+      ENABLED: true
+      DEFAULT_ACTIONS_URL: github
     server:
       DOMAIN: ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
       ROOT_URL: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
