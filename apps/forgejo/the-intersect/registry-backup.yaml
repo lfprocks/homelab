@@ -1,0 +1,93 @@
+# Nightly off-site copy of the package registry: rclone sync of the
+# forgejo-packages RGW bucket into GCS (bucket created by lfprocks/infrastructure
+# lfpcore, versioned with 30-day noncurrent retention to match the forgejo CNPG
+# point-in-time window; see volsync-backups/README.md for restores).
+#
+# Registry blobs are content-addressed and never rewritten, so --size-only is
+# safe and avoids false mismatches between multipart S3 ETags and GCS MD5s;
+# each run only uploads new layers.
+#
+# Guard: if the source suddenly holds less than half the objects the backup
+# does, the job refuses to sync and fails instead of mirroring a wiped bucket
+# into GCS (RegistryBackupStale then fires after 26h).
+#
+# no_check_bucket on both remotes: Rook's per-claim RGW user may own only one
+# bucket, so rclone's pre-upload CreateBucket fails with TooManyBuckets, and
+# the GCS account has no business creating buckets either.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: registry-backup
+spec:
+  schedule: "50 3 * * *"  # UTC, after the CNPG (03:45) and VolSync backups
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 21600
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: forgejo-registry-backup
+            k8s.lfp.rocks/version: "1.75.1"
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: rclone
+              image: docker.io/rclone/rclone:1.75.1
+              command: ["sh", "-ec"]
+              args:
+                - |
+                  SRC="rgw:forgejo-packages"
+                  DST="gcs:lfpr-p-gcsb-usw1-registry-backups-r7g2-8a62ba4/forgejo-packages"
+                  # Object count, or 0 if the path is missing/unreadable. A source
+                  # that cannot be read still fails the job at the sync below.
+                  count() { n=$(rclone size --fast-list --json "$1" 2>/dev/null | sed -nE 's/.*"count":([0-9]+).*/\1/p'); echo "${n:-0}"; }
+                  src=$(count "$SRC"); dst=$(count "$DST")
+                  echo "source objects: $src, backup objects: $dst"
+                  if [ "$dst" -gt 100 ] && [ $((src * 2)) -lt "$dst" ]; then
+                    echo "REFUSING to sync: source has less than half the backup's objects (wiped bucket?)" >&2
+                    exit 1
+                  fi
+                  rclone sync "$SRC" "$DST" --size-only --fast-list \
+                    --transfers 8 --checkers 16 --stats 60s --stats-one-line -v
+                  echo "done: $(count "$DST") objects in backup"
+              env:
+                - {name: HOME, value: /tmp}
+                - {name: RCLONE_CACHE_DIR, value: /tmp/cache}
+                - {name: RCLONE_CONFIG, value: /tmp/rclone.conf}
+                - {name: RCLONE_CONFIG_RGW_TYPE, value: s3}
+                - {name: RCLONE_CONFIG_RGW_PROVIDER, value: Ceph}
+                - {name: RCLONE_CONFIG_RGW_ENDPOINT, value: "http://rook-ceph-rgw-ceph-objectstore.rook-ceph.svc:80"}
+                - {name: RCLONE_CONFIG_RGW_NO_CHECK_BUCKET, value: "true"}
+                - name: RCLONE_CONFIG_RGW_ACCESS_KEY_ID
+                  valueFrom: {secretKeyRef: {name: forgejo-packages, key: AWS_ACCESS_KEY_ID}}
+                - name: RCLONE_CONFIG_RGW_SECRET_ACCESS_KEY
+                  valueFrom: {secretKeyRef: {name: forgejo-packages, key: AWS_SECRET_ACCESS_KEY}}
+                - {name: RCLONE_CONFIG_GCS_TYPE, value: google cloud storage}
+                - {name: RCLONE_CONFIG_GCS_SERVICE_ACCOUNT_FILE, value: /gcs/service-account.json}
+                - {name: RCLONE_CONFIG_GCS_BUCKET_POLICY_ONLY, value: "true"}
+                - {name: RCLONE_CONFIG_GCS_NO_CHECK_BUCKET, value: "true"}
+              resources:
+                requests: {cpu: 50m, memory: 128Mi}
+                limits: {memory: 1Gi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              volumeMounts:
+                - {name: gcs, mountPath: /gcs, readOnly: true}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: gcs
+              secret: {secretName: cnpg-backup-gcs-credentials}
+            - name: tmp
+              emptyDir: {}

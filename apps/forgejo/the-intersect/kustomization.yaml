@@ -9,6 +9,7 @@ resources:
   - values-secret.sops.yaml
   - objectbucketclaim.yaml
   - package-cleanup-rules.yaml
+  - registry-backup.yaml
 configMapGenerator:
   - name: forgejo-values
     files:
