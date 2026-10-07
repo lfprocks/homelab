@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: restic-pocket-id-pvc
+    namespace: pocket-id
+type: Opaque
+stringData:
+    RESTIC_REPOSITORY: ENC[AES256_GCM,data:ZGgEWzcXsTxdwZNpTS0p11Zeziv0/fkDpafdFpMXj3QvNesMW6MsmAXFVJuVdrEyc8DBnbmX4TX7c41zLtC18QgSVJqelm8Brw==,iv:u8c9Sqh3So1khcSevXd9UAVfC/eDr6G9q2g2EuOIqy0=,tag:GaQyeAEUPemCvWexwqBUZQ==,type:str]
+    RESTIC_PASSWORD: ENC[AES256_GCM,data:exu3AHhhwkakuA8C/q3H/5+sBjQmVhGpGKK+RR5fp8kXEbSPHR3Km8gH7dJaYyVjt5W0zJ8ZZqkNy3pRQbkTdQ==,iv:5z/0HWAXoDUztrugsNDU8A1PQO9j7c61QXjJFKjPV+E=,tag:bF3seAip0pgL1kKRI3XzBQ==,type:str]
+    GOOGLE_PROJECT_ID: ENC[AES256_GCM,data:vd5To8PK9luadWBNdntB0A==,iv:bg5/9rU0GC1gqHpdecdme+NyaQRgtdjtNuzc8f2mvsE=,tag:4sxMbkkGRx9hygm3tV46jg==,type:str]
+    GOOGLE_APPLICATION_CREDENTIALS: ENC[AES256_GCM,data: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,iv:ntqKrIEKA3O3QDxg5E16nOMrtwPbaqNV3pMzMqieLRE=,tag:eqZvI8bOwedfpMU5246gCQ==,type:str]
+sops:
+    age:
+        - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBvTlNidFpNdjNlY2ZhRUk1
+            amVkQWo5WFdhNFRvSXNjbW4vZUo1TjZtQldFClZuaUJ3UXgyWFExMWhHdkVsbmls
+            U1FsNDdxVFpVREFwbjlraTBNU0RWMHMKLS0tIER4MEE0cnNpa21xRkJFQnBNRmdl
+            eXI1aDE0Wk96NWF3UW5ySmt1OXh4YVEKR9+e/skfdmxALspfD65fau+SfWbwUlQs
+            oYf5jFCj7hIvBnmZHwo0wJVTf+NSnlwfBKCSY8/QDAhGBrm/G8copQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-10-07T02:50:12Z"
+    mac: ENC[AES256_GCM,data:yb4xITRrdIMPvHqzfmw3pR28cRgDAMrTkCrz/9PfANpLnfDndB3RtDBjLxEKfch37yssQG7Su19czCSpWIT6uZrSDEvenq13RjHxnxCfKarbtE0CUsEGKeKRvajNZSQ/IRMvfo4B1GgwyMPTo5SliLtRX/7QyO/r4moGBRBtz4w=,iv:veDV/1C2uxAs/exMph+q6ZreXs0RdhnZ3UD/wD/G8nQ=,tag:zSEfQQWhAa7F+9S7QtgiLQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

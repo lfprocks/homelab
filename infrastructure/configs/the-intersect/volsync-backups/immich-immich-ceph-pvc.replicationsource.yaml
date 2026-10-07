@@ -1,0 +1,38 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: immich-ceph-pvc
+  namespace: immich
+spec:
+  sourcePVC: immich-ceph-pvc
+  trigger:
+    schedule: 30 3 * * *
+  restic:
+    repository: restic-immich-ceph-pvc
+    copyMethod: Snapshot
+    volumeSnapshotClassName: ceph-filesystem
+    storageClassName: ceph-filesystem
+    accessModes:
+    - ReadOnlyMany
+    cacheCapacity: 2Gi
+    cacheStorageClassName: ceph-block
+    pruneIntervalDays: 7
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 6
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+      seccompProfile:
+        type: RuntimeDefault
+    moverPodLabels:
+      k8s.lfp.rocks/service: volsync-mover
+      k8s.lfp.rocks/version: 0.16.0
+    moverResources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi

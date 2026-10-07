@@ -1,0 +1,39 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: outline-data
+  namespace: outline
+spec:
+  sourcePVC: outline-data
+  trigger:
+    schedule: 10 2 * * *
+  restic:
+    repository: restic-outline-data
+    copyMethod: Snapshot
+    volumeSnapshotClassName: ceph-block
+    storageClassName: ceph-block
+    accessModes:
+    - ReadWriteOnce
+    cacheCapacity: 1Gi
+    cacheStorageClassName: ceph-block
+    pruneIntervalDays: 7
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 6
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
+      seccompProfile:
+        type: RuntimeDefault
+      runAsNonRoot: true
+    moverPodLabels:
+      k8s.lfp.rocks/service: volsync-mover
+      k8s.lfp.rocks/version: 0.16.0
+    moverResources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi
