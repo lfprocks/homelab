@@ -30,6 +30,18 @@ spec:
     cephFileSystemVolumeSnapshotClass:
       enabled: true
     cephClusterSpec:
+      # TEMPORARY - remove once Rook runs a Ceph release containing the Tentacle
+      # backport of ceph#79674 (tracker #79725; not in 20.2.4).
+      # Ceph 20.2.4's fix for CVE-2026-54330 rejects SigV4 requests carrying an
+      # unsigned Content-Type, which minio-go (Forgejo's package storage client)
+      # always sends: every registry blob upload got 403 "'content-type'
+      # supplied but not in CanonicalHeaders". This restores the old header
+      # check on the one RGW daemon. Trade-off accepted 2026-10-07: it re-opens
+      # the CVE (privilege escalation via unsigned x-amz- headers); RGW is
+      # cluster-internal and its only S3 user is the forgejo-packages claim.
+      cephConfig:
+        client.rgw.ceph.objectstore.a:
+          rgw_sigv4_insecure: "true"
       resources:
         mon:
           limits:
