@@ -17,6 +17,9 @@ Pin third-party actions by SHA.
 
 - **Jobs:** unprivileged containers inside DinD, with **no Docker socket**,
   no host network and no volume mounts. Each is capped at 2 CPU, 4 GiB and 4096 pids.
+  This was verified from inside a job: `CapEff=a80425fb` (Docker's default set, no
+  `CAP_SYS_ADMIN`), the Kubernetes API, in-cluster services and the LAN were
+  blocked, and the internet, Forgejo and buildkitd were reachable.
 - **DinD:** privileged, which upstream says it must be. The jobs it runs are not.
   The residual risk is that a container-escape exploit inside a job gives root on that node.
 - **Network:** `network-policy.yaml` lets jobs and builds reach the public
@@ -28,8 +31,9 @@ Pin third-party actions by SHA.
 
 ## Building and pushing images
 
-Jobs have no Docker daemon. Build through BuildKit, and push with the job token
-(or a `package`-scoped token secret):
+Jobs have no Docker daemon. Build through BuildKit, and push with the org's publisher token.
+Forgejo's automatic job token **cannot write packages**: on 15.0.9 it was refused even with
+`permissions: packages: write`.
 
 ```yaml
 jobs:
@@ -40,10 +44,31 @@ jobs:
       - name: Use the cluster BuildKit
         run: docker buildx create --use --driver remote tcp://buildkitd.forgejo-runners.svc.cluster.local:1234
       - name: Log in to the Forgejo registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login "${GITHUB_SERVER_URL#https://}" -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "${GITHUB_SERVER_URL#https://}" -u "${{ vars.REGISTRY_USER }}" --password-stdin
       - name: Build and push
         run: docker buildx build --push -t "${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY,,}:${GITHUB_SHA::12}" .
 ```
+
+Images published this way are pulled by the cluster with no further setup
+(Kyverno `forgejo-registry-pull`).
+
+### Publisher setup per org
+
+`REGISTRY_TOKEN` and `REGISTRY_USER` are org-level Actions secrets and variables for the
+bot user `ci-publisher`. Run this once per org, for example right after mirroring it:
+
+```bash
+apps/forgejo-runners/scripts/provision-org-publisher.sh <org> [<org> ...]
+```
+
+The script is idempotent. For each org it ensures a team `ci-publishers` (packages: write,
+code: read) with the bot as a member. It then mints one `write:package` token per org, so one
+org's token can be revoked without affecting the others; re-running rotates it. It uses a
+short-lived admin token, which is deleted on exit, and it prints no secrets.
+
+The bot cannot push to **personal** namespaces (for example `michaelpeterswa/...`), because
+Forgejo lets only the owner write there. Publish from an org, or give that repo a secret with
+your own `write:package` token.
 
 ## Registration
 
