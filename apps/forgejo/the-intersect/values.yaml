@@ -244,6 +244,11 @@ gitea:
       MINIO_BASE_PATH: packages/
       # Uploads need rgw_sigv4_insecure on Ceph 20.2.4 (minio-go sends an
       # unsigned Content-Type); see the rook-ceph-cluster HelmRelease.
+      # Explicit because #309 once set md5, and the chart MERGES into the
+      # app.ini on the PVC: deleting a key from these values never removes it
+      # from app.ini, it stays in force. To undo a setting, set it back
+      # explicitly; never just delete the line.
+      MINIO_CHECKSUM_ALGORITHM: default
 
 valkey-cluster:
   enabled: false
