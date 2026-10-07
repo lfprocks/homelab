@@ -18,6 +18,17 @@ image:
 env:
   # -- Set the container timezone
   TZ: UTC
+  # Database: CNPG cluster paperless-postgres (the chart only sets these
+  # itself when its bundled postgresql subchart is enabled).
+  PAPERLESS_DBENGINE: postgresql
+  PAPERLESS_DBHOST: paperless-postgres-rw
+  PAPERLESS_DBPORT: "5432"
+  PAPERLESS_DBNAME: paperless
+  PAPERLESS_DBUSER: paperless
+  PAPERLESS_DBPASS:
+    secretKeyRef:
+      name: paperless-postgres-app
+      key: password
   # PAPERLESS_SECRET_KEY lives in values-secret.sops.yaml (env.PAPERLESS_SECRET_KEY).
   PAPERLESS_URL: "https://${SUB_PRAIRIE_ABLE}.${DOMAIN_CORONET_SUMMIT}"
 
@@ -69,7 +80,10 @@ podLabels:
   k8s.lfp.rocks/version: "2.20.15"
 
 postgresql:
-  enabled: true
+  # Database moved to CloudNativePG (postgres.yaml, paperless-postgres) on
+  # 2026-10-07; DB env is set explicitly under `env` below. The old bitnami
+  # PVC (data-paperless-ngx-postgresql-0) is kept until deleted by hand.
+  enabled: false
   image:
     repository: bitnamilegacy/postgresql
     tag: "16.6.0-debian-12-r2"
