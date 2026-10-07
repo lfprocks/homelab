@@ -151,6 +151,14 @@
       allowedVersions: "<10",
     },
     {
+      // HOLD: ceph-csi-drivers must match the ceph-csi-operator that the
+      // rook-ceph chart bundles (v1.0.4 in rook v1.20.8). #248 bumped the
+      // drivers chart alone to 1.1.0. Raise this together with the Rook bump
+      // that ships the matching operator.
+      matchDepNames: ["ceph-csi-drivers"],
+      allowedVersions: "<1.1.0",
+    },
+    {
       // Postgres images back live databases (immich, cloudnative-pg clusters);
       // a major is a data migration, not an upgrade.
       matchDepNames: ["/postgres/"],
