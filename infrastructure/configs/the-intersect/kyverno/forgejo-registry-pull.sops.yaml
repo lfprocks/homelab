@@ -1,0 +1,25 @@
+# Read-only (read:package) token of the Forgejo bot user cluster-pull.
+# Kyverno clones this into every namespace (forgejo-registry-pull.yaml).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-registry-pull
+    namespace: kyverno
+type: kubernetes.io/dockerconfigjson
+stringData:
+    .dockerconfigjson: ENC[AES256_GCM,data:HtC29yyPnisMvf0cJQINQdOQXJQ7dS4wk45MQ6OZdsQbYxgt/YHez0q6e7VEF8oL6h6Qlrjua5Bo4jXr3mfRc89MkUVtnl0F/iK55d+jtTa5Rm2rGNobWKAARgYB7NEFaHwsmV+CloFvRlwuOGqB2+01btHs9o8Y4Ce+V/qgmpLKwQUWlmo+FBf/4zDbNGD2F6QB/KnAM+btVRQO1OQCsQmC3w5+53fCfYPCxaaBz6GQXJ1dwEUFUQ6J+xSHq2MxcfDQs+RKgTmkHvXtcpYi,iv:Kus1Up7iPR2QNP8o6Gie20v/5MJ3lIUT6w+QsfDdTAk=,tag:BbG1I3WhEAwn7kngUjOzMA==,type:str]
+sops:
+    age:
+        - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBHVWRPSGNDa2lBaDVsNC9r
+            OU5NLzFFcWVkNnNUdVdhMHdOanhvKy9RcVFJCkg3NTNiQ3hobzVCWGQ1NGxITlFG
+            aVdwWGJZcFAwM1kzSU1wd3p1ZmlxbTgKLS0tIEdsRFlsQUUxVUJKNjRiNExwdGdZ
+            V04wYWY0QWd5bW94bHJRcENmSU1TVE0KUPNjn4jtWZ+ytbmIfmNOJgL8ygEEG3aw
+            B4jGJrkm9eNxBabx3XSZ6kIcSqK5L3yG9t4JD4yvYq9X6rTm/KLQGA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-10-07T19:22:13Z"
+    mac: ENC[AES256_GCM,data:AjbrYL8BmpxxXUy0Ptiz+DQLi5lu+xKhrDCC1DQ0sYjJ6pKmefPFeBN1BeewC/6mHh1smNsyJ8Qkc19V3Xf6LVxYkK891TeLEUgGW3d719f7Qf7Eq0fe6CcAnocbD5QsGhz41RBnAYAKjjiwGMrDR2gkU7o/2fMIelaYisnnMaQ=,iv:kwptq543s4EYjdBZsL2ogbM4T1RFMIIvPS9YmZl0fZA=,tag:2G5oIYGnRpSNAVSPUaHzhA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
