@@ -8,6 +8,7 @@ resources:
   - postgres.yaml
   - values-secret.sops.yaml
   - objectbucketclaim.yaml
+  - package-cleanup-rules.yaml
 configMapGenerator:
   - name: forgejo-values
     files:

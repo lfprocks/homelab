@@ -1,0 +1,85 @@
+# Default container-image cleanup rule for every Forgejo owner (user or org).
+#
+# Forgejo has no API for package cleanup rules (UI only), and owners appear
+# over time as GitHub orgs are mirrored, so this inserts the standard rule
+# nightly for any owner that has none. The unique index on (owner_id, type)
+# plus ON CONFLICT DO NOTHING means it never touches a rule that already
+# exists: tune one owner in the UI (Settings > Packages) and it stays tuned.
+#
+# The rule (Forgejo's built-in cleanup cron applies it at midnight UTC):
+#   keep the 10 most recent versions of each image, always keep tags matching
+#   ^(v?[0-9].*|latest|main)$ (releases with or without a v, latest, main),
+#   and remove other versions older than 14 days.
+#
+# The packages quota (100 GiB per owner, values.yaml [quota]) is the backstop
+# if cleanup ever stops working.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: package-cleanup-rules-sql
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  ensure-rules.sql: |
+    \set ON_ERROR_STOP on
+    INSERT INTO package_cleanup_rule
+      (enabled, owner_id, type, keep_count, keep_pattern, remove_days,
+       remove_pattern, match_full_name, created_unix, updated_unix)
+    SELECT true, u.id, 'container', 10, '^(v?[0-9].*|latest|main)$', 14,
+           '', false, extract(epoch FROM now())::bigint, extract(epoch FROM now())::bigint
+    FROM "user" u
+    WHERE u.type IN (0, 1)  -- individual users and organizations
+    ON CONFLICT (owner_id, type) DO NOTHING
+    RETURNING owner_id;
+    SELECT count(*) AS owners_with_container_rule
+    FROM package_cleanup_rule WHERE type = 'container';
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: package-cleanup-rules
+spec:
+  schedule: "30 23 * * *"  # UTC, ahead of Forgejo's @midnight cleanup_packages cron
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: forgejo-package-cleanup-rules
+            k8s.lfp.rocks/version: "16"
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 26
+            runAsGroup: 26
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: psql
+              image: ghcr.io/cloudnative-pg/postgresql:16
+              command: ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-f", "/sql/ensure-rules.sql"]
+              env:
+                - name: PGHOST
+                  value: forgejo-postgres-rw
+                - name: PGDATABASE
+                  value: forgejo
+                - name: PGUSER
+                  valueFrom: {secretKeyRef: {name: forgejo-postgres-app, key: username}}
+                - name: PGPASSWORD
+                  valueFrom: {secretKeyRef: {name: forgejo-postgres-app, key: password}}
+              resources:
+                requests: {cpu: 10m, memory: 32Mi}
+                limits: {memory: 128Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              volumeMounts:
+                - {name: sql, mountPath: /sql, readOnly: true}
+          volumes:
+            - name: sql
+              configMap: {name: package-cleanup-rules-sql}

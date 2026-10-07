@@ -176,6 +176,16 @@ gitea:
       CONN_STR: redis://forgejo-dragonfly.forgejo.svc.cluster.local:6379/2
     packages:
       ENABLED: true
+    # Hard per-owner ceiling on package storage, a backstop for the cleanup
+    # rules (package-cleanup-rules.yaml). DEFAULT_GROUPS applies to every user
+    # and organization without an explicit group. The group itself lives in
+    # the database (created via the admin API, see volsync-backups/README.md)
+    # and MUST contain an unlimited size:all rule next to the packages cap:
+    # Forgejo denies any subject that no rule in an owner's groups matches,
+    # so a packages-only group would block every git push.
+    quota:
+      ENABLED: true
+      DEFAULT_GROUPS: packages-default
     # Container images and other packages go to the forgejo-packages bucket on
     # the in-cluster Ceph RGW, not the gitea-shared-storage PVC. Backed up
     # nightly to GCS (registry-backup CronJob). Keys come from
