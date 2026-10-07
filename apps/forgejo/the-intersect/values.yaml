@@ -242,11 +242,8 @@ gitea:
       MINIO_LOCATION: us-east-1
       MINIO_USE_SSL: false
       MINIO_BASE_PATH: packages/
-      # Ceph RGW rejects minio-go's default upload signing over plain HTTP
-      # (streaming SigV4 with a trailing checksum): every PUT was logged as
-      # anonymous and denied (403 -> "permission denied" -> registry 500).
-      # md5 makes minio-go send a plain Content-MD5 instead.
-      MINIO_CHECKSUM_ALGORITHM: md5
+      # Uploads need rgw_sigv4_insecure on Ceph 20.2.4 (minio-go sends an
+      # unsigned Content-Type); see the rook-ceph-cluster HelmRelease.
 
 valkey-cluster:
   enabled: false
