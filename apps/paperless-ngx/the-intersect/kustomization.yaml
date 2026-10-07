@@ -5,6 +5,8 @@ resources:
   - helmrelease.yaml
   - httproute.yaml
   - values-secret.sops.yaml
+  - cnpg-backup-credentials.sops.yaml
+  - postgres.yaml
 configMapGenerator:
   - name: paperless-ngx-values
     files:

@@ -1,0 +1,66 @@
+---
+# Paperless's database on CloudNativePG (was the bitnami postgresql subchart
+# on an SMB volume, with no backups). Bootstrapped by importing the live
+# bitnami database ("microservice" import: one database, owned by the app
+# role) while paperless was scaled to 0; the import only runs at creation.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: paperless-postgres
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:16
+  instances: 2
+  inheritedMetadata:
+    labels:
+      k8s.lfp.rocks/service: "paperless-postgres"
+      k8s.lfp.rocks/version: "16"
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+      prometheus.io/path: /metrics
+  bootstrap:
+    initdb:
+      database: paperless
+      owner: paperless
+      import:
+        type: microservice
+        databases:
+          - paperless
+        source:
+          externalCluster: bitnami-paperless
+  externalClusters:
+    - name: bitnami-paperless
+      connectionParameters:
+        host: paperless-ngx-postgresql
+        user: postgres
+        dbname: paperless
+        sslmode: disable
+      password:
+        name: paperless-ngx-postgresql
+        key: postgres-password
+  storage:
+    size: 8Gi
+    storageClass: ceph-block
+  backup:
+    barmanObjectStore:
+      destinationPath: gs://lfpr-p-gcsb-usw1-cnpg-backups-7q2v-60d5245
+      googleCredentials:
+        applicationCredentials:
+          name: cnpg-backup-gcs-credentials
+          key: service-account.json
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: "30d"
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: paperless-postgres-daily
+spec:
+  schedule: "0 45 3 * * *"
+  backupOwnerReference: self
+  immediate: true
+  cluster:
+    name: paperless-postgres
