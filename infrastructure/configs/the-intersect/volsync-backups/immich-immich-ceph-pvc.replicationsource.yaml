@@ -1,3 +1,6 @@
+# accessModes ReadOnlyMany is for the CephFS snapshot clone only; the RBD
+# restic cache must be ReadWriteOnce (ceph-csi rejects read-only without a
+# content source).
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
@@ -36,3 +39,5 @@ spec:
         memory: 128Mi
       limits:
         memory: 1Gi
+    cacheAccessModes:
+    - ReadWriteOnce
