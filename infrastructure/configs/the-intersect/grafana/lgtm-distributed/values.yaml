@@ -16,8 +16,10 @@ grafana:
 
   persistence:
     enabled: true
-    size: 10Gi
-    storageClassName: smb-client
+    # State lives on the ceph-block PVC grafana-data (grafana-data-pvc.yaml),
+    # copied from the old smb-client volume on 2026-10-07: SQLite on SMB
+    # locked up under alerting writes. The old PV was set to Retain first.
+    existingClaim: grafana-data
 
   # Recreate, not RollingUpdate.
   #
