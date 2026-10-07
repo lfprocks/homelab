@@ -1,0 +1,15 @@
+# Blob storage for Forgejo's package registry (container images and other
+# packages), on the Ceph RGW object store. Rook creates a ConfigMap and a
+# Secret named forgejo-packages with the endpoint, bucket name and S3 keys;
+# helmrelease values read them through additionalConfigFromEnvs.
+#
+# Fixed bucketName (not generateBucketName) so a recreated claim binds back to
+# the same bucket, and ceph-bucket-retain so deleting this claim keeps the data.
+# Backed up nightly to GCS by registry-backup (see volsync-backups/README.md).
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: forgejo-packages
+spec:
+  bucketName: forgejo-packages
+  storageClassName: ceph-bucket-retain

@@ -1,0 +1,15 @@
+# Same object store as the chart's ceph-bucket class, but Retain: deleting an
+# ObjectBucketClaim (a Flux prune, a refactor, a typo) leaves the bucket and
+# its data in place instead of destroying them. Use this for any bucket that
+# holds data rather than cache.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ceph-bucket-retain
+provisioner: rook-ceph.ceph.rook.io/bucket
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  objectStoreName: ceph-objectstore
+  objectStoreNamespace: rook-ceph
+  region: us-east-1
