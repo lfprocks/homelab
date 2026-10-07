@@ -18,6 +18,11 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: registry-backup
+  annotations:
+    # The script uses shell ${...} expansions; without this, Flux's postBuild
+    # substitution rewrites them (it turned echo "${n:-0}" into echo "0",
+    # silently disabling the wiped-bucket guard).
+    kustomize.toolkit.fluxcd.io/substitute: disabled
 spec:
   schedule: "50 3 * * *"  # UTC, after the CNPG (03:45) and VolSync backups
   concurrencyPolicy: Forbid
