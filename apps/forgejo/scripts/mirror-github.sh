@@ -49,13 +49,17 @@ fapi() { # METHOD PATH [JSON] -> HTTP code; body in $BODY
     -H 'Content-Type: application/json' ${3:+-d "$3"} "https://$HOST/api/v1$2"
 }
 
-gh_list() { # owner kind(user|org) -> TSV in $LIST: name private archived description clone_url
+# Fields are separated by ASCII 0x1f (unit separator), not tabs: `read` treats
+# tab as whitespace and collapses an empty field (a repo with no description),
+# which shifted clone_url and failed those migrations.
+SEP=$'\x1f'
+gh_list() { # owner kind(user|org) -> $LIST: name private archived description clone_url
   local url
   if [ "$2" = user ]; then url="user/repos?affiliation=owner&per_page=100"
   else url="orgs/$1/repos?type=all&per_page=100"; fi
   gh api --paginate "$url" --jq '.[] | select(.fork | not) |
     [.name, (.private|tostring), (.archived|tostring),
-     ((.description // "") | gsub("[\\t\\n]"; " ")), .clone_url] | @tsv' > "$LIST" \
+     ((.description // "") | gsub("[\\t\\n\u001f]"; " ")), .clone_url] | join("\u001f")' > "$LIST" \
     || { echo "listing $1 failed" >&2; return 1; }
 }
 
@@ -63,11 +67,11 @@ created=0 skipped=0 skipped_priv=0 failed=0
 mirror_owner() { # gh_owner kind forgejo_owner
   gh_list "$1" "$2" || { failed=$((failed+1)); return; }
   GH_TOKEN=""
-  npriv=$(awk -F'\t' '$2=="true"' "$LIST" | wc -l | tr -d ' ')
+  npriv=$(awk -F"$SEP" '$2=="true"' "$LIST" | wc -l | tr -d ' ')
   if [ "$npriv" -gt 0 ]; then
     read -rsp "  $1 has $npriv private repo(s). Fine-grained read-only token for $1 (Enter = skip private): " GH_TOKEN; echo
   fi
-  while IFS=$'\t' read -r name private archived desc url; do
+  while IFS="$SEP" read -r name private archived desc url; do
     if [ "$private" = true ] && [ -z "$GH_TOKEN" ]; then skipped_priv=$((skipped_priv+1)); continue; fi
     if [ "$(fapi GET "/repos/$3/$name")" = 200 ]; then skipped=$((skipped+1)); continue; fi
     payload=$(NAME="$name" PRIV="$private" DESC="$desc" URL="$url" OWNER="$3" TOK="$GH_TOKEN" INT="$INTERVAL" python3 -c '
