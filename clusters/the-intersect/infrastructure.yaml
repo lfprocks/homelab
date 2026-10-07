@@ -12,7 +12,7 @@ spec:
     kind: GitRepository
     name: flux-system
   path: ./infrastructure/controllers/shared
-  prune: true
+  prune: false  # plan 5 regroup: off while objects move between Kustomizations
   wait: true
   decryption:
     provider: sops
@@ -36,7 +36,7 @@ spec:
     kind: GitRepository
     name: flux-system
   path: ./infrastructure/controllers/the-intersect
-  prune: true
+  prune: false  # plan 5 regroup: off while objects move between Kustomizations
   wait: true
   decryption:
     provider: sops
@@ -63,7 +63,7 @@ spec:
     kind: GitRepository
     name: flux-system
   path: ./infrastructure/configs/the-intersect
-  prune: true
+  prune: false  # plan 5 regroup: off while objects move between Kustomizations
   decryption:
     provider: sops
     secretRef:
