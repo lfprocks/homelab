@@ -114,7 +114,9 @@ or backup never holds up an app.
 #### 3. Apps — `apps.yaml`
 
 Each application has **its own** `Kustomization` (`apps-<name>`) pointing at
-`apps/<app>/the-intersect` (interval 10m, `wait`, `prune`, `timeout: 5m`).
+`apps/<app>/the-intersect` (interval 10m, `retryInterval: 2m`, `wait`, `prune`,
+`timeout: 5m`). The short retry means an app blocked by a briefly not-ready
+dependency recovers within minutes instead of waiting a full interval.
 Every app depends on `infra-network-config`, `infra-storage-config`,
 `infra-policy-config` and `infra-app-sources`, plus only the groups whose CRDs
 it uses: `infra-databases` (CNPG), `infra-databases-config` (Dragonfly),
