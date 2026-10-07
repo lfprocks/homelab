@@ -104,6 +104,39 @@ alloy:
         }
       }
 
+      // VolSync backup status (volsync_volume_out_of_sync etc.). Served over
+      // HTTPS with a self-signed cert on the metrics Service; clustering so
+      // one alloy replica scrapes it, like kube-state-metrics below.
+      discovery.kubernetes "volsync" {
+        role = "endpoints"
+        namespaces {
+          names = ["volsync-system"]
+        }
+        selectors {
+          role  = "endpoints"
+          label = "app.kubernetes.io/name=volsync"
+        }
+      }
+      prometheus.scrape "volsync" {
+        targets    = discovery.kubernetes.volsync.targets
+        forward_to = [prometheus.relabel.volsync.receiver]
+        job_name   = "integrations/volsync"
+        scheme     = "https"
+        tls_config {
+          insecure_skip_verify = true
+        }
+        clustering {
+          enabled = true
+        }
+      }
+      prometheus.relabel "volsync" {
+        forward_to = [prometheus.remote_write.default.receiver]
+        rule {
+          source_labels = ["__name__"]
+          regex         = "up|scrape_samples_scraped|scrape_duration_seconds|volsync_.*"
+          action        = "keep"
+        }
+      }
       // kube state metrics
 
       discovery.kubernetes "kube_state_metrics" {
