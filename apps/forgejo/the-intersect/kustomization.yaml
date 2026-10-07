@@ -7,6 +7,7 @@ resources:
   - cnpg-backup-credentials.sops.yaml
   - postgres.yaml
   - values-secret.sops.yaml
+  - objectbucketclaim.yaml
 configMapGenerator:
   - name: forgejo-values
     files:
