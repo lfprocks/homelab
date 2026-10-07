@@ -602,6 +602,12 @@ grafana:
             # ingester, 2x/hour), PVCPending (Ceph CSI broken after Rook 1.20).
             # Summaries name the object: the backtick form escapes the
             # Grafana template from Helm's tpl, as the contact point does.
+            # Queries filter IN PROMQL (`> 3`, `< 21`, ...) so they return only
+            # offending series. Returning every series (~600 instances) made
+            # Grafana persist each instance's state every minute into its
+            # SQLite DB on SMB -> "database is locked" and 503s on /api/health.
+            # BackupStale stays unfiltered (4 series) so NoData still means the
+            # CNPG metrics vanished.
             # noDataState OK: several queries return nothing when healthy (no
             # not-ready Flux object, no OSD down, no OOM), and Grafana's default
             # NoData state would page exactly then. BackupStale keeps NoData:
@@ -663,7 +669,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      min by (exported_namespace, name) ((certmanager_certificate_expiration_timestamp_seconds - time()) / 86400)
+                      min by (exported_namespace, name) ((certmanager_certificate_expiration_timestamp_seconds - time()) / 86400) < 21
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
@@ -694,7 +700,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (exported_namespace, name) (certmanager_certificate_ready_status{condition!="True"})
+                      max by (exported_namespace, name) (certmanager_certificate_ready_status{condition!="True"}) > 0
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
@@ -725,7 +731,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h]))
+                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) > 3
                 - refId: fired
                   relativeTimeRange: {from: 3600, to: 0}
                   datasourceUid: __expr__
@@ -756,7 +762,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) * on (namespace, pod, container) group_left () max by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"})
+                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) * on (namespace, pod, container) group_left () max by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}) > 1
                 - refId: fired
                   relativeTimeRange: {from: 3600, to: 0}
                   datasourceUid: __expr__
@@ -787,7 +793,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{phase="Pending"})
+                      max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{phase="Pending"}) > 0
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
@@ -818,7 +824,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes)
+                      max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) > 0.85
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
@@ -911,7 +917,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (node) (kube_node_status_condition{condition="Ready", status!="true"})
+                      max by (node) (kube_node_status_condition{condition="Ready", status!="true"}) > 0
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
@@ -942,7 +948,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      min by (instance, mountpoint) (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"})
+                      min by (instance, mountpoint) (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"}) < 0.15
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
