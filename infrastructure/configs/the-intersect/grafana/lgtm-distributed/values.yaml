@@ -117,12 +117,16 @@ grafana:
                   # `title` and `summary` annotations rather than being
                   # hardcoded here. A template that names one alert is a
                   # template that lies about every other one.
+                  # originatingService and idempotencyKey are NOT sent: pnp sets
+                  # the service from the bearer token's principal, takes
+                  # idempotency from an Idempotency-Key header (max 128 chars;
+                  # Grafana's GroupKey is longer), and 400s otherwise.
                   # Built with coll.Dict + data.ToJSON: Grafana's webhook payload
                   # templates have no sprig `toJson` ("function toJson not
                   # defined"), so the previous template failed on every send and
                   # no Pushover notification from Grafana was ever delivered.
                   template: |
-                    {{ `{{ coll.Dict "originatingService" "grafana" "idempotencyKey" .GroupKey "content" (coll.Dict "title" (printf "%s (%d)" (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) "body" (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") "priority" 0) "pushover" (coll.Dict "userOrGroupKey" "$__env{GRAFANA_PUSHOVER_USER_KEY}") | data.ToJSON }}` }}
+                    {{ `{{ coll.Dict "content" (coll.Dict "title" (printf "%s (%d)" (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) "body" (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") "priority" 0) "pushover" (coll.Dict "userOrGroupKey" "$__env{GRAFANA_PUSHOVER_USER_KEY}") | data.ToJSON }}` }}
 
     policies.yaml:
       apiVersion: 1
