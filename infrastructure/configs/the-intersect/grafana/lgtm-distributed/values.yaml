@@ -1024,6 +1024,42 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [0]}
+            # Forgejo package registry off-site copy (registry-backup CronJob,
+            # 03:50 UTC). Fires when the last successful run is over 26h old,
+            # covering failed runs, missed schedules and the job's own
+            # wiped-bucket guard. NoData alerts too: the series disappearing
+            # means the CronJob or its metric is gone.
+            - uid: registry-backup-stale
+              title: RegistryBackupStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Registry backup stale
+                summary: '{{ `Forgejo registry backup to GCS has not succeeded in over 26h. Check: kubectl -n forgejo get jobs -l batch.kubernetes.io/cronjob-name=registry-backup; kubectl -n forgejo logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="forgejo", cronjob="registry-backup"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [93600]}
             - uid: alerting-heartbeat
               title: AlertingHeartbeat
               condition: fired
