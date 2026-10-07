@@ -129,6 +129,25 @@ gitea:
   ssh:
     logLevel: "INFO"
 
+  # Pocket-ID OIDC. The chart re-applies this on every start (add-oauth /
+  # update-oauth), so the auth source is declared here rather than living only
+  # in the database. Client ID/secret: pocket-id-oauth.sops.yaml.
+  # Sign-in requires the Pocket-ID group forgejo-users; forgejo-admins grants
+  # Forgejo admin. No skipLocal2fa: the chart renders booleans as a separate
+  # "true" argument, which the CLI rejects (unexpected arguments: true) and
+  # would fail the init container. It only matters for accounts with Forgejo
+  # TOTP enrolled, and there are none.
+  oauth:
+    - name: pocket-id
+      provider: openidConnect
+      existingSecret: forgejo-pocket-id
+      autoDiscoverUrl: https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/.well-known/openid-configuration
+      scopes: "openid email profile groups"
+      groupClaimName: groups
+      adminGroup: forgejo-admins
+      requiredClaimName: groups
+      requiredClaimValue: forgejo-users
+
   additionalConfigFromEnvs:
     - name: FORGEJO__database__PASSWD
       valueFrom:
@@ -151,10 +170,24 @@ gitea:
 
   config:
     APP_NAME: "Intersect Computer Git"
-    # Registration was open to the internet (Forgejo default). Closed; accounts
-    # will come only from Pocket-ID SSO once that is set up.
+    # Access model: Pocket-ID SSO is the way in (gitea.oauth below). Local
+    # registration is closed (it was open to the internet by default) and
+    # nothing is visible without signing in.
     service:
       DISABLE_REGISTRATION: true
+      REQUIRE_SIGNIN_VIEW: true
+      DEFAULT_KEEP_EMAIL_PRIVATE: true
+    # First Pocket-ID login creates the account, or links an existing local
+    # account whose email/username matches.
+    oauth2_client:
+      ENABLE_AUTO_REGISTRATION: true
+      ACCOUNT_LINKING: auto
+      UPDATE_AVATAR: true
+    openid:
+      ENABLE_OPENID_SIGNIN: false
+      ENABLE_OPENID_SIGNUP: false
+    api:
+      ENABLE_SWAGGER: false
     server:
       DOMAIN: ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
       ROOT_URL: https://${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
