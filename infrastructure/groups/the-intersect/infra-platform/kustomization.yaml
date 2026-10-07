@@ -1,0 +1,11 @@
+# KEDA, reloader, ARC, NFD source, agent-sandbox, NVIDIA, VolSync
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../controllers/shared/keda
+  - ../../../controllers/shared/reloader
+  - ../../../controllers/shared/arc
+  - ../../../controllers/shared/node-feature-discovery
+  - ../../../controllers/the-intersect/agent-sandbox
+  - ../../../controllers/the-intersect/nvidia
+  - ../../../controllers/the-intersect/volsync

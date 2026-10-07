@@ -1,0 +1,7 @@
+# Rook operator + Ceph CSI, SMB/NFS chart sources, snapshot controller
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../controllers/the-intersect/rookceph
+  - ../../../controllers/shared/storage
+  - ../../../controllers/the-intersect/snapshot-controller

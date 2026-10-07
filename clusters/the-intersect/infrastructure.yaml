@@ -1,8 +1,12 @@
+# Infrastructure, split into groups so one broken component only blocks
+# what actually needs it (plan 5, 2026-10-07). Directories under
+# infrastructure/groups/ only list members; the manifests stay where they were.
+# Apps depend on the -config groups they need; see apps.yaml.
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: shared-infra-controllers
+  name: infra-network
   namespace: flux-system
 spec:
   interval: 1h
@@ -11,8 +15,8 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/controllers/shared
-  prune: false  # plan 5 regroup: off while objects move between Kustomizations
+  path: ./infrastructure/groups/the-intersect/infra-network
+  prune: false
   wait: true
   decryption:
     provider: sops
@@ -20,55 +24,392 @@ spec:
       name: sops-age
   postBuild:
     substituteFrom:
-      - kind: Secret
-        name: cluster-vars
+    - kind: Secret
+      name: cluster-vars
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: infra-controllers
+  name: infra-certs
   namespace: flux-system
 spec:
   interval: 1h
   retryInterval: 1m
   timeout: 5m
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./infrastructure/controllers/the-intersect
-  prune: false  # plan 5 regroup: off while objects move between Kustomizations
-  wait: true
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: Secret
-        name: cluster-vars
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: infra-configs
-  namespace: flux-system
-spec:
   dependsOn:
-    - name: infra-controllers
-    - name: shared-infra-controllers
-  interval: 1h
-  retryInterval: 1m
-  timeout: 5m
+  - name: infra-network
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/configs/the-intersect
-  prune: false  # plan 5 regroup: off while objects move between Kustomizations
+  path: ./infrastructure/groups/the-intersect/infra-certs
+  prune: false
+  wait: true
   decryption:
     provider: sops
     secretRef:
       name: sops-age
   postBuild:
     substituteFrom:
-      - kind: Secret
-        name: cluster-vars
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-storage
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-storage
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-policy
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-policy
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-databases
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-storage-config
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-databases
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-platform
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-platform
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-app-sources
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-app-sources
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-network-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-network
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-network-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-certs-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-certs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-certs-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-storage-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 15m
+  dependsOn:
+  - name: infra-storage
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-storage-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-policy-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-policy
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-policy-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-databases-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-databases
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-databases-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-platform-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-platform
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-platform-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-observability
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  dependsOn:
+  - name: infra-network-config
+  - name: infra-storage-config
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-observability
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-backups
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+  - name: infra-platform
+  - name: infra-storage-config
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-backups
+  prune: false
+  wait: false
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-apps-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  dependsOn:
+  - name: infra-app-sources
+  - name: infra-network-config
+  - name: infra-storage-config
+  - name: infra-policy-config
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/groups/the-intersect/infra-apps-config
+  prune: false
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-vars

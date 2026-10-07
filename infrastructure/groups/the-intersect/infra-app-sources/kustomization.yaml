@@ -1,0 +1,17 @@
+# Chart sources and namespaces for apps
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../controllers/shared/alpineworks
+  - ../../../controllers/the-intersect/bitnami
+  - ../../../controllers/the-intersect/pgadmin4
+  - ../../../controllers/the-intersect/jellyfin
+  - ../../../controllers/the-intersect/paperless-ngx
+  - ../../../controllers/the-intersect/invidious
+  - ../../../controllers/the-intersect/immich
+  - ../../../controllers/the-intersect/openwebui
+  - ../../../controllers/the-intersect/pulsar
+  - ../../../controllers/the-intersect/stable-diffusion
+  - ../../../controllers/the-intersect/home-assistant
+  - ../../../controllers/the-intersect/forgejo
+  - ../../../controllers/the-intersect/emqx
