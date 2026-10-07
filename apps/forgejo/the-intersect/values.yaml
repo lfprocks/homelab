@@ -135,6 +135,19 @@ gitea:
         secretKeyRef:
           name: forgejo-postgres-app
           key: password
+    # Package registry blobs on Ceph RGW (objectbucketclaim.yaml). Rook
+    # generates the forgejo-packages Secret; the section name is pre-escaped
+    # the way the chart escapes config keys ('.' -> _0X2E_).
+    - name: FORGEJO__storage_0X2E_packages__MINIO_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-packages
+          key: AWS_ACCESS_KEY_ID
+    - name: FORGEJO__storage_0X2E_packages__MINIO_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-packages
+          key: AWS_SECRET_ACCESS_KEY
 
   config:
     APP_NAME: "Intersect Computer Git"
@@ -161,6 +174,20 @@ gitea:
     queue:
       TYPE: redis
       CONN_STR: redis://forgejo-dragonfly.forgejo.svc.cluster.local:6379/2
+    packages:
+      ENABLED: true
+    # Container images and other packages go to the forgejo-packages bucket on
+    # the in-cluster Ceph RGW, not the gitea-shared-storage PVC. Backed up
+    # nightly to GCS (registry-backup CronJob). Keys come from
+    # additionalConfigFromEnvs above.
+    storage.packages:
+      STORAGE_TYPE: minio
+      MINIO_ENDPOINT: rook-ceph-rgw-ceph-objectstore.rook-ceph.svc:80
+      MINIO_BUCKET: forgejo-packages
+      MINIO_BUCKET_LOOKUP: path
+      MINIO_LOCATION: us-east-1
+      MINIO_USE_SSL: false
+      MINIO_BASE_PATH: packages/
 
 valkey-cluster:
   enabled: false
