@@ -37,6 +37,8 @@ infrastructure/
     the-intersect/          # the-intersect controllers
   configs/
     the-intersect/          # the-intersect cluster config (issuers, gateways, ...)
+  groups/
+    the-intersect/<group>/  # membership lists: which controllers/configs dirs each Flux group applies
 apps/
   <app>/
     base/                   # shared base manifests for an app (where present)
@@ -64,7 +66,7 @@ clusters/the-intersect/
     kustomization.yaml      # patches the root sync to enable SOPS decryption
   namespaces.yaml           # application namespaces (privileged PSA + gateway access)
   cluster-vars.sops.yaml    # SOPS-encrypted Secret of cluster-wide variables
-  infrastructure.yaml       # shared-infra-controllers, infra-controllers, infra-configs
+  infrastructure.yaml       # the infra-* group Kustomizations (see below)
   apps.yaml                 # one Flux Kustomization per application
 ```
 
@@ -86,23 +88,39 @@ bootstrap` regenerating `gotk-sync.yaml`.
 
 #### 2. Infrastructure — `infrastructure.yaml`
 
-Three `Kustomization` objects, chained with `dependsOn`:
+Infrastructure is split into small groups so that one broken component only
+blocks what actually needs it. Each group is a Flux `Kustomization` whose path
+is `infrastructure/groups/the-intersect/<group>/`, a list of member
+directories under `controllers/` and `configs/`. The manifests themselves live
+where they always did. Controllers and their configuration are separate groups,
+because config usually needs CRDs the controller installs.
 
-- **`shared-infra-controllers`** → `./infrastructure/controllers/shared`
-  (interval 1h, `wait`, `prune`). Controllers common to every cluster.
-- **`infra-controllers`** → `./infrastructure/controllers/the-intersect`
-  (interval 1h, `wait`, `prune`). Cluster-specific controllers.
-- **`infra-configs`** → `./infrastructure/configs/the-intersect`, which
-  **`dependsOn` both controller layers** so config (issuers, gateways, storage
-  classes, etc.) is applied only after the controllers that consume it are ready.
+| Group | Members | Depends on |
+|---|---|---|
+| `infra-network` → `infra-network-config` | Gateway API CRDs, Cilium → LB pools, gateways, Hubble route, Multus | — |
+| `infra-certs` → `infra-certs-config` | cert-manager → ClusterIssuers | network |
+| `infra-storage` → `infra-storage-config` | Rook + Ceph CSI, SMB/NFS sources, snapshot controller → Ceph cluster, SMB/NFS drivers, local-path | — |
+| `infra-policy` → `infra-policy-config` | Kyverno → policies | — |
+| `infra-databases` → `infra-databases-config` | CloudNativePG, Dragonfly operators → shared Dragonfly | storage-config |
+| `infra-platform` → `infra-platform-config` | KEDA, reloader, ARC, agent-sandbox, NVIDIA, VolSync → NFD | — |
+| `infra-app-sources` | chart sources and namespaces for apps | — |
+| `infra-apps-config` | pgadmin, open-webui, pulsar, home-assistant, emqx | app-sources, network/storage/policy config |
+| `infra-observability` | LGTM, Alloy, kube-state-metrics, suspension exporter | network/storage config |
+| `infra-backups` | VolSync ReplicationSources | platform, storage-config |
+
+Nothing depends on `infra-observability` or `infra-backups`: a broken Grafana
+or backup never holds up an app.
 
 #### 3. Apps — `apps.yaml`
 
 Each application has **its own** `Kustomization` (`apps-<name>`) pointing at
-`apps/<app>/the-intersect`. Every app **`dependsOn infra-configs`** (interval
-10m, `wait`, `prune`, `timeout: 5m`), so workloads roll out only after their
-supporting infrastructure is ready. A few declare extra dependencies — e.g.
-`apps-adsbx-live-notifier` also `dependsOn apps-pulsar-notification-pipeline`.
+`apps/<app>/the-intersect` (interval 10m, `wait`, `prune`, `timeout: 5m`).
+Every app depends on `infra-network-config`, `infra-storage-config`,
+`infra-policy-config` and `infra-app-sources`, plus only the groups whose CRDs
+it uses: `infra-databases` (CNPG), `infra-databases-config` (Dragonfly),
+`infra-platform` (KEDA, agent-sandbox), `infra-platform-config` (GPU),
+`infra-certs-config` (cert-manager resources). A few declare app dependencies
+too, e.g. `apps-adsbx-live-notifier` also `dependsOn apps-pulsar-notification-pipeline`.
 
 ### Reconciliation order
 
@@ -112,9 +130,9 @@ GitRepository flux-system (poll every 1m)
         ▼
 root sync (./clusters/the-intersect)
         │
-        ├─ shared-infra-controllers ─┐
-        ├─ infra-controllers ────────┴─► infra-configs ─► apps-* (per application)
-        │      (1h)                          (1h)              (10m)
+        ├─ infra-<group> (1h) ─► infra-<group>-config (1h) ─┐
+        ├─ infra-app-sources (1h) ──────────────────────────┴─► apps-* (10m, only the groups each needs)
+        └─ infra-observability, infra-backups (nothing waits on them)
 ```
 
 Every child Kustomization decrypts with SOPS (`sops-age`) and injects

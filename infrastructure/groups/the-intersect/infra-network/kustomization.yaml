@@ -1,0 +1,6 @@
+# Gateway API CRDs and Cilium
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../controllers/shared/gatewayapi
+  - ../../../controllers/the-intersect/cilium

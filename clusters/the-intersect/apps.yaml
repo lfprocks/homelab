@@ -7,7 +7,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -32,7 +35,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -53,7 +60,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -74,7 +84,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -95,7 +108,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-databases
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -120,7 +137,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -145,7 +165,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -170,7 +194,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -195,7 +223,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -220,7 +252,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -245,7 +281,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -270,7 +310,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -295,7 +338,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -320,7 +366,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -345,7 +394,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -370,7 +422,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-databases
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -395,7 +451,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -420,7 +480,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -445,7 +509,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -470,7 +537,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -495,7 +565,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -520,7 +593,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-databases
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -545,7 +622,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -570,7 +650,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -595,7 +678,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -620,7 +707,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -645,7 +736,12 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-databases
+    - name: infra-databases-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -670,7 +766,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -691,7 +791,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -712,7 +816,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -733,7 +840,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -758,7 +869,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -779,7 +893,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -800,7 +917,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -825,7 +945,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -850,7 +973,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
     - name: apps-pulsar-notification-pipeline
   sourceRef:
     kind: GitRepository
@@ -876,7 +1002,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -897,7 +1026,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -922,7 +1054,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -947,7 +1082,12 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-databases
+    - name: infra-databases-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -972,7 +1112,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-platform
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -997,7 +1141,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -1024,7 +1171,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -1049,7 +1199,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -1074,7 +1227,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -1099,7 +1255,11 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+    - name: infra-certs-config
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -1124,7 +1284,10 @@ metadata:
 spec:
   interval: 10m0s
   dependsOn:
-    - name: infra-configs
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
   sourceRef:
     kind: GitRepository
     name: flux-system
