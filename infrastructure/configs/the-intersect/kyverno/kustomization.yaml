@@ -5,3 +5,5 @@ resources:
   - disallow-latest-tag.yaml
   - require-resource-requests.yaml
   - sync-version-label.yaml
+  - forgejo-registry-pull.sops.yaml
+  - forgejo-registry-pull.yaml

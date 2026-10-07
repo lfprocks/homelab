@@ -1,0 +1,66 @@
+# Pull credentials for the Forgejo container registry, everywhere.
+#
+# Forgejo requires sign-in (REQUIRE_SIGNIN_VIEW), so image pulls need a
+# credential. The source Secret (forgejo-registry-pull.sops.yaml, in this
+# namespace) holds a read:package token of the Forgejo bot user cluster-pull.
+#   1. generate: Kyverno clones it into every namespace and keeps it in sync,
+#      so rotating the token is one sops edit.
+#   2. mutate: any Pod with an image on the Forgejo registry gets it in
+#      imagePullSecrets. Pods only (autogen off), so Deployments in git are
+#      never rewritten and Flux never sees drift.
+# Apps need nothing: reference the image and it pulls.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: forgejo-registry-pull
+  annotations:
+    policies.kyverno.io/title: Forgejo registry pull credentials
+    policies.kyverno.io/subject: Pod, Secret
+    pod-policies.kyverno.io/autogen-controllers: none
+spec:
+  generateExisting: true
+  rules:
+    - name: clone-pull-secret
+      match:
+        any:
+          - resources:
+              kinds: [Namespace]
+      exclude:
+        any:
+          - resources:
+              names: [kyverno]
+      generate:
+        apiVersion: v1
+        kind: Secret
+        name: forgejo-registry-pull
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        clone:
+          namespace: kyverno
+          name: forgejo-registry-pull
+    - name: add-pull-secret-containers
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - <(image): "${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}/*"
+            imagePullSecrets:
+              - name: forgejo-registry-pull
+    - name: add-pull-secret-init-containers
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+      mutate:
+        patchStrategicMerge:
+          spec:
+            initContainers:
+              - <(image): "${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}/*"
+            imagePullSecrets:
+              - name: forgejo-registry-pull

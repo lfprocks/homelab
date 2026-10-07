@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
+  - rbac-generate-secrets.yaml
