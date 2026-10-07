@@ -602,6 +602,11 @@ grafana:
             # ingester, 2x/hour), PVCPending (Ceph CSI broken after Rook 1.20).
             # Summaries name the object: the backtick form escapes the
             # Grafana template from Helm's tpl, as the contact point does.
+            # noDataState OK: several queries return nothing when healthy (no
+            # not-ready Flux object, no OSD down, no OOM), and Grafana's default
+            # NoData state would page exactly then. BackupStale keeps NoData:
+            # there, missing data means the CNPG metrics vanished. execErrState
+            # Error makes a broken rule show as an error, not a fake alert.
             # FluxNotReady skips reason=DependencyNotReady: when one infra
             # Kustomization is slow or broken, every app downstream reports
             # that reason too. Alert on the object that actually failed, not
@@ -609,6 +614,8 @@ grafana:
             - uid: flux-not-ready
               title: FluxNotReady
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 15m
               annotations:
                 title: Flux resource not ready
@@ -638,6 +645,8 @@ grafana:
             - uid: certificate-expiring
               title: CertificateExpiringSoon
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 1h
               annotations:
                 title: certificate expiring soon
@@ -667,6 +676,8 @@ grafana:
             - uid: certificate-not-ready
               title: CertificateNotReady
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 1h
               annotations:
                 title: certificate not ready
@@ -696,6 +707,8 @@ grafana:
             - uid: pod-crashlooping
               title: PodCrashLooping
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 5m
               annotations:
                 title: pod crash-looping
@@ -725,6 +738,8 @@ grafana:
             - uid: pod-oomkilled
               title: PodOOMKilled
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 0m
               annotations:
                 title: container OOMKilled repeatedly
@@ -754,6 +769,8 @@ grafana:
             - uid: pvc-pending
               title: PVCPending
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 15m
               annotations:
                 title: volume claim stuck Pending
@@ -783,6 +800,8 @@ grafana:
             - uid: volume-almost-full
               title: VolumeAlmostFull
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 30m
               annotations:
                 title: volume almost full
@@ -812,6 +831,8 @@ grafana:
             - uid: ceph-health
               title: CephHealthNotOK
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 15m
               annotations:
                 title: ceph health not OK
@@ -841,6 +862,8 @@ grafana:
             - uid: ceph-osd-down
               title: CephOSDDown
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 5m
               annotations:
                 title: ceph OSD down
@@ -870,6 +893,8 @@ grafana:
             - uid: node-not-ready
               title: NodeNotReady
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 5m
               annotations:
                 title: node not ready
@@ -899,6 +924,8 @@ grafana:
             - uid: node-disk-almost-full
               title: NodeDiskAlmostFull
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 30m
               annotations:
                 title: node disk almost full
@@ -928,6 +955,8 @@ grafana:
             - uid: cnpg-backup-stale
               title: BackupStale
               condition: fired
+              noDataState: NoData
+              execErrState: Error
               for: 30m
               annotations:
                 title: database backup stale
@@ -957,6 +986,8 @@ grafana:
             - uid: alerting-heartbeat
               title: AlertingHeartbeat
               condition: fired
+              noDataState: OK
+              execErrState: Error
               for: 0m
               annotations:
                 title: alerting heartbeat
