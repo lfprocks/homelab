@@ -1,0 +1,16 @@
+# Grafana's state (SQLite grafana.db, plugins, alerting) on Ceph RBD.
+# It used to live on the chart's smb-client volume; SQLite on a network
+# filesystem locked up under alert-state writes (503s on /api/health,
+# 2026-10-07). A block device gives SQLite real file locking. The chart uses
+# this via grafana.persistence.existingClaim.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: grafana
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 5Gi
