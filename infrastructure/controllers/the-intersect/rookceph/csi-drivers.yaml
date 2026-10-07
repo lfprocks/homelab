@@ -29,7 +29,7 @@ spec:
         kind: HelmRepository
         name: ceph-csi-operator
       # Keep in step with the ceph-csi-operator subchart bundled by rook-ceph.
-      version: 1.1.0
+      version: 1.0.4
   interval: 1h0m0s
   # Rook's recommended values (deploy/charts/ceph-csi-drivers/values.yaml at
   # v1.20.8). Driver names MUST stay <operator namespace>.<type>.csi.ceph.com:
