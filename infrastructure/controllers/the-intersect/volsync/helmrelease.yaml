@@ -1,0 +1,32 @@
+---
+# VolSync: scheduled PVC backups (restic) to the GCS bucket
+# lfpr-p-gcsb-usw1-volsync-backups-szog-ea82375. Sources live in
+# infrastructure/configs/the-intersect/volsync-backups. Each run snapshots the
+# PVC (CSI VolumeSnapshot) and backs up the snapshot, so apps keep running.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: backube
+  namespace: volsync-system
+spec:
+  interval: 1h0m0s
+  url: https://backube.github.io/helm-charts/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: volsync
+  namespace: volsync-system
+spec:
+  chart:
+    spec:
+      chart: volsync
+      sourceRef:
+        kind: HelmRepository
+        name: backube
+      version: 0.16.0
+  interval: 1h0m0s
+  values:
+    manageCRDs: true
+    metrics:
+      disableAuth: true
