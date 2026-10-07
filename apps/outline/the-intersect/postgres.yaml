@@ -14,6 +14,12 @@ spec:
     labels:
       k8s.lfp.rocks/service: "outline-postgres"
       k8s.lfp.rocks/version: "16"
+    # Alloy scrapes pods by these annotations: CNPG's exporter on :9187
+    # (cnpg_collector_last_available_backup_timestamp feeds BackupStale).
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+      prometheus.io/path: /metrics
 
   managed:
     roles:
