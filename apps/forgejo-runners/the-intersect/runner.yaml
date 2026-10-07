@@ -75,6 +75,9 @@ spec:
             - {name: data, mountPath: /data}
             - {name: dind-sock, mountPath: /var/run/dind}
             - {name: registration, mountPath: /registration, readOnly: true}
+            # Read-only root fs: the runner stages action files under /tmp
+            # ("open /tmp/act...: read-only file system" otherwise).
+            - {name: tmp, mountPath: /tmp}
         - name: dind
           image: docker.io/library/docker:29.8.2-dind
           # Bypass dockerd-entrypoint.sh: with TLS off it ALSO listens on
@@ -107,6 +110,8 @@ spec:
         - name: data
           emptyDir: {}
         - name: dind-sock
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
         - name: docker-data
           persistentVolumeClaim: {claimName: docker-data}
