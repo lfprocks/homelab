@@ -10,6 +10,14 @@
   // auto-merge and GitHub merges once `validate` passes.
   automerge: false,
 
+  // Wait 7 days after a release before proposing it: day-0 releases broke
+  // things this week (openclaw 2026.7.35, paperless 3.0.1's bad migration) and
+  // upstream usually ships the fix within days. Registries that publish no
+  // release timestamp would otherwise never update; timestamp-optional lets
+  // those through rather than silently freezing them.
+  minimumReleaseAge: "7 days",
+  minimumReleaseAgeBehaviour: "timestamp-optional",
+
   timezone: "America/Los_Angeles",
   // Run overnight so the openclaw digest at 07:00 sees a settled set of PRs.
   schedule: ["before 6am"],
@@ -106,6 +114,10 @@
         "registry.k8s.io/agent-sandbox/agent-sandbox-controller",
       ],
       labels: ["renovate", "risk/high"],
+      // One PR per minor version for infrastructure: Rook (and others) only
+      // support upgrading one minor at a time, and #243 jumped rook-ceph
+      // 1.17 -> 1.20 in a single PR, which skipped Rook 1.18's CSI migration.
+      separateMultipleMinor: true,
     },
     {
       // HOLD: operator.yaml is a hand-copied release manifest; bumping only
