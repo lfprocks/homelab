@@ -77,7 +77,7 @@ gh_list() { # owner kind(user|org) -> $LIST: name private archived description c
     || { echo "listing $1 failed" >&2; return 1; }
 }
 
-created=0 skipped=0 skipped_priv=0 failed=0
+created=0 skipped=0 skipped_priv=0 notready=0 failed=0
 mirror_owner() { # gh_owner kind forgejo_owner
   gh_list "$1" "$2" || { failed=$((failed+1)); return; }
   GH_TOKEN=""
@@ -89,14 +89,24 @@ mirror_owner() { # gh_owner kind forgejo_owner
     if [ "$private" = true ] && [ -z "$GH_TOKEN" ]; then skipped_priv=$((skipped_priv+1)); continue; fi
     st=$(repo_status "$3" "$name")
     if [ "$st" = 0 ]; then skipped=$((skipped+1)); continue; fi
-    if [ -n "$st" ]; then  # left half-migrated by an interrupted run: remove and redo
-      fapi DELETE "/repos/$3/$name" >/dev/null
-      printf '  ~ %s/%s: removed half-migrated copy (status %s), retrying\n' "$3" "$name" "$st"
+    if [ -n "$st" ]; then
+      # Not ready: usually a migration still running server-side (they finish on
+      # their own even if the request was dropped). Never delete it from under a
+      # live migration; report it and re-run later.
+      notready=$((notready+1))
+      printf '  ~ %s/%s: exists but not ready (status %s), skipped; re-run later\n' "$3" "$name" "$st"
+      continue
     fi
     payload=$(NAME="$name" PRIV="$private" DESC="$desc" URL="$url" OWNER="$3" TOK="$GH_TOKEN" INT="$INTERVAL" python3 -c '
 import json, os
+# Public repos: plain git mirror. service "github" makes Forgejo call the GitHub
+# API per repo; anonymously that is 60 requests/hour, and go-github then sleeps
+# until the reset (~30 repos/hour). A pull mirror only carries git data + LFS,
+# so the API metadata buys nothing. Private repos keep "github": they carry the
+# owner token and get the authenticated 5000/hour quota.
+priv = os.environ["PRIV"] == "true"
 p = {"clone_addr": os.environ["URL"], "repo_owner": os.environ["OWNER"], "repo_name": os.environ["NAME"],
-     "service": "github", "mirror": True, "mirror_interval": os.environ["INT"],
+     "service": "github" if priv else "git", "mirror": True, "mirror_interval": os.environ["INT"],
      "private": os.environ["PRIV"] == "true", "description": os.environ["DESC"][:2048],
      "lfs": True, "wiki": False}
 if p["private"]:
@@ -127,4 +137,4 @@ for org in "$@"; do
   mirror_owner "$org" org "$forg"
 done
 echo
-echo "created $created, already present $skipped, private skipped (no token) $skipped_priv, failed $failed"
+echo "created $created, already present $skipped, not ready (re-run later) $notready, private skipped (no token) $skipped_priv, failed $failed"
