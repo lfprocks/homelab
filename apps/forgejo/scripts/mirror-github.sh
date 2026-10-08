@@ -5,7 +5,9 @@
 #
 #   - one Forgejo org per GitHub org (created for $FORGEJO_USER, so you own it);
 #     personal repos go to your Forgejo user
-#   - forks are skipped; archived repos are mirrored and archived in Forgejo
+#   - forks are skipped; archived repos are mirrored but NOT flagged archived:
+#     Forgejo refuses to archive a mirror (422 "repo is a mirror, cannot
+#     archive/un-archive"); they never change upstream, so syncing is free
 #   - visibility is preserved; only PRIVATE repos store a GitHub token (it is
 #     needed on every sync); public ones are fetched anonymously
 #   - wikis are not mirrored (GitHub reports has_wiki for empty wikis, and a
@@ -115,7 +117,6 @@ print(json.dumps(p))')
     code=$(fapi POST /repos/migrate "$payload"); payload=""
     if [ "$code" = 201 ]; then
       created=$((created+1))
-      if [ "$archived" = true ]; then fapi PATCH "/repos/$3/$name" '{"archived":true}' >/dev/null; fi
       printf '  + %s/%s%s\n' "$3" "$name" "$([ "$private" = true ] && echo ' (private)')"
     else
       failed=$((failed+1)); printf '  ! %s/%s: HTTP %s %s\n' "$3" "$name" "$code" "$(head -c 160 "$BODY")"
