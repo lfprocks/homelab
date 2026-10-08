@@ -34,27 +34,30 @@ fj()  { kubectl -n forgejo exec deploy/forgejo -c forgejo -- forgejo "$@"; }
 sql() { kubectl -n forgejo exec forgejo-postgres-1 -c postgres -- psql -U postgres -d forgejo -tAc "$1"; }
 ADMIN_TOKEN_NAME="mirror-github-$$"
 BODY=$(mktemp); LIST=$(mktemp)
-# The migrate API is synchronous. Through the public gateway a slow clone hits
-# Envoy's stream timeout (504) and the dropped request cancels the migration,
-# so talk to the Forgejo Service directly through a port-forward instead.
-PF_PORT=$((20000 + RANDOM % 20000))
-kubectl -n forgejo port-forward svc/forgejo-http "$PF_PORT:3000" >/dev/null 2>&1 &
-PF_PID=$!
 cleanup() {
   sql "DELETE FROM access_token WHERE name='${ADMIN_TOKEN_NAME}'" >/dev/null || true
-  kill "$PF_PID" 2>/dev/null || true
   rm -f "$BODY" "$LIST"
   GH_TOKEN=""
 }
 trap cleanup EXIT
-for _ in $(seq 1 30); do curl -s -o /dev/null "http://127.0.0.1:$PF_PORT/api/healthz" && break; sleep 1; done
-API="http://127.0.0.1:$PF_PORT/api/v1"
 ADMIN_TOKEN=$(fj admin user generate-access-token --username intersect-admin \
   --token-name "$ADMIN_TOKEN_NAME" --scopes write:admin,write:organization,write:repository,write:user --raw 2>/dev/null | tail -1)
 
+# Each API call runs curl INSIDE the Forgejo pod against localhost:3000.
+# Not the public gateway: the migrate API is synchronous and a slow clone hit
+# Envoy's stream timeout (504). Not a port-forward: a long-lived tunnel died
+# mid-run and failed every request after it. One exec per call has neither
+# problem. The JSON payload goes over stdin, never on a command line.
 fapi() { # METHOD PATH [JSON] -> HTTP code ("000" if the request itself failed); body in $BODY
-  curl -s -m 3600 -o "$BODY" -w '%{http_code}' -X "$1" -H "Authorization: token $ADMIN_TOKEN" \
-    -H 'Content-Type: application/json' ${3:+-d "$3"} "$API$2" || true
+  local out
+  out=$(printf '%s' "${3:-}" | kubectl -n forgejo exec -i deploy/forgejo -c forgejo -- \
+    curl -s -m 3600 -w '\n%{http_code}' -X "$1" -H "Authorization: token $ADMIN_TOKEN" \
+    -H 'Content-Type: application/json' ${3:+--data-binary @-} "http://localhost:3000/api/v1$2" 2>/dev/null) || true
+  if [[ "$out" == *$'\n'* ]]; then
+    printf '%s' "${out%$'\n'*}" > "$BODY"; echo "${out##*$'\n'}"
+  else
+    : > "$BODY"; echo 000
+  fi
 }
 repo_status() { # owner name -> Forgejo repository.status (0 ready, 1 being migrated, ...), empty if absent
   sql "SELECT status FROM repository WHERE lower_name=lower('$2') AND owner_name ILIKE '$1'" 2>/dev/null | head -1
