@@ -735,8 +735,13 @@ grafana:
                     refId: q
                     editorMode: code
                     instant: true
+                    # The [1h] window keeps a deleted pod's samples for up to
+                    # an hour, so a pod that was replaced kept "crash-looping"
+                    # after it was gone. kube_pod_info drops as soon as the
+                    # pod is deleted, so the join limits this to live pods.
                     expr: >-
-                      sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) > 3
+                      (sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) > 3)
+                      and on (namespace, pod) kube_pod_info
                 - refId: fired
                   relativeTimeRange: {from: 3600, to: 0}
                   datasourceUid: __expr__
