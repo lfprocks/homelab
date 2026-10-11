@@ -127,8 +127,12 @@ grafana:
                   # templates have no sprig `toJson` ("function toJson not
                   # defined"), so the previous template failed on every send and
                   # no Pushover notification from Grafana was ever delivered.
+                  # The title leads with [FIRING] or [RESOLVED]. Without it the
+                  # resolve notification is word-for-word the firing one, so a
+                  # recovery reads as a fresh failure. .Status is "resolved"
+                  # only when every alert in the group has resolved.
                   template: |
-                    {{ `{{ coll.Dict "content" (coll.Dict "title" (printf "%s (%d)" (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) "body" (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") "priority" 0) "pushover" (coll.Dict "userOrGroupKey" "$__env{GRAFANA_PUSHOVER_USER_KEY}") | data.ToJSON }}` }}
+                    {{ `{{ $s := "FIRING" }}{{ if eq .Status "resolved" }}{{ $s = "RESOLVED" }}{{ end }}{{ coll.Dict "content" (coll.Dict "title" (printf "[%s] %s (%d)" $s (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) "body" (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") "priority" 0) "pushover" (coll.Dict "userOrGroupKey" "$__env{GRAFANA_PUSHOVER_USER_KEY}") | data.ToJSON }}` }}
 
     policies.yaml:
       apiVersion: 1
