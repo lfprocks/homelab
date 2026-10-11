@@ -131,8 +131,12 @@ grafana:
                   # resolve notification is word-for-word the firing one, so a
                   # recovery reads as a fresh failure. .Status is "resolved"
                   # only when every alert in the group has resolved.
+                  # No template variables: grafana expands $name as an
+                  # environment variable in provisioning files, so `$s` became
+                  # an empty string and the template stopped parsing. The
+                  # and/or pair picks the word without needing a `$`.
                   template: |
-                    {{ `{{ $s := "FIRING" }}{{ if eq .Status "resolved" }}{{ $s = "RESOLVED" }}{{ end }}{{ coll.Dict "content" (coll.Dict "title" (printf "[%s] %s (%d)" $s (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) "body" (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") "priority" 0) "pushover" (coll.Dict "userOrGroupKey" "$__env{GRAFANA_PUSHOVER_USER_KEY}") | data.ToJSON }}` }}
+                    {{ `{{ coll.Dict "content" (coll.Dict "title" (printf "[%s] %s (%d)" (or (and (eq .Status "resolved") "RESOLVED") "FIRING") (or .CommonAnnotations.title .CommonLabels.alertname "grafana alert") (len .Alerts)) "body" (or .CommonAnnotations.summary .CommonLabels.alertname "grafana alert") "priority" 0) "pushover" (coll.Dict "userOrGroupKey" "$__env{GRAFANA_PUSHOVER_USER_KEY}") | data.ToJSON }}` }}
 
     policies.yaml:
       apiVersion: 1
