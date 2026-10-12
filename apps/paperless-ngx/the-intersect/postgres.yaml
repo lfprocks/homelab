@@ -8,7 +8,14 @@ kind: Cluster
 metadata:
   name: paperless-postgres
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:16
+  # Pinned by digest: `:16` is a floating tag and nodes cache whatever digest
+  # they last pulled. After the 2026-10-10 power event the standby came back
+  # on a cached digest whose google-api-core calls an API missing from its
+  # Python 3.9, so every barman-cloud-backup failed ("module
+  # 'importlib.metadata' has no attribute 'packages_distributions'", surfaced
+  # by CNPG as "invalid character 'A'"). This digest is the one the primary
+  # and the forgejo/outline backups run on successfully.
+  imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:acbed84c842730d6cefb89e7135743fe160233296b645b2f30f49fa18e2ebcf1
   instances: 2
   inheritedMetadata:
     labels:
