@@ -43,7 +43,7 @@ spec:
         - name: *name
           # Image default ENTRYPOINT/CMD already runs `cook server /recipes --host`
           # binding 0.0.0.0:9080, so no command/args override is needed.
-          image: ghcr.io/cooklang/cookcli:0.37.0
+          image: ghcr.io/cooklang/cookcli:0.38.1
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
