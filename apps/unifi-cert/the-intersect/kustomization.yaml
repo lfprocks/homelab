@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: unifi-cert
+
+resources:
+  - certificate.yaml
+  - udm-secret.yaml
+  - ssh-secret.yaml
+  - cronjob.yaml
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: unifi-cert
+configMapGenerator:
+  - name: unifi-cert-script
+    files:
+      - push_cert.sh
+    options:
+      annotations:
+        # Shell expansions (${want#...}, ${UDM_HOST:?}) would otherwise be
+        # rewritten by Flux's postBuild envsubst before the script runs.
+        kustomize.toolkit.fluxcd.io/substitute: disabled

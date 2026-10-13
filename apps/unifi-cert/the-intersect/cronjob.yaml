@@ -1,0 +1,80 @@
+---
+# Daily: push the current unifi-console certificate onto the UDM if it does not
+# already have it (see push_cert.sh). Kick the first run by hand:
+#   kubectl -n unifi-cert create job --from=cronjob/unifi-cert-push first-push
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: unifi-cert-push
+spec:
+  schedule: "37 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: "unifi-cert-push"
+            k8s.lfp.rocks/version: "v2.49.1"
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            # Secret files are root-owned with this group; ssh accepts a
+            # group-readable key it does not own.
+            fsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: push
+              # Only needs ssh and sha256sum; alpine/git ships both.
+              image: alpine/git:v2.49.1@sha256:c0280cf9572316299b08544065d3bf35db65043d5e3963982ec50647d2746e26
+              command: ["/bin/sh", "/app/push_cert.sh"]
+              env:
+                - name: HOME
+                  value: /home/push
+              envFrom:
+                - secretRef:
+                    name: unifi-cert-udm
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  memory: 64Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /app
+                  readOnly: true
+                - name: tls
+                  mountPath: /tls
+                  readOnly: true
+                - name: ssh
+                  mountPath: /ssh
+                  readOnly: true
+                - name: home
+                  mountPath: /home/push
+          volumes:
+            - name: home
+              emptyDir: {}
+            - name: script
+              configMap:
+                name: unifi-cert-script
+            - name: tls
+              secret:
+                secretName: unifi-console-tls
+            - name: ssh
+              secret:
+                secretName: unifi-cert-ssh
+                defaultMode: 0440

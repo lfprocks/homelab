@@ -1,0 +1,19 @@
+---
+# Let's Encrypt certificate for the UDM Pro SE console (10.0.0.1). Issued here
+# by cert-manager via Cloudflare DNS-01 and pushed to the UDM by the CronJob in
+# cronjob.yaml. RSA 2048 for the widest client compatibility (UniFi apps).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: unifi-console
+spec:
+  secretName: unifi-console-tls
+  dnsNames:
+    - unifi.management.lfp.rocks
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
