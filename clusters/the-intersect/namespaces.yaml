@@ -353,3 +353,14 @@ metadata:
     pod-security.kubernetes.io/audit: privileged
     pod-security.kubernetes.io/warn: privileged
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: case-lighting
+  labels:
+    k8s.lfp.rocks/policy: enforce
+    # privileged: needs hidraw access to the NZXT USB controller
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---

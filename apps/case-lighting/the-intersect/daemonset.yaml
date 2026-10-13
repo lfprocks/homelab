@@ -1,0 +1,59 @@
+---
+# Sets worker-04's NZXT case lighting (two HUE 2 strips on an NZXT Smart
+# Device V2, USB 1e71:2006) to static red. The Smart Device V2 forgets its
+# colour on power loss, so this runs on every pod start, which includes every
+# node boot.
+#
+# Only the NZXT strips are reachable. The board's ASUS Aura USB controller
+# (0b05:1872) drives the ARGB headers, which are empty; the onboard LEDs and the
+# G.Skill RAM sit on the chipset SMBus, which needs i2c-piix4 and i2c-dev, and
+# neither ships in the Talos kernel.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: case-lighting
+  namespace: case-lighting
+  labels:
+    app: case-lighting
+spec:
+  selector:
+    matchLabels:
+      app: case-lighting
+  template:
+    metadata:
+      labels:
+        app: case-lighting
+        k8s.lfp.rocks/service: "case-lighting"
+        k8s.lfp.rocks/version: "liquidctl-1.15.0"
+    spec:
+      # NFD does not label the NZXT controller (only class ef/ff USB devices
+      # are labelled), so pin by hostname.
+      nodeSelector:
+        kubernetes.io/hostname: the-intersect-worker-04
+      containers:
+        - name: liquidctl
+          image: debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              apt-get update -qq
+              DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends 'liquidctl=1.15.0*'
+              liquidctl -m "Smart Device V2" initialize
+              liquidctl -m "Smart Device V2" set led1 color fixed ff0000
+              liquidctl -m "Smart Device V2" set led2 color fixed ff0000
+              echo "case lighting set"
+              exec sleep infinity
+          securityContext:
+            # hidraw nodes are root-only, and a privileged container gets the
+            # host's devices in /dev without a hostPath mount (the hidrawN
+            # number is not stable across boots, so no single node is mounted).
+            # Root, privileged and a writable root filesystem (apt at start)
+            # are the same accepted Trivy findings zwavejs-ui carries.
+            privileged: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              memory: 256Mi
