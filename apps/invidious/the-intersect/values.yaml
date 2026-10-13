@@ -2,7 +2,7 @@ name: invidious
 
 image:
   repository: quay.io/invidious/invidious
-  tag: 2026.10.11-20bcaa0
+  tag: 2026.10.13-907fe54
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
