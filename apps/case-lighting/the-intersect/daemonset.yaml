@@ -45,8 +45,11 @@ spec:
               echo "case lighting set"
               exec sleep infinity
           securityContext:
-            # hidraw access; the device number is not stable across boots, so
-            # the whole of /dev is mounted rather than one /dev/hidrawN.
+            # hidraw nodes are root-only, and a privileged container gets the
+            # host's devices in /dev without a hostPath mount (the hidrawN
+            # number is not stable across boots, so no single node is mounted).
+            # Root, privileged and a writable root filesystem (apt at start)
+            # are the same accepted Trivy findings zwavejs-ui carries.
             privileged: true
           resources:
             requests:
@@ -54,11 +57,3 @@ spec:
               memory: 32Mi
             limits:
               memory: 256Mi
-          volumeMounts:
-            - name: dev
-              mountPath: /dev
-      volumes:
-        - name: dev
-          hostPath:
-            path: /dev
-            type: Directory
