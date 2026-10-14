@@ -145,6 +145,14 @@ pages:
                     # even when uploaded the full chain; Go can't verify it. Affects
                     # this status check only, not the link.
                     allow-insecure: true
+                  - title: Proxmox
+                    url: https://${SUB_CEDAR_SPIRE}.${DOMAIN_SLATE_FJORD}
+                    icon: di:proxmox
+                  # iDRAC9 serves the full chain, so unlike olympic's this one
+                  # verifies.
+                  - title: glacier iDRAC
+                    url: https://${SUB_RUSSET_HERON}.${DOMAIN_IVORY_ESTUARY}
+                    icon: di:idrac
                   - title: BirdNET
                     url: https://${SUB_EMBER_QUILL}.${DOMAIN_NOBLE_NOOK}
                     icon: mdi:bird
