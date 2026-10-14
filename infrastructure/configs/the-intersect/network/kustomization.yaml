@@ -6,5 +6,4 @@ resources:
   - hubble-httproute.yaml
   - multuscni.yaml
   - cni-plugins.yaml
-  - multus-macvlan-eno1.yaml
-  - multus-macvlan-enp5s0.yaml
+  - multus-macvlan-bond0.yaml
