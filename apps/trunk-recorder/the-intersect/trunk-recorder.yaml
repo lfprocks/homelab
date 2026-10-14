@@ -60,6 +60,12 @@ spec:
           image: alpine:3.24.2
           command: ["/bin/sh"]
           args: ["-c", "while true; do find /app/psernlfp -type f -delete 2>/dev/null || true; sleep 600; done"]
+          resources:
+            limits:
+              memory: "32Mi"
+            requests:
+              cpu: "5m"
+              memory: "16Mi"
       volumes:
         - name: dev-bus-usb
           hostPath:
