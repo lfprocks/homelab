@@ -17,3 +17,21 @@ spec:
     algorithm: RSA
     size: 2048
     rotationPolicy: Always
+---
+# Same for glacier's iDRAC9 (10.0.0.15), pushed by cronjob-glacier.yaml over
+# Redfish.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: glacier-idrac
+spec:
+  secretName: glacier-idrac-tls
+  dnsNames:
+    - glacier.management.lfp.rocks
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
