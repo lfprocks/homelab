@@ -6,6 +6,8 @@ resources:
   - certificate.yaml
   - idrac-secret.yaml
   - cronjob.yaml
+  - glacier-secret.yaml
+  - cronjob-glacier.yaml
 labels:
   - includeSelectors: true
     pairs:
@@ -15,6 +17,7 @@ configMapGenerator:
   - name: idrac-cert-script
     files:
       - push_cert.sh
+      - push_cert_redfish.py
     options:
       annotations:
         # The script is full of shell expansions (${var:0:23}, ${VAR:?}) that

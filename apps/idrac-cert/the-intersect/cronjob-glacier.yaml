@@ -1,0 +1,72 @@
+---
+# Daily: push the current glacier-idrac certificate into glacier's iDRAC9 if
+# it is not already serving it (see push_cert_redfish.py). The very first push
+# must skip TLS verification, because the iDRAC still has Dell's self-signed
+# certificate; do it once with a Job that sets BOOTSTRAP_INSECURE=true:
+#   kubectl -n idrac-cert create job --from=cronjob/idrac-cert-push-glacier first-push --dry-run=client -o yaml \
+#     | yq '.spec.template.spec.containers[0].env += [{"name": "BOOTSTRAP_INSECURE", "value": "true"}]' \
+#     | kubectl apply -f -
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: idrac-cert-push-glacier
+spec:
+  schedule: "27 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: "idrac-cert-push-glacier"
+            k8s.lfp.rocks/version: "python-3.13.7"
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: push
+              # Standard library only; no packages installed.
+              image: python:3.13.7-alpine3.22@sha256:9ba6d8cbebf0fb6546ae71f2a1c14f6ffd2fdab83af7fa5669734ef30ad48844
+              command: ["python3", "/app/push_cert_redfish.py"]
+              env:
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+                - name: PYTHONUNBUFFERED
+                  value: "1"
+              envFrom:
+                - secretRef:
+                    name: idrac-cert-glacier
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /app
+                  readOnly: true
+                - name: tls
+                  mountPath: /tls
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: idrac-cert-script
+            - name: tls
+              secret:
+                secretName: glacier-idrac-tls
