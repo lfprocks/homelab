@@ -13,9 +13,9 @@ spec:
   # on a cached digest whose google-api-core calls an API missing from its
   # Python 3.9, so every barman-cloud-backup failed ("module
   # 'importlib.metadata' has no attribute 'packages_distributions'", surfaced
-  # by CNPG as "invalid character 'A'"). This digest is the one the primary
-  # and the forgejo/outline backups run on successfully.
-  imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:acbed84c842730d6cefb89e7135743fe160233296b645b2f30f49fa18e2ebcf1
+  # by CNPG as "invalid character 'A'"). Now on the same digest as the
+  # forgejo and outline clusters (PostgreSQL 16.15, barman-cloud 3.19.1).
+  imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:34cd4159d07b3410a1b29da35072e2e927a0905e717a61afa3814624a2e8859a
   instances: 2
   inheritedMetadata:
     labels:
