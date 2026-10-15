@@ -15,8 +15,8 @@ single GCS bucket, `gs://lfpr-p-gcsb-usw1-cnpg-backups-7q2v-60d5245`
 | --- | --- | --- | --- | --- |
 | `transcribe-postgres`  | `transcribe` | `postgresql:17`              | 1 | 02:30 |
 | `immich-postgres-new`  | `immich`     | `cloudnative-pgvecto.rs:16.5-v0.3.0` | 2 | 03:15 |
-| `outline-postgres`     | `outline`    | `postgresql:16`              | 2 | 03:30 |
-| `forgejo-postgres`     | `forgejo`    | `postgresql:16`              | 2 | 03:45 |
+| `outline-postgres`     | `outline`    | `postgresql:16.15` (digest) | 2 | 03:30 |
+| `forgejo-postgres`     | `forgejo`    | `postgresql:16.15` (digest) | 2 | 03:45 |
 
 Schedules are staggered so several clusters don't stream to GCS at once and
 contend for ceph and network bandwidth. `retentionPolicy` is `30d` on all of

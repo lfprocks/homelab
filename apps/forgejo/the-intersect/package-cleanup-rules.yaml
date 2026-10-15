@@ -60,7 +60,7 @@ spec:
             seccompProfile: {type: RuntimeDefault}
           containers:
             - name: psql
-              image: ghcr.io/cloudnative-pg/postgresql:16
+              image: ghcr.io/cloudnative-pg/postgresql:16@sha256:34cd4159d07b3410a1b29da35072e2e927a0905e717a61afa3814624a2e8859a
               command: ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-f", "/sql/ensure-rules.sql"]
               env:
                 - name: PGHOST
