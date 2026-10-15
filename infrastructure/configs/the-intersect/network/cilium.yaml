@@ -13,5 +13,11 @@ kind: CiliumL2AnnouncementPolicy
 metadata:
   name: main-pool-l2
 spec:
+  # Cilium ignores node.kubernetes.io/exclude-from-external-load-balancers for
+  # L2 announcements, so keep LoadBalancer ARP off the control planes here.
+  nodeSelector:
+    matchExpressions:
+      - key: node-role.kubernetes.io/control-plane
+        operator: DoesNotExist
   loadBalancerIPs: true
   externalIPs: true
