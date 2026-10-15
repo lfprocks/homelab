@@ -4,7 +4,10 @@ kind: Cluster
 metadata:
   name: outline-postgres
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:16
+  # Pinned by digest (PostgreSQL 16.15, barman-cloud 3.19.1): the floating :16
+  # tag left each instance on whatever its node had cached, from 16.10 to
+  # 16.15. 16.10's old barman broke paperless backups (see paperless postgres).
+  imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:34cd4159d07b3410a1b29da35072e2e927a0905e717a61afa3814624a2e8859a
   instances: 2
 
   # CNPG generates these pods, so the labels the kyverno require-labels policy
