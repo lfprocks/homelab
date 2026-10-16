@@ -79,7 +79,7 @@ spec:
             # ("open /tmp/act...: read-only file system" otherwise).
             - {name: tmp, mountPath: /tmp}
         - name: dind
-          image: docker.io/library/docker:29.8.2-dind
+          image: docker.io/library/docker:29.9.0-dind
           # Bypass dockerd-entrypoint.sh: with TLS off it ALSO listens on
           # tcp://0.0.0.0:2375, an unauthenticated Docker API that job
           # containers could reach via the bridge gateway (= node root).
