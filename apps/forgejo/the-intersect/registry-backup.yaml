@@ -47,7 +47,7 @@ spec:
             seccompProfile: {type: RuntimeDefault}
           containers:
             - name: rclone
-              image: docker.io/rclone/rclone:1.75.1
+              image: docker.io/rclone/rclone:1.75.2
               command: ["sh", "-ec"]
               args:
                 - |
