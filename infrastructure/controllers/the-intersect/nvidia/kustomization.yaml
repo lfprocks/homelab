@@ -5,4 +5,3 @@ resources:
   - helmrepository.yaml
   - helmrelease.yaml
   - runtimeclass.yaml
-  - gfd-daemonset.yaml
