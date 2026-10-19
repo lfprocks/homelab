@@ -19,6 +19,9 @@ spec:
         app.kubernetes.io/version: 0.16.2
         app.kubernetes.io/part-of: nvidia-gpu
     spec:
+      # Needed on Talos for the NVIDIA libraries (NVML) to be injected; without it
+      # GFD can't detect the GPUs and exits with "unsupported strategy auto".
+      runtimeClassName: nvidia
       containers:
         - image: nvcr.io/nvidia/k8s-device-plugin:v0.20.1
           name: gpu-feature-discovery
