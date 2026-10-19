@@ -15,6 +15,30 @@ spec:
   interval: 1m0s
   values:
     runtimeClassName: nvidia
+    # The chart's default affinity looks for feature.node.kubernetes.io/pci-10de.present,
+    # but NFD labels GPU nodes with the PCI class too (pci-0300_10de), so without this
+    # the DaemonSet desires 0 pods while the HelmRelease still reports Ready.
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: feature.node.kubernetes.io/pci-0300_10de.present
+                  operator: In
+                  values:
+                    - "true"
+    # Advertise the single GPU as 4 time-sliced nvidia.com/gpu replicas so several
+    # workloads can request it. Time-slicing shares compute, not VRAM.
+    config:
+      default: default
+      map:
+        default: |-
+          version: v1
+          sharing:
+            timeSlicing:
+              resources:
+                - name: nvidia.com/gpu
+                  replicas: 4
 # ---
 # apiVersion: helm.toolkit.fluxcd.io/v2
 # kind: HelmRelease
