@@ -27,7 +27,14 @@ spec:
                   operator: In
                   values:
                     - "true"
-    # Advertise the single GPU as 4 time-sliced nvidia.com/gpu replicas so several
+    # Chart-managed GPU feature discovery: unlike the old hand-written DaemonSet it
+    # gets the runtime class, NODE_NAME and RBAC for NodeFeature objects. NFD itself
+    # is installed separately, so the bundled subchart stays off.
+    gfd:
+      enabled: true
+    nfd:
+      enabled: false
+    # Advertise each GPU as 4 time-sliced nvidia.com/gpu replicas so several
     # workloads can request it. Time-slicing shares compute, not VRAM.
     config:
       default: default
