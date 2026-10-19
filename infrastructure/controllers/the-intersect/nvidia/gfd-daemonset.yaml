@@ -38,8 +38,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  # On discrete-GPU based systems NFD adds the following lable where 10de is te NVIDIA PCI vendor ID
-                  - key: feature.node.kubernetes.io/pci-10de.present
+                  # On discrete-GPU based systems NFD adds the following label: 0300 is the
+                  # display-controller PCI class and 10de the NVIDIA vendor ID (NFD's default
+                  # label includes the class, so the upstream pci-10de.present never matches)
+                  - key: feature.node.kubernetes.io/pci-0300_10de.present
                     operator: In
                     values:
                       - "true"
