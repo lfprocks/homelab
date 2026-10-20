@@ -58,6 +58,10 @@ spec:
           resources:
             limits:
               memory: "8Gi"
+              # Two time-sliced slots: the device plugin's default "distributed" policy
+              # puts them on different physical GPUs, so the model keeps splitting
+              # across both cards (-ngl 99) as it did before explicit requests.
+              nvidia.com/gpu: 2
             requests:
               cpu: "250m"
               memory: "2Gi"
