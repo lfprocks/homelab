@@ -11,7 +11,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: grafana
-      version: 1.13.0
+      version: 1.13.1
   valuesFrom:
     - kind: ConfigMap
       name: alloy-values
