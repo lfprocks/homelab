@@ -201,6 +201,13 @@ grafana:
               # long enough not to nag and short enough that a notification
               # missed overnight is repeated in the morning.
               repeat_interval: 6h
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["category", "=", "lfpweather"]
+              group_by: ["alertname", "source"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 6h
 
             # Cluster-health rules: one notification per affected object.
             - receiver: pnp-pushover
@@ -599,6 +606,56 @@ grafana:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
 
+        - orgId: 1
+          name: timestral
+          folder: alerts
+          interval: 5m
+          rules:
+            - uid: timestral-run-stale
+              title: Timestral forecast run stale
+              condition: fired
+              # No metrics at all means the service is down, so page.
+              noDataState: Alerting
+              execErrState: Error
+              # The service runs hourly; 7200s is two missed runs, and the
+              # 15m hold rides out a slow run. timestral_nws is excluded so
+              # its warm-up cannot page. The query takes the newest success
+              # across pods within 24h: the gauge has no series until the first
+              # run after a restart, and the previous pod's samples bridge
+              # that gap. Timestamps are aggregated with max before subtracting
+              # so a frozen old-pod series cannot dominate as staleness. A zero
+              # floor per source (the label_replace(vector(0)) terms) means a
+              # source that never reports after a restart, or whose old
+              # samples have aged out of the window, counts as maximally stale
+              # instead of disappearing and falsely resolving.
+              # The route matches on category, not alertname, so a
+              # DatasourceError from execErrState still reaches Pushover.
+              for: 15m
+              annotations:
+                title: timestral forecast run stale
+                summary: 'timestral forecast runs have not succeeded for over two hours{{ `{{ if $labels.source }} (source {{ $labels.source }}){{ end }}` }}'
+              labels:
+                severity: warning
+                category: lfpweather
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max by (source) (max_over_time(timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"}[24h]) or label_replace(vector(0),"source","nws","","") or label_replace(vector(0),"source","timestral","",""))
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [7200]}
         - orgId: 1
           name: cluster-health
           folder: alerts

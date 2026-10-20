@@ -4,6 +4,7 @@ namespace: lfpweather
 
 resources:
   - ../base/
+  - scoreboard-dashboard.yaml
 
 labels:
   - includeSelectors: true
