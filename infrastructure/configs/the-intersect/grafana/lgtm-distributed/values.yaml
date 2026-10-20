@@ -619,9 +619,11 @@ grafana:
               execErrState: Error
               # The service runs hourly; 7200s is two missed runs, and the
               # 15m hold rides out a slow run. timestral_nws is excluded so
-              # its warm-up cannot page. max_over_time[3h] bridges a restart:
-              # the gauge has no series until the first run after startup, and
-              # the previous pod's samples keep the value accurate meanwhile.
+              # its warm-up cannot page. The query takes the newest success
+              # across pods within 3h: the gauge has no series until the first
+              # run after a restart, and the previous pod's samples bridge
+              # that gap. Timestamps are aggregated with max before subtracting
+              # so a frozen old-pod series cannot dominate as staleness.
               for: 15m
               annotations:
                 title: timestral forecast run stale
@@ -638,7 +640,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (source) (time() - max_over_time(timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"}[3h]))
+                      time() - max by (source) (max_over_time(timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"}[3h]))
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
