@@ -619,11 +619,13 @@ grafana:
               execErrState: Error
               # The service runs hourly; 7200s is two missed runs, and the
               # 15m hold rides out a slow run. timestral_nws is excluded so
-              # its warm-up cannot page.
+              # its warm-up cannot page. max_over_time[3h] bridges a restart:
+              # the gauge has no series until the first run after startup, and
+              # the previous pod's samples keep the value accurate meanwhile.
               for: 15m
               annotations:
                 title: timestral forecast run stale
-                summary: '{{ `{{ $labels.source }}` }} forecast has not succeeded for over two hours'
+                summary: 'timestral forecast runs have not succeeded for over two hours{{ `{{ if $labels.source }} (source {{ $labels.source }}){{ end }}` }}'
               labels:
                 severity: warning
                 category: lfpweather
@@ -636,7 +638,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      max by (source) (time() - timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"})
+                      max by (source) (time() - max_over_time(timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"}[3h]))
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__
