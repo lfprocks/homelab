@@ -203,7 +203,7 @@ grafana:
               repeat_interval: 6h
             - receiver: pnp-pushover
               object_matchers:
-                - ["alertname", "=", "Timestral forecast run stale"]
+                - ["category", "=", "lfpweather"]
               group_by: ["alertname", "source"]
               group_wait: 30s
               group_interval: 15m
@@ -623,7 +623,13 @@ grafana:
               # across pods within 24h: the gauge has no series until the first
               # run after a restart, and the previous pod's samples bridge
               # that gap. Timestamps are aggregated with max before subtracting
-              # so a frozen old-pod series cannot dominate as staleness.
+              # so a frozen old-pod series cannot dominate as staleness. A zero
+              # floor per source (the label_replace(vector(0)) terms) means a
+              # source that never reports after a restart, or whose old
+              # samples have aged out of the window, counts as maximally stale
+              # instead of disappearing and falsely resolving.
+              # The route matches on category, not alertname, so a
+              # DatasourceError from execErrState still reaches Pushover.
               for: 15m
               annotations:
                 title: timestral forecast run stale
@@ -640,7 +646,7 @@ grafana:
                     editorMode: code
                     instant: true
                     expr: >-
-                      time() - max by (source) (max_over_time(timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"}[24h]))
+                      time() - max by (source) (max_over_time(timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"}[24h]) or label_replace(vector(0),"source","nws","","") or label_replace(vector(0),"source","timestral","",""))
                 - refId: fired
                   relativeTimeRange: {from: 600, to: 0}
                   datasourceUid: __expr__

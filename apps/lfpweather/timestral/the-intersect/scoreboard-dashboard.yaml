@@ -150,7 +150,7 @@ data:
               "editorMode": "code",
               "format": "time_series",
               "rawQuery": true,
-              "rawSql": "SELECT time_bucket('1 day', valid_at) AS time, source AS metric, avg(abs_error) AS mae FROM sensors.temperature_forecast_scores(date_trunc('hour', $__timeFrom()::timestamptz), date_trunc('hour', $__timeTo()::timestamptz)) WHERE (source <> 'timestral_nws' OR covariate_coverage >= $min_coverage) AND (NOT $complete_only OR complete_run) GROUP BY 1,2 ORDER BY 1",
+              "rawSql": "SELECT time_bucket('1 day', valid_at, 'America/Los_Angeles') AS time, source AS metric, avg(abs_error) AS mae FROM sensors.temperature_forecast_scores(date_trunc('hour', $__timeFrom()::timestamptz), date_trunc('hour', $__timeTo()::timestamptz)) WHERE (source <> 'timestral_nws' OR covariate_coverage >= $min_coverage) AND (NOT $complete_only OR complete_run) GROUP BY 1,2 ORDER BY 1",
               "refId": "A"
             }
           ],
@@ -307,7 +307,7 @@ data:
               "editorMode": "code",
               "format": "time_series",
               "rawQuery": true,
-              "rawSql": "SELECT issued_at AS time, max(covariate_coverage) AS coverage FROM sensors.temperature_forecast_scores(date_trunc('hour', $__timeFrom()::timestamptz), date_trunc('hour', $__timeTo()::timestamptz)) WHERE (source <> 'timestral_nws' OR covariate_coverage >= $min_coverage) AND (NOT $complete_only OR complete_run) GROUP BY 1 ORDER BY 1",
+              "rawSql": "SELECT issued_at AS time, max(covariate_coverage) AS coverage FROM sensors.temperature_forecast_scores(date_trunc('hour', $__timeFrom()::timestamptz), date_trunc('hour', $__timeTo()::timestamptz)) GROUP BY 1 ORDER BY 1",
               "refId": "A"
             }
           ],
@@ -345,7 +345,7 @@ data:
                 "type": "prometheus",
                 "uid": "prom"
               },
-              "expr": "time() - timestral_run_last_success_timestamp_seconds",
+              "expr": "time() - max by (source) (max_over_time(timestral_run_last_success_timestamp_seconds{source=~\"nws|timestral\"}[24h]) or label_replace(vector(0),\"source\",\"nws\",\"\",\"\") or label_replace(vector(0),\"source\",\"timestral\",\"\",\"\"))",
               "legendFormat": "{{source}}",
               "range": true,
               "refId": "A"
