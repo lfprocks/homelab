@@ -201,6 +201,13 @@ grafana:
               # long enough not to nag and short enough that a notification
               # missed overnight is repeated in the morning.
               repeat_interval: 6h
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["alertname", "=", "Timestral forecast run stale"]
+              group_by: ["alertname", "source"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 6h
 
             # Cluster-health rules: one notification per affected object.
             - receiver: pnp-pushover
@@ -599,6 +606,46 @@ grafana:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
 
+        - orgId: 1
+          name: timestral
+          folder: alerts
+          interval: 5m
+          rules:
+            - uid: timestral-run-stale
+              title: Timestral forecast run stale
+              condition: fired
+              # No metrics at all means the service is down, so page.
+              noDataState: Alerting
+              execErrState: Error
+              # The service runs hourly; 7200s is two missed runs, and the
+              # 15m hold rides out a slow run. timestral_nws is excluded so
+              # its warm-up cannot page.
+              for: 15m
+              annotations:
+                title: timestral forecast run stale
+                summary: '{{ `{{ $labels.source }}` }} forecast has not succeeded for over two hours'
+              labels:
+                severity: warning
+                category: lfpweather
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (source) (time() - timestral_run_last_success_timestamp_seconds{source=~"nws|timestral"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [7200]}
         - orgId: 1
           name: cluster-health
           folder: alerts
