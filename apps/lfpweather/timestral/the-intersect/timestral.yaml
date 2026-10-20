@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lfpweather-timestral-env-configmap
+data:
+  GRID_POINT: "SEW/127,75"
+  HISTORY_DAYS: "30"
+  MODEL_ID: "mistralai/Timestral-209M"
+  REQUIRE_CUDA: "true"
+  SCHEDULE_ENABLED: "true"
+  LOG_LEVEL: "info"
+  HOME: "/tmp"
+  NWS_USER_AGENT: "lfpweather-timestral (https://github.com/michaelpeterswa/lfpweather-timestral)"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lfpweather-timestral-models
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lfpweather-timestral
+  labels:
+    app: *name
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        k8s.lfp.rocks/service: "lfpweather-timestral"
+        k8s.lfp.rocks/version: "v1.0.0"
+    spec:
+      runtimeClassName: nvidia
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/lfpweather-timestral:v1.0.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            periodSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: metrics
+            periodSeconds: 10
+          volumeMounts:
+            - name: models
+              mountPath: /models
+          resources:
+            limits:
+              memory: "4Gi"
+              nvidia.com/gpu: 1
+            requests:
+              cpu: "250m"
+              memory: "1Gi"
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: lfpweather-timestral-models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lfpweather-timestral
+  labels:
+    app: lfpweather-timestral
+    service: lfpweather-timestral
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: api
+    - name: metrics
+      port: 8081
+      targetPort: metrics
+  selector:
+    app: lfpweather-timestral
