@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: lfpweather-frontend-env-configmap
+data:
   # Sections hidden for the season (keys: lib/sections.ts in lfpweather.com).
   # Re-enable heat-stress/fire-weather in late spring, degree-days/evapotranspiration at green-up.
   DISABLED_SECTIONS: "heat-stress,fire-weather,degree-days,evapotranspiration,ai-insights-fire"
-  name: lfpweather-frontend-env-configmap
-data:
   FORECAST_INFERENCE_API_BASE_URL: https://${SUB_COMBAT_PILGRIM}.${DOMAIN_COMMON_STAR}
   # The AskBar route handler proxies chat to the broker over in-cluster DNS.
   BROKER_URL: http://lfpweather-broker.lfpweather.svc.cluster.local
