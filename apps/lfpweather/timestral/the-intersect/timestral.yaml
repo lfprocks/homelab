@@ -10,6 +10,7 @@ data:
   REQUIRE_CUDA: "true"
   SCHEDULE_ENABLED: "true"
   LOG_LEVEL: "info"
+  HOME: "/tmp"
   NWS_USER_AGENT: "lfpweather-timestral (https://github.com/michaelpeterswa/lfpweather-timestral)"
 ---
 apiVersion: v1
@@ -66,6 +67,7 @@ spec:
           image: ghcr.io/michaelpeterswa/lfpweather-timestral:v1.0.0
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           startupProbe:

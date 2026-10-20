@@ -32,9 +32,24 @@ spec:
         prometheus.io/port: "8081"
         prometheus.istio.io/merge-metrics: "false"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: *name
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: lfpweather-timestral-env-configmap
@@ -45,6 +60,9 @@ spec:
               containerPort: 8080
             - name: metrics
               containerPort: 8081
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
