@@ -60,7 +60,7 @@ spec:
                 capabilities: {drop: [ALL]}
               resources:
                 requests: {cpu: 100m, memory: 128Mi}
-                limits: {memory: 512Mi}
+                limits: {memory: 1Gi}
               volumeMounts:
                 - {name: config, mountPath: /etc/kiwix-sync, readOnly: true}
                 - {name: tools, mountPath: /opt/kiwix}
