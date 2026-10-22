@@ -292,4 +292,32 @@ class DescriptionEscapeTest(unittest.TestCase):
 
     def test_converter_revision_bumped_for_escaping(self):
         from geo_sync import core
-        self.assertGreaterEqual(int(core.CONVERTER_REV), 2)
+        self.assertGreaterEqual(int(core.CONVERTER_REV), 3)
+
+
+class FlatKmlTest(unittest.TestCase):
+    """iTAK rejects KML with a <Document> nested in a <Document> (LIBKML's
+    layout) as "too large, parsing aborted", even at 50 pins; a flat file of
+    983 pins imports (owner's tests, 2026-10-22)."""
+
+    def test_output_is_one_flat_document(self):
+        from geo_sync import formats
+        kml = ('<?xml version="1.0" encoding="utf-8" ?><kml xmlns="http://www.opengis.net/kml/2.2" '
+               'xmlns:atom="http://www.w3.org/2005/Atom"><Document id="root_doc"><atom:author><atom:name>OSM'
+               '</atom:name></atom:author><Document id="alpr"><name>alpr</name><Schema name="alpr" id="alpr.schema">'
+               '<SimpleField name="osm_id" type="string"></SimpleField></Schema><Folder><Placemark id="p1"><name>A'
+               '</name><Point><coordinates>-122,47,0</coordinates></Point></Placemark></Folder>'
+               '<Placemark id="p2"><name>B</name><Point><coordinates>-122,47.1,0</coordinates></Point></Placemark>'
+               '</Document></Document></kml>')
+        out = formats.tak_style(kml, "points", "camera", "ALPR", title="ALPR cameras")
+        import xml.etree.ElementTree as ET
+        k = "{http://www.opengis.net/kml/2.2}"
+        root = ET.fromstring(out.encode())
+        documents = list(root.iter(k + "Document"))
+        self.assertEqual(len(documents), 1)
+        self.assertEqual([c.tag for c in documents[0]][:2], [k + "name", k + "Style"])
+        self.assertEqual(documents[0].find(k + "name").text, "ALPR cameras")
+        self.assertEqual([p.find(k + "name").text for p in documents[0].findall(k + "Placemark")], ["A", "B"])
+        self.assertEqual(list(root.iter(k + "Folder")), [])
+        self.assertEqual(list(root.iter(k + "Schema")), [])
+        self.assertNotIn("Atom", out)

@@ -58,18 +58,25 @@ def _details(text):
     return html.escape(text) if text else text
 
 
-def tak_style(kml_text, geometry, icon=None, fallback_name="Feature"):
-    """Rewrite LIBKML output so TAK clients show labels and icons.
+def tak_style(kml_text, geometry, icon=None, fallback_name="Feature", title=None, attribution=""):
+    """Rewrite LIBKML output into one flat Document TAK clients can read.
 
-    Parsed as XML and edited per Placemark (its own <name>/<description>
-    children only): values are crowdsourced, and markup inside them must
-    never become a label.
+    iTAK rejects a <Document> nested in a <Document> (LIBKML's layout) as
+    "too large, parsing aborted", even for 50 placemarks; a flat Document
+    of nearly 1,000 imports. So: one Document holding a name, the style and
+    every Placemark, with no Folders, Schemas or Atom elements. Placemarks
+    are edited as XML (only their own <name>/<description>): values are
+    crowdsourced, and markup inside them must never become a label.
     """
+    source = ET.fromstring(kml_text.encode("utf-8"))
     ET.register_namespace("", KML)
-    root = ET.fromstring(kml_text.encode("utf-8"))
-    document = root.find(_k("Document"))
-    document.insert(0, _style(geometry, icon))
-    for placemark in root.iter(_k("Placemark")):
+    root = ET.Element(_k("kml"))
+    document = ET.SubElement(root, _k("Document"))
+    ET.SubElement(document, _k("name")).text = title or fallback_name
+    if attribution:
+        ET.SubElement(document, _k("description")).text = html.escape(attribution)
+    document.append(_style(geometry, icon))
+    for placemark in source.iter(_k("Placemark")):
         for extended in placemark.findall(_k("ExtendedData")):
             placemark.remove(extended)
         name = placemark.find(_k("name"))
@@ -81,9 +88,12 @@ def tak_style(kml_text, geometry, icon=None, fallback_name="Feature"):
         description = placemark.find(_k("description"))
         if description is not None:
             description.text = _details(description.text)
+        for old in placemark.findall(_k("styleUrl")):
+            placemark.remove(old)
         style_url = ET.Element(_k("styleUrl"))
         style_url.text = "#style"
         placemark.insert(list(placemark).index(name) + 1, style_url)
+        document.append(placemark)
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
 
 
@@ -132,7 +142,8 @@ def write_layer(gpkg_in, out_noext, geometry, attribution, link="", name_field="
             args += ["-dsco", f"LINK={link}"]
         subprocess.run(args, check=True, env=env)
         with open(kml, encoding="utf-8") as f:
-            text = tak_style(f.read(), geometry, icon, fallback_name or os.path.basename(out_noext).split("_")[0])
+            text = tak_style(f.read(), geometry, icon, fallback_name or os.path.basename(out_noext).split("_")[0],
+                             title=os.path.basename(out_noext), attribution=attribution)
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
             z.writestr("doc.kml", text)
         os.remove(kml)
