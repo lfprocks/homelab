@@ -19,9 +19,10 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 1
-      # A cold Wikipedia download is ~119 GB; partial downloads resume on the
-      # next run, so a deadline hit costs time, not progress.
-      activeDeadlineSeconds: 43200
+      # A cold load can be hundreds of GB (Gutenberg alone is ~206 GB) at a
+      # few MiB/s from some mirrors. 3 days stays well inside the weekly
+      # schedule; a deadline hit still resumes next run, costing a week.
+      activeDeadlineSeconds: 259200
       template:
         metadata:
           labels:

@@ -22,6 +22,7 @@ WIKI = "wikipedia_en_all_maxi_2026-08.zim"
 WIKT = "wiktionary_en_all_nopic_2026-08.zim"
 SF_OLD = "serverfault.com_en_all_2026-02.zim"
 SF_NEW = "serverfault.com_en_all_2026-10.zim"
+BOOKS = {"wikipedia_en_all_maxi", "wiktionary_en_all_nopic", "serverfault.com_en_all"}
 
 
 class FakeKiwix:
@@ -96,6 +97,9 @@ class RunTest(unittest.TestCase):
         self.fake.publish("zim/wiktionary", WIKT, b"T" * 3000)
         self.fake.publish("zim/stack_exchange", SF_OLD, b"S" * 2000)
         self.config = kiwix_sync.load_config(os.path.join(APP, "library.json"))
+        # Behaviour tests run against the three books the fake server
+        # publishes, not however long the live wanted-list has grown.
+        self.config["wanted"] = [w for w in self.config["wanted"] if w["book"] in BOOKS]
         self.manage = self.fake_manage(exit_code=0)
 
     def tearDown(self):
