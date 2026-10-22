@@ -13,6 +13,9 @@ configMapGenerator:
     files:
       - kiwix_sync.py
       - library.json
+      # Shared with geo-sync: one register for the whole library.
+      - ../../library/register.json
+      - ../../library/common/library_common.py
 labels:
   - includeSelectors: false
     pairs:
