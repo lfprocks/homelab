@@ -1,0 +1,17 @@
+{
+  "register": [
+    {"path": "00_Meta", "state": "in-use", "purpose": "Rules, this register, and manifests of every file fetched"},
+    {"path": "01_Incoming", "state": "in-use", "purpose": "Downloads in progress; nothing reads from here"},
+    {"path": "02_Kiwix", "state": "in-use", "purpose": "Kiwix ZIM files and the generated library.xml"},
+    {"path": "02_Kiwix/01_Wikipedia", "state": "in-use", "purpose": "English Wikipedia with images"},
+    {"path": "02_Kiwix/02_Wiktionary", "state": "in-use", "purpose": "English Wiktionary (text only)"},
+    {"path": "02_Kiwix/03_Stack_Exchange", "state": "in-use", "purpose": "Stack Exchange sites"},
+    {"path": "03_Geo", "state": "reserved", "purpose": "Geospatial data for Washington and north Idaho (ATAK)"},
+    {"path": "04_Datasets", "state": "reserved", "purpose": "Raw datasets such as a Hacker News dump"}
+  ],
+  "wanted": [
+    {"book": "wikipedia_en_all_maxi", "upstream_dir": "zim/wikipedia", "folder": "02_Kiwix/01_Wikipedia", "license": "CC BY-SA 4.0 (Wikimedia)"},
+    {"book": "wiktionary_en_all_nopic", "upstream_dir": "zim/wiktionary", "folder": "02_Kiwix/02_Wiktionary", "license": "CC BY-SA 4.0 (Wikimedia)"},
+    {"book": "serverfault.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"}
+  ]
+}

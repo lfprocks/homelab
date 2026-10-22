@@ -75,4 +75,10 @@ for path in $paths; do
   fi
 done
 
+echo "INFO - Running app unit tests"
+if ! python3 -m unittest discover -s apps/kiwix/tests -v; then
+  echo "ERROR - apps/kiwix unit tests failed"
+  failed=1
+fi
+
 exit "$failed"

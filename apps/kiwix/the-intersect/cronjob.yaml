@@ -1,0 +1,74 @@
+# Weekly sync of the offline library: keeps each wanted ZIM at its newest
+# upstream build, verified against download.kiwix.org's sha256, and maintains
+# the share's numbered layout, README and manifest. Logic and tests:
+# kiwix_sync.py and apps/kiwix/tests. KiwixLibraryStale alerts if this has not
+# succeeded in 8 days.
+#
+# kiwix-manage is a static binary, copied out of the kiwix-tools image by the
+# init container so the script can run on plain Python.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kiwix-sync
+spec:
+  schedule: "0 11 * * 0"  # UTC: Sunday 04:00 PDT
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      # A cold Wikipedia download is ~119 GB; partial downloads resume on the
+      # next run, so a deadline hit costs time, not progress.
+      activeDeadlineSeconds: 43200
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: kiwix-sync
+            k8s.lfp.rocks/version: "3.8.2"
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            seccompProfile: {type: RuntimeDefault}
+          initContainers:
+            - name: kiwix-tools
+              image: ghcr.io/kiwix/kiwix-tools:3.8.2
+              command: ["cp", "/usr/local/bin/kiwix-manage", "/opt/kiwix/kiwix-manage"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              resources:
+                requests: {cpu: 10m, memory: 16Mi}
+                limits: {memory: 64Mi}
+              volumeMounts:
+                - {name: tools, mountPath: /opt/kiwix}
+          containers:
+            - name: sync
+              image: docker.io/library/python:3.13.17-alpine3.24
+              command: ["python3", "/etc/kiwix-sync/kiwix_sync.py"]
+              env:
+                - {name: PYTHONUNBUFFERED, value: "1"}
+                - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              resources:
+                requests: {cpu: 100m, memory: 128Mi}
+                limits: {memory: 512Mi}
+              volumeMounts:
+                - {name: config, mountPath: /etc/kiwix-sync, readOnly: true}
+                - {name: tools, mountPath: /opt/kiwix}
+                - {name: library, mountPath: /library}
+          volumes:
+            - name: config
+              configMap: {name: kiwix-sync}
+            - name: tools
+              emptyDir: {}
+            - name: library
+              persistentVolumeClaim: {claimName: kiwix-library-rw-pvc}
