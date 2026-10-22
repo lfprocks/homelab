@@ -1130,6 +1130,42 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [93600]}
+            # Offline Kiwix library (kiwix-sync CronJob, weekly, Sunday 11:00
+            # UTC). Fires when the last fully clean run is over 8 days old:
+            # failed downloads, checksum mismatches and missed schedules all
+            # keep the job from succeeding. NoData alerts too, so this also
+            # fires during the first, hours-long sync until it succeeds once.
+            - uid: kiwix-library-stale
+              title: KiwixLibraryStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Kiwix library stale
+                summary: '{{ `Kiwix library sync has not succeeded in over 8 days. Check: kubectl -n kiwix get jobs -l batch.kubernetes.io/cronjob-name=kiwix-sync; kubectl -n kiwix logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="kiwix", cronjob="kiwix-sync"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [691200]}
             - uid: alerting-heartbeat
               title: AlertingHeartbeat
               condition: fired
