@@ -131,6 +131,12 @@ def manifest_row(file, url, sha256, size, fetched_at, license):
 # --- Orchestration ----------------------------------------------------------
 
 CHUNK = 8 * 1024 * 1024
+# Flush the part to the share every this many bytes, so unwritten SMB cache
+# (charged to the pod's memory limit) stays bounded on a fast stream.
+FSYNC_EVERY = 64 * 1024 * 1024
+# Wikimedia's mirror (dumps.wikimedia.org) answers 403 to generic clients
+# such as Python-urllib; its User-Agent policy asks for a descriptive one.
+USER_AGENT = "kiwix-sync/1.0 (offline library; https://github.com/lfprocks/homelab)"
 LIBRARY_XML = "02_Kiwix/library.xml"
 MANIFEST = "00_Meta/02_Kiwix.manifest.tsv"
 INCOMING = "01_Incoming"
@@ -150,15 +156,19 @@ def _write_atomic(path, text):
     os.replace(tmp, path)
 
 
+def _request(url):
+    return urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+
+
 def _fetch_text(url):
-    with urllib.request.urlopen(url, timeout=60) as response:
+    with urllib.request.urlopen(_request(url), timeout=60) as response:
         return response.read().decode("utf-8", "replace")
 
 
 def _download(url, part):
     """Stream url into part, resuming from its current size."""
     offset = os.path.getsize(part) if os.path.exists(part) else 0
-    request = urllib.request.Request(url)
+    request = _request(url)
     if offset:
         request.add_header("Range", f"bytes={offset}-")
     try:
@@ -175,8 +185,14 @@ def _download(url, part):
         # A server that ignores Range sends the whole file: start over.
         mode = "ab" if offset and response.status == 206 else "wb"
         with open(part, mode) as f:
+            unsynced = 0
             while chunk := response.read(CHUNK):
                 f.write(chunk)
+                unsynced += len(chunk)
+                if unsynced >= FSYNC_EVERY:
+                    f.flush()
+                    os.fsync(f.fileno())
+                    unsynced = 0
 
 
 def _sha256(path):

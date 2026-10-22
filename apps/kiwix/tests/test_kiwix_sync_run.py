@@ -30,6 +30,7 @@ class FakeKiwix:
     def __init__(self):
         self.files = {}  # url path -> bytes
         self.requests = []  # (path, range header)
+        self.user_agents = []
         fake = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -38,6 +39,7 @@ class FakeKiwix:
 
             def do_GET(self):
                 fake.requests.append((self.path, self.headers.get("Range")))
+                fake.user_agents.append(self.headers.get("User-Agent", ""))
                 if self.path.endswith("/"):
                     names = sorted(p[len(self.path):] for p in fake.files if p.startswith(self.path))
                     body = "".join(f'<a href="{n}">{n}</a>\n' for n in names).encode()
@@ -224,6 +226,30 @@ class RunTest(unittest.TestCase):
         library = self.read("02_Kiwix", "library.xml").decode()
         self.assertIn("<library", library)
         self.assertNotIn(".zim", library)
+
+    def test_requests_send_descriptive_user_agent(self):
+        # dumps.wikimedia.org (where Wikipedia ZIMs redirect) answers 403 to
+        # generic clients such as Python-urllib.
+        self.assertEqual(self.run_sync(), 0)
+        self.assertTrue(self.fake.user_agents)
+        for agent in self.fake.user_agents:
+            self.assertTrue(agent.startswith("kiwix-sync/"), agent)
+
+    def test_download_flushes_to_disk_periodically(self):
+        # Bounds unwritten SMB cache charged to the pod's memory limit: the
+        # first live run was OOM-killed streaming Wikipedia.
+        synced = []
+        original = os.fsync
+        old = (kiwix_sync.CHUNK, kiwix_sync.FSYNC_EVERY)
+        kiwix_sync.CHUNK, kiwix_sync.FSYNC_EVERY = 100, 1000
+        os.fsync = lambda fd: (synced.append(fd), original(fd))
+        try:
+            self.assertEqual(self.run_sync(), 0)
+        finally:
+            os.fsync = original
+            kiwix_sync.CHUNK, kiwix_sync.FSYNC_EVERY = old
+        # 5000 + 3000 + 2000 bytes at a sync per 1000 bytes.
+        self.assertGreaterEqual(len(synced), 10)
 
     def test_invalid_config_fails_before_io(self):
         self.config["wanted"][0]["folder"] = "02_Kiwix/09_Nope"
