@@ -44,12 +44,18 @@ spec:
             httpGet: {path: /catalog/v2/root.xml, port: http}
             periodSeconds: 15
             failureThreshold: 5760
+          # 5s, not the 1s default: closing a 100+ GB file on the share
+          # stalled this node's SMB traffic for ~50s (2026-10-22) and the
+          # 1s checks took the site offline although kiwix-serve was fine.
           readinessProbe:
             httpGet: {path: /catalog/v2/root.xml, port: http}
             periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 4
           livenessProbe:
             httpGet: {path: /catalog/v2/root.xml, port: http}
             periodSeconds: 30
+            timeoutSeconds: 5
             failureThreshold: 4
           securityContext:
             allowPrivilegeEscalation: false
