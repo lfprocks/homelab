@@ -1,8 +1,7 @@
 """Writing a finished vector layer in the TAK-ready format for its type.
 
-KMZ (LIBKML) for points and lines, unless the layer is too big for TAK
-clients to handle smoothly; GeoPackage for large polygon layers and
-anything over the feature limit. See core.FORMATS (set by the iTAK check).
+KMZ for every vector layer (see core.FORMATS): iTAK reads vector overlays
+only as KML/KMZ/GeoPDF, and handles large flat KMZs.
 """
 import html
 import os
@@ -12,9 +11,6 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 from . import core
-
-# TAK clients slow down on KMZ files with more than about this many features.
-KMZ_MAX_FEATURES = 20000
 
 # Icons TAK clients recognise from Google's KML icon set (iTAK showed the
 # camera as a coloured camera symbol in the owner's test).
@@ -125,8 +121,6 @@ def write_layer(gpkg_in, out_noext, geometry, attribution, link="", name_field="
     if missing and n:
         raise RuntimeError(f"label/description field(s) {missing} not in the layer")
     fmt = core.FORMATS.get(geometry, "kmz")
-    if fmt == "kmz" and n > KMZ_MAX_FEATURES:
-        fmt = "gpkg"
     out = f"{out_noext}.{fmt}"
     if fmt == "gpkg":
         subprocess.run(["ogr2ogr", "-overwrite", "-f", "GPKG", out, gpkg_in, "-lco", f"DESCRIPTION={attribution}"],

@@ -33,12 +33,13 @@ KEEP_VERSIONS = 2
 LOCK = "geo-sync.lock"
 LOCK_STALE_S = 4 * 24 * 3600
 # Bump when a converter's output changes for the same inputs and options.
-CONVERTER_REV = "3"  # 2: KMZ descriptions HTML-escaped; 3: flat KML for iTAK
+CONVERTER_REV = "4"  # 2: KMZ descriptions HTML-escaped; 3: flat KML for iTAK; 4: polygons as KMZ
 DATE_IN_NAME = re.compile(r"(19|20)\d{2}[-_]?\d{2}")
 
-# Output format per data type. Provisional until the iTAK check (plan 1,
-# Task 3) is recorded in the spec.
-FORMATS = {"points": "kmz", "lines": "kmz", "polygons": "gpkg", "raster": "mbtiles"}
+# Output format per data type. iTAK reads vector overlays only as KML, KMZ
+# or GeoPDF; GeoPackage only as raster map tiles (owner's checks, 2026-10-22).
+# A flat 18 MB / 15,110-line KMZ imports, so size never changes the format.
+FORMATS = {"points": "kmz", "lines": "kmz", "polygons": "kmz", "raster": "mbtiles"}
 
 # Registries filled by the source modules (osm, vector, charts, ...).
 FETCHERS = {}

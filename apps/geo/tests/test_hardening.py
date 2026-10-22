@@ -292,7 +292,7 @@ class DescriptionEscapeTest(unittest.TestCase):
 
     def test_converter_revision_bumped_for_escaping(self):
         from geo_sync import core
-        self.assertGreaterEqual(int(core.CONVERTER_REV), 3)
+        self.assertGreaterEqual(int(core.CONVERTER_REV), 4)
 
 
 class FlatKmlTest(unittest.TestCase):
@@ -321,3 +321,8 @@ class FlatKmlTest(unittest.TestCase):
         self.assertEqual(list(root.iter(k + "Folder")), [])
         self.assertEqual(list(root.iter(k + "Schema")), [])
         self.assertNotIn("Atom", out)
+
+
+class ItakFormatsTest(unittest.TestCase):
+    def test_every_vector_type_is_kmz(self):
+        self.assertEqual({core.FORMATS[t] for t in ("points", "lines", "polygons")}, {"kmz"})
