@@ -141,7 +141,8 @@ def append_manifest(path, header, row):
 
 
 def write_atomic(path, text):
-    tmp = path + ".tmp"
+    # pid-unique: two jobs (kiwix-sync, geo-sync) may write the same README.
+    tmp = f"{path}.{os.getpid()}.tmp"
     with open(tmp, "w") as f:
         f.write(text)
     os.replace(tmp, path)

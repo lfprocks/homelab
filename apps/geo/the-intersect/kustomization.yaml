@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: geo
+
+resources:
+  - persistentvolumes.yaml
+  - cronjob-sync.yaml
+  - cronjob-fire.yaml
+configMapGenerator:
+  - name: geo-sync
+    files:
+      - geo_sync/__init__.py
+      - geo_sync/__main__.py
+      - geo_sync/areas.py
+      - geo_sync/charts.py
+      - geo_sync/core.py
+      - geo_sync/fcc.py
+      - geo_sync/fire.py
+      - geo_sync/formats.py
+      - geo_sync/inbox.py
+      - geo_sync/live.py
+      - geo_sync/osm.py
+      - geo_sync/vector.py
+      - sources.json
+      # Shared with kiwix-sync: one register for the whole library.
+      - ../../library/register.json
+      - ../../library/common/library_common.py
+labels:
+  - includeSelectors: false
+    pairs:
+      env: prod
+      proj: geo
