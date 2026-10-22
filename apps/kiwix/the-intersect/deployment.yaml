@@ -37,12 +37,18 @@ spec:
               exec /usr/local/bin/start.sh --monitorLibrary --library "$lib"
           ports:
             - {name: http, containerPort: 8080}
+          # Nothing listens while the container waits for library.xml, so
+          # liveness and readiness hold off until this succeeds: up to 24h
+          # for the first sync to write it.
+          startupProbe:
+            httpGet: {path: /catalog/v2/root.xml, port: http}
+            periodSeconds: 15
+            failureThreshold: 5760
           readinessProbe:
             httpGet: {path: /catalog/v2/root.xml, port: http}
             periodSeconds: 15
           livenessProbe:
             httpGet: {path: /catalog/v2/root.xml, port: http}
-            initialDelaySeconds: 30
             periodSeconds: 30
             failureThreshold: 4
           securityContext:

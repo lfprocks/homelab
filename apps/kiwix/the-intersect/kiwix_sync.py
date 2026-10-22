@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 
 MANIFEST_HEADER = "file\turl\tsha256\tsize_bytes\tfetched_at_utc\tlicense\n"
@@ -160,7 +161,17 @@ def _download(url, part):
     request = urllib.request.Request(url)
     if offset:
         request.add_header("Range", f"bytes={offset}-")
-    with urllib.request.urlopen(request, timeout=120) as response:
+    try:
+        response = urllib.request.urlopen(request, timeout=120)
+    except urllib.error.HTTPError as error:
+        # 416 for a resumed range means the part already holds the whole
+        # file (the last run died before verifying it): let the checksum
+        # decide, rather than failing this book every week.
+        if error.code == 416 and offset:
+            error.close()
+            return
+        raise
+    with response:
         # A server that ignores Range sends the whole file: start over.
         mode = "ab" if offset and response.status == 206 else "wb"
         with open(part, mode) as f:

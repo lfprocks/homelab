@@ -53,6 +53,13 @@ class FakeKiwix:
                 rng = self.headers.get("Range")
                 if rng:
                     start = int(rng.split("=")[1].split("-")[0])
+                    if start >= len(data):
+                        # What download.kiwix.org's mirrors answer for a
+                        # range at or past the end of the file.
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{len(data)}")
+                        self.end_headers()
+                        return
                     self.send_response(206)
                     self.send_header("Content-Range", f"bytes {start}-{len(data) - 1}/{len(data)}")
                     data = data[start:]
@@ -142,6 +149,24 @@ class RunTest(unittest.TestCase):
         self.assertEqual(self.run_sync(), 0)
         self.assertIn((f"/zim/wikipedia/{WIKI}", "bytes=1234-"), self.fake.requests)
         self.assertEqual(self.read("02_Kiwix", "01_Wikipedia", WIKI), b"W" * 5000)
+
+    def test_complete_part_is_verified_not_wedged(self):
+        # The pod died after the last byte but before the move: the next run
+        # gets 416 for its range and must verify the part, not fail forever.
+        os.makedirs(self.path("01_Incoming"))
+        with open(self.path("01_Incoming", WIKI + ".part"), "wb") as f:
+            f.write(b"W" * 5000)
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(self.read("02_Kiwix", "01_Wikipedia", WIKI), b"W" * 5000)
+        self.assertEqual(os.listdir(self.path("01_Incoming")), [])
+
+    def test_complete_but_corrupt_part_is_discarded(self):
+        os.makedirs(self.path("01_Incoming"))
+        with open(self.path("01_Incoming", WIKI + ".part"), "wb") as f:
+            f.write(b"Z" * 5000)
+        self.assertEqual(self.run_sync(), 1)
+        self.assertFalse(os.path.exists(self.path("02_Kiwix", "01_Wikipedia", WIKI)))
+        self.assertEqual(os.listdir(self.path("01_Incoming")), [])
 
     def test_checksum_mismatch_leaves_served_copy(self):
         self.assertEqual(self.run_sync(), 0)
