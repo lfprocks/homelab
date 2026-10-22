@@ -40,6 +40,7 @@ spec:
               command: ["cp", "/usr/local/bin/kiwix-manage", "/opt/kiwix/kiwix-manage"]
               securityContext:
                 allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
                 capabilities: {drop: [ALL]}
               resources:
                 requests: {cpu: 10m, memory: 16Mi}
@@ -52,8 +53,10 @@ spec:
               command: ["python3", "/etc/kiwix-sync/kiwix_sync.py"]
               env:
                 - {name: PYTHONUNBUFFERED, value: "1"}
+                - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
               securityContext:
                 allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
                 capabilities: {drop: [ALL]}
               resources:
                 requests: {cpu: 100m, memory: 128Mi}

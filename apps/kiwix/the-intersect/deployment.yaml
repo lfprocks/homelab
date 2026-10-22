@@ -53,6 +53,7 @@ spec:
             failureThreshold: 4
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
           resources:
             requests: {cpu: 50m, memory: 256Mi}
