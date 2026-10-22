@@ -1166,6 +1166,72 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [691200]}
+            # Offline library 03_Geo (geo-sync CronJob, weekly, Saturday 11:00 UTC).
+            # Deferred sources are not failures, so a multi-run cold load does not
+            # fire this; real source errors do. NoData alerts too.
+            - uid: geo-library-stale
+              title: GeoLibraryStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Geo library stale
+                summary: '{{ `Geo library stale: geo-sync has not succeeded in over 8 days. Check: kubectl -n geo get jobs -l batch.kubernetes.io/cronjob-name=geo-sync; kubectl -n geo logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="geo", cronjob="geo-sync"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [691200]}
+            # Hourly WFIGS wildfire snapshot (geo-fire CronJob). NoData alerts too.
+            - uid: geo-fire-stale
+              title: GeoFireSnapshotStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Wildfire snapshot stale
+                summary: '{{ `Wildfire snapshot stale: geo-fire has not succeeded in over 6 hours. Check: kubectl -n geo get jobs -l batch.kubernetes.io/cronjob-name=geo-fire; kubectl -n geo logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="geo", cronjob="geo-fire"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [21600]}
             - uid: alerting-heartbeat
               title: AlertingHeartbeat
               condition: fired

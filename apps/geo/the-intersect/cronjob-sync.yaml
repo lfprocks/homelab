@@ -1,0 +1,101 @@
+# Weekly sync of 03_Geo: every source in sources.json is re-fetched only
+# when its upstream changed, converted to TAK-ready formats and moved into
+# place; then the library-inbox sweep. Saturday, so it never overlaps the
+# Sunday Kiwix sync on the share. Processing runs on worker-04 with node-
+# local scratch (no Ceph, no tiling over SMB). A run past its budget defers
+# the rest to the next run without failing. GeoLibraryStale alerts if this
+# has not succeeded in 8 days.
+# Design: terraform/docs/superpowers/specs/2026-10-22-offline-library-geo-design.md
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: geo-sync
+spec:
+  schedule: "0 11 * * 6"  # UTC: Saturday 04:00 PDT
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 259200
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: geo-sync
+            k8s.lfp.rocks/version: "3.13.3"
+        spec:
+          restartPolicy: Never
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - {key: kubernetes.io/hostname, operator: In, values: [the-intersect-worker-04]}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: sync
+              image: ghcr.io/osgeo/gdal:ubuntu-full-3.13.3
+              command: ["python3", "-m", "geo_sync", "sync"]
+              workingDir: /etc/geo-sync
+              env:
+                - {name: PYTHONPATH, value: /etc/geo-sync}
+                - {name: PYTHONUNBUFFERED, value: "1"}
+                - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+                - {name: HOME, value: /tmp}
+                # GDAL's OSM driver writes its node index to the working
+                # directory (the read-only ConfigMap) unless told otherwise,
+                # and then returns zero features without failing.
+                - {name: CPL_TMPDIR, value: /scratch}
+                - {name: TMPDIR, value: /scratch}
+                - {name: SQLITE_TMPDIR, value: /scratch}
+                - {name: GEO_BUDGET_SECONDS, value: "230400"}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              resources:
+                requests: {cpu: "1", memory: 2Gi}
+                limits: {cpu: "4", memory: 6Gi}
+              volumeMounts:
+                - {name: code, mountPath: /etc/geo-sync, readOnly: true}
+                - {name: scratch, mountPath: /scratch}
+                - {name: tmp, mountPath: /tmp}
+                - {name: library, mountPath: /library}
+                - {name: personal, mountPath: /library-personal}
+                - {name: inbox, mountPath: /library-inbox}
+          volumes:
+            - name: code
+              configMap:
+                name: geo-sync
+                items:
+                  - {key: __init__.py, path: geo_sync/__init__.py}
+                  - {key: __main__.py, path: geo_sync/__main__.py}
+                  - {key: areas.py, path: geo_sync/areas.py}
+                  - {key: charts.py, path: geo_sync/charts.py}
+                  - {key: core.py, path: geo_sync/core.py}
+                  - {key: fcc.py, path: geo_sync/fcc.py}
+                  - {key: fire.py, path: geo_sync/fire.py}
+                  - {key: formats.py, path: geo_sync/formats.py}
+                  - {key: inbox.py, path: geo_sync/inbox.py}
+                  - {key: live.py, path: geo_sync/live.py}
+                  - {key: osm.py, path: geo_sync/osm.py}
+                  - {key: vector.py, path: geo_sync/vector.py}
+                  - {key: sources.json, path: sources.json}
+                  - {key: register.json, path: register.json}
+                  - {key: library_common.py, path: library_common.py}
+            - name: scratch
+              emptyDir: {sizeLimit: 50Gi}
+            - name: tmp
+              emptyDir: {sizeLimit: 1Gi}
+            - name: library
+              persistentVolumeClaim: {claimName: geo-library-rw-pvc}
+            - name: personal
+              persistentVolumeClaim: {claimName: geo-personal-rw-pvc}
+            - name: inbox
+              persistentVolumeClaim: {claimName: geo-inbox-rw-pvc}

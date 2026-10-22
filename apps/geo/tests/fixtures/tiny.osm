@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+  <node id="1" lat="47.60" lon="-122.30" version="1"><tag k="man_made" v="surveillance"/><tag k="surveillance:type" v="ALPR"/><tag k="manufacturer" v="Flock Safety"/><tag k="direction" v="90"/></node>
+  <node id="2" lat="47.61" lon="-122.31" version="1"><tag k="man_made" v="surveillance"/><tag k="surveillance:type" v="ALPR"/><tag k="manufacturer" v="Flock Safety"/></node>
+  <node id="3" lat="48.27" lon="-116.55" version="1"><tag k="man_made" v="surveillance"/><tag k="surveillance:type" v="ALPR"/><tag k="manufacturer" v="Motorola Solutions"/></node>
+  <node id="4" lat="47.62" lon="-122.32" version="1"><tag k="man_made" v="surveillance"/><tag k="surveillance:type" v="camera"/></node>
+  <node id="5" lat="40.00" lon="-100.00" version="1"><tag k="man_made" v="surveillance"/><tag k="surveillance:type" v="ALPR"/><tag k="manufacturer" v="Flock Safety"/></node>
+  <node id="6" lat="47.63" lon="-122.33" version="1"><tag k="amenity" v="hospital"/><tag k="name" v="Test Hospital"/></node>
+  <node id="7" lat="47.64" lon="-122.34" version="1"><tag k="amenity" v="fire_station"/><tag k="name" v="Station 1"/></node>
+  <node id="8" lat="47.65" lon="-122.35" version="1"><tag k="amenity" v="police"/><tag k="name" v="Precinct"/></node>
+  <node id="9" lat="47.66" lon="-122.36" version="1"><tag k="amenity" v="cafe"/><tag k="name" v="Not Emergency"/></node>
+  <node id="10" lat="47.67" lon="-122.37" version="1"><tag k="emergency" v="ambulance_station"/><tag k="name" v="Medic 1"/></node>
+  <node id="20" lat="47.700" lon="-122.300" version="1"/>
+  <node id="21" lat="47.700" lon="-122.298" version="1"/>
+  <node id="22" lat="47.702" lon="-122.298" version="1"/>
+  <node id="23" lat="47.702" lon="-122.300" version="1"/>
+  <way id="100" version="1"><nd ref="20"/><nd ref="21"/><nd ref="22"/><nd ref="23"/><nd ref="20"/><tag k="amenity" v="hospital"/><tag k="building" v="hospital"/><tag k="name" v="Polygon Hospital"/></way>
+</osm>

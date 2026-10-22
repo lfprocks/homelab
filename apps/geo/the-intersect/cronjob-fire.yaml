@@ -1,0 +1,82 @@
+# Hourly offline snapshot of WFIGS current wildfire perimeters, clipped to
+# the region; the last 24 are kept. GeoFireSnapshotStale alerts after 6h.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: geo-fire
+spec:
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: geo-fire
+            k8s.lfp.rocks/version: "3.13.3"
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: fire
+              image: ghcr.io/osgeo/gdal:ubuntu-full-3.13.3
+              command: ["python3", "-m", "geo_sync", "fire"]
+              workingDir: /etc/geo-sync
+              env:
+                - {name: PYTHONPATH, value: /etc/geo-sync}
+                - {name: PYTHONUNBUFFERED, value: "1"}
+                - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+                - {name: HOME, value: /tmp}
+                # GDAL's OSM driver writes its node index to the working
+                # directory (the read-only ConfigMap) unless told otherwise,
+                # and then returns zero features without failing.
+                - {name: CPL_TMPDIR, value: /scratch}
+                - {name: TMPDIR, value: /scratch}
+                - {name: SQLITE_TMPDIR, value: /scratch}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              resources:
+                requests: {cpu: 100m, memory: 256Mi}
+                limits: {memory: 1Gi}
+              volumeMounts:
+                - {name: code, mountPath: /etc/geo-sync, readOnly: true}
+                - {name: scratch, mountPath: /scratch}
+                - {name: tmp, mountPath: /tmp}
+                - {name: library, mountPath: /library}
+          volumes:
+            - name: code
+              configMap:
+                name: geo-sync
+                items:
+                  - {key: __init__.py, path: geo_sync/__init__.py}
+                  - {key: __main__.py, path: geo_sync/__main__.py}
+                  - {key: areas.py, path: geo_sync/areas.py}
+                  - {key: charts.py, path: geo_sync/charts.py}
+                  - {key: core.py, path: geo_sync/core.py}
+                  - {key: fcc.py, path: geo_sync/fcc.py}
+                  - {key: fire.py, path: geo_sync/fire.py}
+                  - {key: formats.py, path: geo_sync/formats.py}
+                  - {key: inbox.py, path: geo_sync/inbox.py}
+                  - {key: live.py, path: geo_sync/live.py}
+                  - {key: osm.py, path: geo_sync/osm.py}
+                  - {key: vector.py, path: geo_sync/vector.py}
+                  - {key: sources.json, path: sources.json}
+                  - {key: register.json, path: register.json}
+                  - {key: library_common.py, path: library_common.py}
+            - name: scratch
+              emptyDir: {sizeLimit: 2Gi}
+            - name: tmp
+              emptyDir: {sizeLimit: 256Mi}
+            - name: library
+              persistentVolumeClaim: {claimName: geo-library-rw-pvc}
