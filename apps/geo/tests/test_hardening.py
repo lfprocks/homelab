@@ -272,3 +272,23 @@ class TakStyleSafetyTest(unittest.TestCase):
         self.assertEqual(len(description), 0)  # stays text, never becomes elements
         self.assertIn("&lt;name&gt;Spoofed&lt;/name&gt;", out)  # escaped when written
         self.assertEqual(len(root.findall(".//k:Style", ns)), 1)
+
+
+class DescriptionEscapeTest(unittest.TestCase):
+    def test_plain_descriptions_are_html_escaped(self):
+        # TAK clients render descriptions as HTML; FCC addresses and
+        # RepeaterBook locations are third-party text.
+        from geo_sync import formats
+        kml = ('<?xml version="1.0" encoding="utf-8" ?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
+               '<Placemark><name>T</name><description><![CDATA[1 Main <img src=x onerror=alert(1)> St]]>'
+               '</description><Point><coordinates>-122,47,0</coordinates></Point></Placemark></Document></kml>')
+        out = formats.tak_style(kml, "points", None, "T")
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(out.encode())
+        text = root.find(".//{http://www.opengis.net/kml/2.2}description").text
+        self.assertNotIn("<img", text)
+        self.assertIn("&lt;img", text)
+
+    def test_converter_revision_bumped_for_escaping(self):
+        from geo_sync import core
+        self.assertGreaterEqual(int(core.CONVERTER_REV), 2)
