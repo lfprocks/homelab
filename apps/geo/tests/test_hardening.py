@@ -270,7 +270,8 @@ class TakStyleSafetyTest(unittest.TestCase):
         self.assertEqual(names, ["ALPR", "Real & Named"])
         description = root.find(".//k:Placemark/k:description", ns)
         self.assertEqual(len(description), 0)  # stays text, never becomes elements
-        self.assertIn("&lt;name&gt;Spoofed&lt;/name&gt;", out)  # escaped when written
+        # HTML-escaped for TAK's HTML rendering (and XML-escaped again on write).
+        self.assertIn("&lt;name&gt;Spoofed&lt;/name&gt;", description.text)
         self.assertEqual(len(root.findall(".//k:Style", ns)), 1)
 
 
