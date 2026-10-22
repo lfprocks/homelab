@@ -53,7 +53,9 @@ def _details(text):
         rows = "".join(f"<tr><td><b>{html.escape(k)}</b></td><td>{html.escape(v)}</td></tr>"
                        for k, v in sorted(HSTORE.findall(text)))
         return f"<table>{rows}</table>"
-    return text
+    # Plain third-party text (FCC addresses, RepeaterBook locations): TAK
+    # clients render descriptions as HTML, so escape it.
+    return html.escape(text) if text else text
 
 
 def tak_style(kml_text, geometry, icon=None, fallback_name="Feature"):

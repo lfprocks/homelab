@@ -33,7 +33,7 @@ KEEP_VERSIONS = 2
 LOCK = "geo-sync.lock"
 LOCK_STALE_S = 4 * 24 * 3600
 # Bump when a converter's output changes for the same inputs and options.
-CONVERTER_REV = "1"
+CONVERTER_REV = "2"  # 2: KMZ descriptions HTML-escaped
 DATE_IN_NAME = re.compile(r"(19|20)\d{2}[-_]?\d{2}")
 
 # Output format per data type. Provisional until the iTAK check (plan 1,
