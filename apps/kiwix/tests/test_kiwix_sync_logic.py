@@ -81,7 +81,7 @@ class ValidateTest(unittest.TestCase):
 
     def test_validate_rejects_reserved_target(self):
         config = copy.deepcopy(self.config)
-        config["wanted"][0]["folder"] = "03_Geo"
+        config["wanted"][0]["folder"] = "04_Datasets"
         self.assertTrue(kiwix_sync.validate(config))
 
 
@@ -91,7 +91,7 @@ class SkeletonAndReadmeTest(unittest.TestCase):
 
     def test_skeleton_skips_reserved(self):
         dirs = kiwix_sync.skeleton_dirs(self.config)
-        self.assertNotIn("03_Geo", dirs)
+        self.assertNotIn("03_Geo/01_Imagery", dirs)
         self.assertNotIn("04_Datasets", dirs)
         self.assertIn("02_Kiwix/03_Stack_Exchange", dirs)
         self.assertEqual(dirs, sorted(dirs))
@@ -99,8 +99,9 @@ class SkeletonAndReadmeTest(unittest.TestCase):
     def test_readme_lists_every_register_entry_and_rules(self):
         readme = kiwix_sync.render_readme(self.config)
         for entry in self.config["register"]:
-            self.assertIn(entry["path"], readme)
-        geo_line = next(line for line in readme.splitlines() if "03_Geo" in line)
+            if entry.get("share", "library") == "library":
+                self.assertIn(entry["path"], readme)
+        geo_line = next(line for line in readme.splitlines() if "04_Datasets" in line)
         self.assertIn("reserved", geo_line)
         self.assertIn("Numbers are never reused, renumbered or renamed.", readme)
 

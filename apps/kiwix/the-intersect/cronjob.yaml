@@ -55,6 +55,8 @@ spec:
               env:
                 - {name: PYTHONUNBUFFERED, value: "1"}
                 - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+                - {name: LIBRARY_REGISTER, value: /etc/kiwix-sync/register.json}
+                - {name: PYTHONPATH, value: /etc/kiwix-sync}
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true

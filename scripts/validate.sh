@@ -76,9 +76,13 @@ for path in $paths; do
 done
 
 echo "INFO - Running app unit tests"
-if ! python3 -m unittest discover -s apps/kiwix/tests -v; then
-  echo "ERROR - apps/kiwix unit tests failed"
-  failed=1
-fi
+for tests in apps/library/common/tests apps/kiwix/tests apps/geo/tests; do
+  [ -d "$tests" ] || continue
+  # geo tests that need GDAL skip themselves when osgeo is not importable.
+  if ! python3 -m unittest discover -s "$tests" -v; then
+    echo "ERROR - $tests unit tests failed"
+    failed=1
+  fi
+done
 
 exit "$failed"

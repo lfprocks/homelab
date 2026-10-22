@@ -138,7 +138,7 @@ class RunTest(unittest.TestCase):
         self.assertEqual(len(manifest), 4)
         self.assertEqual(os.listdir(self.path("01_Incoming")), [])
         self.assertTrue(os.path.exists(self.path("00_Meta", "README.md")))
-        self.assertFalse(os.path.exists(self.path("03_Geo")))
+        self.assertFalse(os.path.exists(self.path("04_Datasets")))
 
     def test_second_run_is_noop(self):
         self.assertEqual(self.run_sync(), 0)
