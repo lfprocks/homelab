@@ -8,8 +8,14 @@ terraform/docs/superpowers/specs/2026-10-21-offline-library-kiwix-design.md.
 Python stdlib only. Never write a dollar sign followed by a brace in this
 file: Flux postBuild substitution would rewrite it.
 """
+import datetime
+import hashlib
 import json
+import os
 import re
+import subprocess
+import sys
+import urllib.request
 
 MANIFEST_HEADER = "file\turl\tsha256\tsize_bytes\tfetched_at_utc\tlicense\n"
 
@@ -119,3 +125,162 @@ def render_readme(config):
 
 def manifest_row(file, url, sha256, size, fetched_at, license):
     return "\t".join([file, url, sha256, str(size), fetched_at, license]) + "\n"
+
+
+# --- Orchestration ----------------------------------------------------------
+
+CHUNK = 8 * 1024 * 1024
+LIBRARY_XML = "02_Kiwix/library.xml"
+MANIFEST = "00_Meta/02_Kiwix.manifest.tsv"
+INCOMING = "01_Incoming"
+
+
+def log(message):
+    print(message, flush=True)
+
+
+def _write_atomic(path, text):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
+def _fetch_text(url):
+    with urllib.request.urlopen(url, timeout=60) as response:
+        return response.read().decode("utf-8", "replace")
+
+
+def _download(url, part):
+    """Stream url into part, resuming from its current size."""
+    offset = os.path.getsize(part) if os.path.exists(part) else 0
+    request = urllib.request.Request(url)
+    if offset:
+        request.add_header("Range", f"bytes={offset}-")
+    with urllib.request.urlopen(request, timeout=120) as response:
+        # A server that ignores Range sends the whole file: start over.
+        mode = "ab" if offset and response.status == 206 else "wb"
+        with open(part, mode) as f:
+            while chunk := response.read(CHUNK):
+                f.write(chunk)
+
+
+def _sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(CHUNK):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _manifest_files(root):
+    path = os.path.join(root, MANIFEST)
+    if not os.path.exists(path):
+        return set()
+    with open(path) as f:
+        return {line.split("\t", 1)[0] for line in f.readlines()[1:]}
+
+
+def _append_manifest(root, row):
+    path = os.path.join(root, MANIFEST)
+    new = not os.path.exists(path)
+    with open(path, "a") as f:
+        if new:
+            f.write(MANIFEST_HEADER)
+        f.write(row)
+
+
+def sync_book(want, root, base_url, now):
+    """Bring one book to its newest upstream build. True when it ended clean."""
+    book, folder = want["book"], os.path.join(root, want["folder"])
+    listing_url = f"{base_url}{want['upstream_dir']}/"
+    name = newest_build(_fetch_text(listing_url), book)
+    if name is None:
+        log(f"{book}: no build found at {listing_url}")
+        return False
+    target = os.path.join(folder, name)
+    if os.path.exists(target) and name in _manifest_files(root):
+        log(f"{book}: {name} is current")
+        return True
+    url = f"{listing_url}{name}"
+    part = os.path.join(root, INCOMING, name + ".part")
+    log(f"{book}: downloading {url}")
+    _download(url, part)
+    expected = _fetch_text(url + ".sha256").split()[0].lower()
+    actual = _sha256(part)
+    if actual != expected:
+        log(f"{book}: CHECKSUM MISMATCH for {name}: expected {expected}, got {actual}; discarded")
+        os.remove(part)
+        return False
+    size = os.path.getsize(part)
+    os.replace(part, target)
+    fetched_at = now.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _append_manifest(root, manifest_row(name, url, actual, size, fetched_at, want["license"]))
+    log(f"{book}: {name} verified and in place ({size} bytes)")
+    return True
+
+
+def rebuild_catalogue(config, root, kiwix_manage):
+    """Rewrite library.xml with the newest build of each book. True on success."""
+    zims = []
+    for want in config["wanted"]:
+        builds = book_builds(os.listdir(os.path.join(root, want["folder"])), want["book"])
+        if builds:
+            zims.append(os.path.join(root, want["folder"], builds[-1]))
+    library = os.path.join(root, LIBRARY_XML)
+    tmp = library + ".tmp"
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    if not zims:
+        log("catalogue: no books yet")
+        return True
+    result = subprocess.run([kiwix_manage, tmp, "add", *zims])
+    if result.returncode != 0:
+        log(f"catalogue: kiwix-manage exited {result.returncode}; library.xml left as it was")
+        return False
+    os.replace(tmp, library)
+    log(f"catalogue: library.xml lists {len(zims)} books")
+    return True
+
+
+def run(config, root, base_url, kiwix_manage, now):
+    errors = validate(config)
+    if errors:
+        for error in errors:
+            log(f"config: {error}")
+        return 1
+    for path in skeleton_dirs(config):
+        os.makedirs(os.path.join(root, path), exist_ok=True)
+    _write_atomic(os.path.join(root, "00_Meta", "README.md"), render_readme(config))
+
+    clean = True
+    for want in config["wanted"]:
+        try:
+            clean = sync_book(want, root, base_url, now) and clean
+        except Exception as error:  # one book's failure must not stop the others
+            log(f"{want['book']}: failed: {error!r}")
+            clean = False
+
+    if not rebuild_catalogue(config, root, kiwix_manage):
+        return 1
+    for want in config["wanted"]:
+        folder = os.path.join(root, want["folder"])
+        for old in builds_to_delete(os.listdir(folder), want["book"]):
+            os.remove(os.path.join(folder, old))
+            log(f"{want['book']}: deleted old build {old}")
+    return 0 if clean else 1
+
+
+def main():
+    config = load_config(os.environ.get("LIBRARY_CONFIG", "/etc/kiwix-sync/library.json"))
+    sys.exit(run(
+        config,
+        os.environ.get("LIBRARY_ROOT", "/library"),
+        os.environ.get("KIWIX_BASE_URL", "https://download.kiwix.org/"),
+        os.environ.get("KIWIX_MANAGE", "/opt/kiwix/kiwix-manage"),
+        datetime.datetime.now(datetime.timezone.utc),
+    ))
+
+
+if __name__ == "__main__":
+    main()
