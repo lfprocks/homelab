@@ -176,6 +176,30 @@ class RunTest(unittest.TestCase):
         self.assertEqual(self.run_sync(), 0)
         self.assertEqual(sorted(os.listdir(folder)), ["serverfault.com_en_all_2025-12.zim", SF_OLD])
 
+    def test_empty_catalogue_written_before_downloads(self):
+        # kiwix-serve exits without a library.xml, so one must exist before the
+        # first (hours-long) download starts.
+        seen = []
+        original = self.fake.server.RequestHandlerClass.do_GET
+        root = self.root
+
+        def spy(handler):
+            if handler.path.endswith(".zim"):
+                seen.append(os.path.exists(os.path.join(root, "02_Kiwix", "library.xml")))
+            original(handler)
+
+        self.fake.server.RequestHandlerClass.do_GET = spy
+        self.assertEqual(self.run_sync(), 0)
+        self.assertTrue(seen)
+        self.assertTrue(all(seen))
+
+    def test_empty_catalogue_when_no_books(self):
+        self.fake.files.clear()
+        self.assertEqual(self.run_sync(), 1)
+        library = self.read("02_Kiwix", "library.xml").decode()
+        self.assertIn("<library", library)
+        self.assertNotIn(".zim", library)
+
     def test_invalid_config_fails_before_io(self):
         self.config["wanted"][0]["folder"] = "02_Kiwix/09_Nope"
         self.assertEqual(self.run_sync(), 1)

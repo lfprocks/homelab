@@ -5,6 +5,9 @@ namespace: kiwix
 resources:
   - persistentvolumes.yaml
   - cronjob.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
 configMapGenerator:
   - name: kiwix-sync
     files:

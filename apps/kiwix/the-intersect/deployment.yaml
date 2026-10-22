@@ -1,0 +1,58 @@
+# kiwix-serve over the offline library, read-only. --monitorLibrary picks up
+# each library.xml the sync job renames into place, without a restart.
+#
+# kiwix-serve exits if library.xml is missing, so before the first sync has
+# run the container waits for it instead of crash-looping. The sync writes an
+# empty library.xml in its first seconds, before any download.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiwix-serve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiwix-serve
+  template:
+    metadata:
+      labels:
+        app: kiwix-serve
+        k8s.lfp.rocks/service: kiwix-serve
+        k8s.lfp.rocks/version: "3.8.2"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: kiwix-serve
+          image: ghcr.io/kiwix/kiwix-serve:3.8.2
+          # The image's start.sh adds --port=8080 itself.
+          command: ["sh", "-c"]
+          args:
+            - |
+              lib=/library/02_Kiwix/library.xml
+              until [ -f "$lib" ]; do echo "waiting for $lib (first kiwix-sync run)"; sleep 15; done
+              exec /usr/local/bin/start.sh --monitorLibrary --library "$lib"
+          ports:
+            - {name: http, containerPort: 8080}
+          readinessProbe:
+            httpGet: {path: /catalog/v2/root.xml, port: http}
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: {path: /catalog/v2/root.xml, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 4
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 50m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          volumeMounts:
+            - {name: library, mountPath: /library, readOnly: true}
+      volumes:
+        - name: library
+          persistentVolumeClaim: {claimName: kiwix-library-ro-pvc, readOnly: true}

@@ -133,6 +133,9 @@ CHUNK = 8 * 1024 * 1024
 LIBRARY_XML = "02_Kiwix/library.xml"
 MANIFEST = "00_Meta/02_Kiwix.manifest.tsv"
 INCOMING = "01_Incoming"
+# kiwix-serve exits when its library file is missing, so an empty one is
+# written before the first download.
+EMPTY_LIBRARY = '<?xml version="1.0" encoding="UTF-8" ?>\n<library version="20110515"/>\n'
 
 
 def log(message):
@@ -252,6 +255,9 @@ def run(config, root, base_url, kiwix_manage, now):
     for path in skeleton_dirs(config):
         os.makedirs(os.path.join(root, path), exist_ok=True)
     _write_atomic(os.path.join(root, "00_Meta", "README.md"), render_readme(config))
+    library = os.path.join(root, LIBRARY_XML)
+    if not os.path.exists(library):
+        _write_atomic(library, EMPTY_LIBRARY)
 
     clean = True
     for want in config["wanted"]:
