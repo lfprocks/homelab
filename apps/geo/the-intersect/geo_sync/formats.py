@@ -43,7 +43,7 @@ def _style(geometry, icon, colour=None):
     else:
         line = ET.SubElement(style, _k("LineStyle"))
         ET.SubElement(line, _k("color")).text = _kml_colour(colour or "FF8000", "ff")
-        ET.SubElement(line, _k("width")).text = "3"
+        ET.SubElement(line, _k("width")).text = "4"
         ET.SubElement(ET.SubElement(style, _k("PolyStyle")), _k("color")).text = _kml_colour(colour or "FF8000", "55")
         ET.SubElement(ET.SubElement(style, _k("LabelStyle")), _k("scale")).text = "0.8"
     return style

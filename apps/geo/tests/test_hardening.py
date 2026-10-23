@@ -347,3 +347,13 @@ class LayerColourTest(unittest.TestCase):
         colours = {e["id"]: e["options"].get("colour") for e in shaped}
         self.assertTrue(all(colours.values()), colours)
         self.assertGreater(len(set(colours.values())), 5)
+
+
+class ContrastTest(unittest.TestCase):
+    def test_no_green_for_land_on_a_forested_map(self):
+        # Owner: green land layers were hard to see over forest.
+        entries = {e["id"]: e for e in json.load(open(os.path.join(APP, "sources.json")))}
+        for key in ("usfs_ownership", "usfs_admin_forest", "usfs_wilderness"):
+            rgb = entries[key]["options"]["colour"]
+            r, g, b = int(rgb[0:2], 16), int(rgb[2:4], 16), int(rgb[4:6], 16)
+            self.assertFalse(g > r and g > b and r < 0x80 and b < 0x80, f"{key} is a dark green: {rgb}")
