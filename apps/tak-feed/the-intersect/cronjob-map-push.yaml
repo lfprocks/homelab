@@ -1,0 +1,86 @@
+---
+# Weekly: push the allowlisted ATAK outputs of the library (push.py) to the
+# TAK server VM's /srv/library, which then mirrors exactly that set. Saturday
+# 14:00 UTC, three hours after geo-sync starts; geo-sync moves finished files
+# into place by rename, and push.py skips hidden (partial) files, so a run
+# that overlaps it sends last week's or this week's version of a file, never
+# half of one. Kick a run by hand:
+#   kubectl -n tak-feed create job --from=cronjob/tak-feed-map-push map-push-now
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tak-feed-map-push
+spec:
+  schedule: "0 14 * * 6"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 43200
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: tak-feed-map-push
+            k8s.lfp.rocks/version: "3.13.17"
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            fsGroup: 65534
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: push
+              image: docker.io/library/python:3.13.17-alpine3.24@sha256:fa0bb0d0cd7c7d6cef30a69094d32ac2b71c7304c87c6107fec100e1ee4eda02
+              command: ["/bin/sh", "/app/tak-feed.sh", "maps"]
+              env:
+                - name: TAK_HOST
+                  valueFrom: {secretKeyRef: {name: tak-feed-ssh, key: TAK_HOST}}
+                - name: TAK_PORT
+                  valueFrom: {secretKeyRef: {name: tak-feed-ssh, key: TAK_PORT}}
+                - {name: HOME, value: /tmp}
+                - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+                - {name: PYTHONUNBUFFERED, value: "1"}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {memory: 512Mi}
+              volumeMounts:
+                - {name: app, mountPath: /app, readOnly: true}
+                - {name: ssh, mountPath: /ssh, readOnly: true}
+                - {name: library, mountPath: /library, readOnly: true}
+                - {name: tools, mountPath: /tools}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: app
+              configMap:
+                name: tak-feed
+                items:
+                  - {key: tak-feed.sh, path: tak-feed.sh}
+                  - {key: push.py, path: push.py}
+            # Only this job's key, never the certificate push's.
+            - name: ssh
+              secret:
+                secretName: tak-feed-ssh
+                defaultMode: 0440
+                items:
+                  - {key: map-push, path: key}
+                  - {key: known_hosts, path: known_hosts}
+            - name: library
+              persistentVolumeClaim:
+                claimName: tak-feed-library-ro-pvc
+                readOnly: true
+            - name: tools
+              emptyDir: {sizeLimit: 256Mi}
+            - name: tmp
+              emptyDir: {sizeLimit: 64Mi}

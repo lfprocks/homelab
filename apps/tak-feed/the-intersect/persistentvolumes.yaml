@@ -1,0 +1,56 @@
+# The library share, READ-ONLY, for the map push. Only the keep-class share:
+# library-personal is never mounted here. The same kubernetes SMB account as
+# geo, so the read-only mount ("ro" below, and readOnly on the claim and the
+# mount) is what keeps this namespace from writing; see
+# terraform/truenas/library.tf.
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tak-feed-library-ro-pv
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: tak-feed
+    name: tak-feed-library-ro-pvc
+  mountOptions:
+    - ro
+    - dir_mode=0555
+    - file_mode=0444
+    - uid=65534
+    - gid=65534
+    - noperm
+    - nobrl
+    - mfsymlinks # symlinks show as symlinks, which push.py skips
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: true
+    volumeHandle: smb-tak-feed-library-ro
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/library"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tak-feed-library-ro-pvc
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: tak-feed-library-ro-pv

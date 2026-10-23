@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tak-feed
+
+resources:
+  - certificate.yaml
+  - secret.sops.yaml
+  - persistentvolumes.yaml
+  - cronjob-cert-push.yaml
+  - cronjob-map-push.yaml
+labels:
+  - includeSelectors: false
+    pairs:
+      env: prod
+      proj: tak-feed
+configMapGenerator:
+  - name: tak-feed
+    files:
+      - tak-feed.sh
+      - push.py
+    options:
+      annotations:
+        # tak-feed.sh uses shell expansions (${1:?}, ${TAK_HOST:?}) that
+        # Flux's postBuild envsubst would otherwise rewrite before it runs.
+        kustomize.toolkit.fluxcd.io/substitute: disabled
