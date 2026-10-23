@@ -326,3 +326,24 @@ class FlatKmlTest(unittest.TestCase):
 class ItakFormatsTest(unittest.TestCase):
     def test_every_vector_type_is_kmz(self):
         self.assertEqual({core.FORMATS[t] for t in ("points", "lines", "polygons")}, {"kmz"})
+
+
+class LayerColourTest(unittest.TestCase):
+    """Every line/polygon layer rendered the same orange in iTAK."""
+
+    def test_colour_option_sets_line_and_fill(self):
+        from geo_sync import formats
+        kml = ('<?xml version="1.0" encoding="utf-8" ?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
+               '<Placemark><name>W</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-122,47 -121,47 -121,48 '
+               '-122,47</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>')
+        out = formats.tak_style(kml, "polygons", colour="2E7D32")  # RRGGBB, as people write colours
+        self.assertIn("<color>ff327d2e</color>", out)  # KML is aabbggrr
+        self.assertIn("<color>55327d2e</color>", out)  # translucent fill
+
+    def test_line_and_polygon_layers_have_distinct_colours(self):
+        entries = {e["id"]: e for e in json.load(open(os.path.join(APP, "sources.json")))}
+        shaped = [e for e in entries.values() if e["options"].get("geometry") in ("lines", "polygons")
+                  or e["convert"] == "osm-filter" and e["id"].startswith("osm_")]
+        colours = {e["id"]: e["options"].get("colour") for e in shaped}
+        self.assertTrue(all(colours.values()), colours)
+        self.assertGreater(len(set(colours.values())), 5)

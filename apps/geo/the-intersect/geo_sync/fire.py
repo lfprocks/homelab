@@ -27,7 +27,8 @@ def run(ctx):
         vector.clip(src, ctx, geojson, clipped)
         name = f"{PREFIX}{ctx.now.strftime('%Y-%m-%dT%H')}"
         out = formats.write_layer(clipped, os.path.join(work, name), "polygons", src.license,
-                                  name_field="poly_IncidentName", desc_field="", allow_empty=True)
+                                  name_field="poly_IncidentName", desc_field="", allow_empty=True,
+                                  colour="B71C1C")
         # geo-fire may run before geo-sync ever has built the skeleton.
         folder = os.path.join(ctx.library_root, FOLDER)
         incoming = os.path.join(ctx.library_root, core.INCOMING)
