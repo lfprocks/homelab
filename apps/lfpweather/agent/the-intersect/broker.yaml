@@ -55,4 +55,4 @@ spec:
     spec:
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.2.1
+          image: ghcr.io/michaelpeterswa/lfpweather-agent:v1.2.2
