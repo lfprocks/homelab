@@ -98,7 +98,8 @@ class VectorTest(unittest.TestCase):
         outs = self.core.CONVERTERS["vector-clip"](src, self.ctx, [zpath], self.outdir("o1"))
         self.assertEqual(len(outs), 1)
         self.assertEqual(self.count(outs[0]), 1)
-        self.assertTrue(outs[0].endswith(".gpkg"))  # polygons -> GeoPackage (provisional FORMATS)
+        # iTAK reads overlays only as KML/KMZ/GeoPDF (owner's check, 2026-10-22).
+        self.assertTrue(outs[0].endswith(".kmz"))
 
     def test_invalid_polygon_on_the_edge_survives_clip(self):
         # A real WFIGS perimeter was lost: GEOS threw "Ring edge missing"

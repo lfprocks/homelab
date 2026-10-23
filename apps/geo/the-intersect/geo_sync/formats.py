@@ -1,8 +1,7 @@
 """Writing a finished vector layer in the TAK-ready format for its type.
 
-KMZ (LIBKML) for points and lines, unless the layer is too big for TAK
-clients to handle smoothly; GeoPackage for large polygon layers and
-anything over the feature limit. See core.FORMATS (set by the iTAK check).
+KMZ for every vector layer (see core.FORMATS): iTAK reads vector overlays
+only as KML/KMZ/GeoPDF, and handles large flat KMZs.
 """
 import html
 import os
@@ -12,9 +11,6 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 from . import core
-
-# TAK clients slow down on KMZ files with more than about this many features.
-KMZ_MAX_FEATURES = 20000
 
 # Icons TAK clients recognise from Google's KML icon set (iTAK showed the
 # camera as a coloured camera symbol in the owner's test).
@@ -31,7 +27,13 @@ def _k(tag):
     return f"{{{KML}}}{tag}"
 
 
-def _style(geometry, icon):
+def _kml_colour(rrggbb, alpha):
+    """KML colours are aabbggrr; people write rrggbb."""
+    r, g, b = rrggbb[0:2], rrggbb[2:4], rrggbb[4:6]
+    return f"{alpha}{b}{g}{r}".lower()
+
+
+def _style(geometry, icon, colour=None):
     style = ET.Element(_k("Style"), id="style")
     if geometry == "points":
         icon_style = ET.SubElement(style, _k("IconStyle"))
@@ -40,9 +42,9 @@ def _style(geometry, icon):
         ET.SubElement(ET.SubElement(style, _k("LabelStyle")), _k("scale")).text = "1.0"
     else:
         line = ET.SubElement(style, _k("LineStyle"))
-        ET.SubElement(line, _k("color")).text = "ff0080ff"
-        ET.SubElement(line, _k("width")).text = "3"
-        ET.SubElement(ET.SubElement(style, _k("PolyStyle")), _k("color")).text = "400080ff"
+        ET.SubElement(line, _k("color")).text = _kml_colour(colour or "FF8000", "ff")
+        ET.SubElement(line, _k("width")).text = "4"
+        ET.SubElement(ET.SubElement(style, _k("PolyStyle")), _k("color")).text = _kml_colour(colour or "FF8000", "55")
         ET.SubElement(ET.SubElement(style, _k("LabelStyle")), _k("scale")).text = "0.8"
     return style
 
@@ -58,18 +60,25 @@ def _details(text):
     return html.escape(text) if text else text
 
 
-def tak_style(kml_text, geometry, icon=None, fallback_name="Feature"):
-    """Rewrite LIBKML output so TAK clients show labels and icons.
+def tak_style(kml_text, geometry, icon=None, fallback_name="Feature", title=None, attribution="", colour=None):
+    """Rewrite LIBKML output into one flat Document TAK clients can read.
 
-    Parsed as XML and edited per Placemark (its own <name>/<description>
-    children only): values are crowdsourced, and markup inside them must
-    never become a label.
+    iTAK rejects a <Document> nested in a <Document> (LIBKML's layout) as
+    "too large, parsing aborted", even for 50 placemarks; a flat Document
+    of nearly 1,000 imports. So: one Document holding a name, the style and
+    every Placemark, with no Folders, Schemas or Atom elements. Placemarks
+    are edited as XML (only their own <name>/<description>): values are
+    crowdsourced, and markup inside them must never become a label.
     """
+    source = ET.fromstring(kml_text.encode("utf-8"))
     ET.register_namespace("", KML)
-    root = ET.fromstring(kml_text.encode("utf-8"))
-    document = root.find(_k("Document"))
-    document.insert(0, _style(geometry, icon))
-    for placemark in root.iter(_k("Placemark")):
+    root = ET.Element(_k("kml"))
+    document = ET.SubElement(root, _k("Document"))
+    ET.SubElement(document, _k("name")).text = title or fallback_name
+    if attribution:
+        ET.SubElement(document, _k("description")).text = html.escape(attribution)
+    document.append(_style(geometry, icon, colour))
+    for placemark in source.iter(_k("Placemark")):
         for extended in placemark.findall(_k("ExtendedData")):
             placemark.remove(extended)
         name = placemark.find(_k("name"))
@@ -81,9 +90,12 @@ def tak_style(kml_text, geometry, icon=None, fallback_name="Feature"):
         description = placemark.find(_k("description"))
         if description is not None:
             description.text = _details(description.text)
+        for old in placemark.findall(_k("styleUrl")):
+            placemark.remove(old)
         style_url = ET.Element(_k("styleUrl"))
         style_url.text = "#style"
         placemark.insert(list(placemark).index(name) + 1, style_url)
+        document.append(placemark)
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
 
 
@@ -101,7 +113,7 @@ def _fields(path):
 
 
 def write_layer(gpkg_in, out_noext, geometry, attribution, link="", name_field="name", desc_field="other_tags",
-                allow_empty=False, icon=None, fallback_name=None):
+                allow_empty=False, icon=None, fallback_name=None, colour=None):
     """Write gpkg_in as out_noext.kmz or .gpkg; returns the path written.
 
     Fails on an empty layer (unless allow_empty) and on a label/description
@@ -115,8 +127,6 @@ def write_layer(gpkg_in, out_noext, geometry, attribution, link="", name_field="
     if missing and n:
         raise RuntimeError(f"label/description field(s) {missing} not in the layer")
     fmt = core.FORMATS.get(geometry, "kmz")
-    if fmt == "kmz" and n > KMZ_MAX_FEATURES:
-        fmt = "gpkg"
     out = f"{out_noext}.{fmt}"
     if fmt == "gpkg":
         subprocess.run(["ogr2ogr", "-overwrite", "-f", "GPKG", out, gpkg_in, "-lco", f"DESCRIPTION={attribution}"],
@@ -132,7 +142,8 @@ def write_layer(gpkg_in, out_noext, geometry, attribution, link="", name_field="
             args += ["-dsco", f"LINK={link}"]
         subprocess.run(args, check=True, env=env)
         with open(kml, encoding="utf-8") as f:
-            text = tak_style(f.read(), geometry, icon, fallback_name or os.path.basename(out_noext).split("_")[0])
+            text = tak_style(f.read(), geometry, icon, fallback_name or os.path.basename(out_noext).split("_")[0],
+                             title=os.path.basename(out_noext), attribution=attribution, colour=colour)
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
             z.writestr("doc.kml", text)
         os.remove(kml)

@@ -107,7 +107,8 @@ def osm_filter(src, ctx, inputs, outdir):
                         "-clipsrc", areas.cutline(ctx, area), "-nln", src.key], check=True)
         name = core.derived_name(src, ctx, "x", area=area)[: -len(".x")]
         outs.append(formats.write_layer(clipped, os.path.join(outdir, name), preset["geometry"], ATTRIBUTION, LINK,
-                                        icon=src.options.get("icon"), fallback_name=src.options.get("fallback_name")))
+                                        icon=src.options.get("icon"), fallback_name=src.options.get("fallback_name"),
+                                        colour=src.options.get("colour")))
     return outs
 
 

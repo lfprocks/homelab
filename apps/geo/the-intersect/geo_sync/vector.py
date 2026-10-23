@@ -152,7 +152,8 @@ def vector_clip(src, ctx, inputs, outdir):
     return [formats.write_layer(clipped, os.path.join(outdir, name), opts.get("geometry", "polygons"),
                                 src.license, name_field=opts.get("name_field"),
                                 desc_field=opts.get("desc_field", ""), allow_empty=opts.get("allow_empty", False),
-                                icon=opts.get("icon"), fallback_name=opts.get("fallback_name"))]
+                                icon=opts.get("icon"), fallback_name=opts.get("fallback_name"),
+                                colour=opts.get("colour"))]
 
 
 core.CONVERTERS["vector-clip"] = vector_clip

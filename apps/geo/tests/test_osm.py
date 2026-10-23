@@ -68,14 +68,13 @@ class OsmTest(unittest.TestCase):
         _, outs = self.convert("alpr", self.osm.PRESETS["alpr"])
         self.assertIn("© OpenStreetMap contributors", self.kml_text(outs[0]))
 
-    def test_large_layer_goes_to_gpkg(self):
-        old = self.formats.KMZ_MAX_FEATURES
-        self.formats.KMZ_MAX_FEATURES = 2
-        try:
-            _, outs = self.convert("alpr", self.osm.PRESETS["alpr"])
-        finally:
-            self.formats.KMZ_MAX_FEATURES = old
-        self.assertEqual(os.path.basename(outs[0]), "alpr_region_2026-10-22.gpkg")
+    def test_large_layer_stays_kmz(self):
+        # iTAK reads no GeoPackage overlays, and a flat 18 MB / 15,110-line KMZ
+        # imported fine (owner's test), so size never switches the format.
+        old = self.formats.KMZ_MAX_FEATURES if hasattr(self.formats, "KMZ_MAX_FEATURES") else None
+        _, outs = self.convert("alpr", self.osm.PRESETS["alpr"])
+        self.assertEqual(os.path.basename(outs[0]), "alpr_region_2026-10-22.kmz")
+        self.assertIsNone(old)
 
     def test_derived_source_does_not_copy_the_extract(self):
         self.assertFalse(self.core.Source(key="alpr", cls="keep", folder="x", kind="osm-derived", url="",
