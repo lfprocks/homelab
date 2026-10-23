@@ -18,6 +18,8 @@ configMapGenerator:
     files:
       - tak-feed.sh
       - push.py
+      # push.py allowlists the keep-class datasets this register names.
+      - ../../library/register.json
     options:
       annotations:
         # tak-feed.sh uses shell expansions (${1:?}, ${TAK_HOST:?}) that

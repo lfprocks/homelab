@@ -42,25 +42,34 @@ rsync_() {
 
 case "$mode" in
   cert)
+    # One copy, taken once: what is checked is exactly what is sent, even
+    # if cert-manager renews the Secret mid-run.
+    mkdir /tmp/tls
     for f in fullchain.pem privkey.pem; do
-      [ -s "/tls/$f" ] || { echo "refusing: /tls/$f is empty or missing" >&2; exit 1; }
+      cp "/tls/$f" "/tmp/tls/$f"
+      [ -s "/tmp/tls/$f" ] || { echo "refusing: /tls/$f is empty or missing" >&2; exit 1; }
     done
     # A key that does not match its certificate would leave nginx unable to
     # start at its next restart (its reload refuses the pair, a restart
     # fails), so it is never sent.
     python3 -c 'import ssl, sys; ssl.create_default_context(ssl.Purpose.CLIENT_AUTH).load_cert_chain(sys.argv[1], sys.argv[2])' \
-      /tls/fullchain.pem /tls/privkey.pem \
+      /tmp/tls/fullchain.pem /tmp/tls/privkey.pem \
       || { echo "refusing: the key does not match the certificate" >&2; exit 1; }
     # --checksum: an unchanged certificate is not rewritten, so the VM's
     # path unit (and its nginx reload) fires only on a real renewal.
-    # --copy-links: Secret volume files are symlinks; send their contents.
-    rsync_ --checksum --copy-links --perms --chmod=F600 --timeout=120 \
-      --itemize-changes /tls/fullchain.pem /tls/privkey.pem "tak-feed@$TAK_HOST:/"
+    rsync_ --checksum --perms --chmod=F600 --timeout=120 \
+      --itemize-changes /tmp/tls/fullchain.pem /tmp/tls/privkey.pem "tak-feed@$TAK_HOST:/"
     ;;
   maps)
     # push.py refuses (non-zero) on a missing or empty share, so an unmounted
     # library never reaches --delete-after.
     python3 /app/push.py /library /tmp/stage
+    # Again, immediately before rsync follows the links (--copy-links):
+    # every link must still lead, through no symlink, to a regular file at
+    # its own path under /library. The share is mounted without mfsymlinks,
+    # so a link written through SMB is a plain file here; this is the
+    # second wall, for anything that still shows up as a symlink.
+    python3 /app/push.py --verify /library /tmp/stage
     # The stage holds one symlink per allowlisted file and nothing else, so
     # --delete-after leaves the server holding exactly the allowlisted set.
     # lost+found (the VM disk's root) is excluded, which also protects it.

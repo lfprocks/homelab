@@ -68,6 +68,7 @@ spec:
                 items:
                   - {key: tak-feed.sh, path: tak-feed.sh}
                   - {key: push.py, path: push.py}
+                  - {key: register.json, path: register.json}
             # Only this job's key, never the certificate push's.
             - name: ssh
               secret:
@@ -83,4 +84,5 @@ spec:
             - name: tools
               emptyDir: {sizeLimit: 256Mi}
             - name: tmp
-              emptyDir: {sizeLimit: 64Mi}
+              # Holds the key copy: memory, never node disk.
+              emptyDir: {sizeLimit: 64Mi, medium: Memory}

@@ -25,7 +25,9 @@ spec:
     - gid=65534
     - noperm
     - nobrl
-    - mfsymlinks # symlinks show as symlinks, which push.py skips
+    # No mfsymlinks, unlike geo's mounts: a link written on the share then
+    # shows here as a small regular file, never as a symlink this pod would
+    # follow to its own key or environment. push.py verifies regardless.
     - cache=strict
     - noserverino # required to prevent data corruption
   csi:
