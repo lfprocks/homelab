@@ -85,7 +85,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: *name
-          image: ghcr.io/sysadminsmedia/homebox:0.27.0
+          image: ghcr.io/sysadminsmedia/homebox:0.27.1
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
