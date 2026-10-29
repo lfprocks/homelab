@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: *name
-          image: ollama/ollama:0.40.6
+          image: ollama/ollama:0.40.8
           lifecycle:
             postStart:
               exec:
