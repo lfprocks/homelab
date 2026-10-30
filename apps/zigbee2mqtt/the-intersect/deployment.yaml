@@ -1,0 +1,98 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zigbee2mqtt
+  namespace: zigbee2mqtt
+  labels:
+    app: zigbee2mqtt
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  # Single-writer PVC and a single USB coordinator: never run two pods.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zigbee2mqtt
+  template:
+    metadata:
+      labels:
+        app: zigbee2mqtt
+        k8s.lfp.rocks/service: "zigbee2mqtt"
+        k8s.lfp.rocks/version: "2.14.2"
+    spec:
+      nodeSelector:
+        # Only schedule on the node with the Zigbee dongle (CP210x bridge on
+        # the SONOFF Dongle Plus MG24, plugged into worker-02).
+        feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
+      initContainers:
+        - name: seed-config
+          image: koenkk/zigbee2mqtt:2.14.2
+          command:
+            - sh
+            - -c
+            - '[ -f /app/data/configuration.yaml ] || cp /seed/configuration.yaml /app/data/configuration.yaml'
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: seed-config
+              mountPath: /seed
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+      containers:
+        - name: zigbee2mqtt
+          image: koenkk/zigbee2mqtt:2.14.2
+          envFrom:
+            - configMapRef:
+                name: zigbee2mqtt-env-configmap
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          # zigbee2mqtt has no HTTP health endpoint; the frontend only listens
+          # once the coordinator has started.
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: zigbee-device
+              mountPath: /dev/zigbee
+          # Needed to open the host's USB serial device (same as zwavejs-ui).
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: zigbee2mqtt-data
+        - name: seed-config
+          configMap:
+            name: zigbee2mqtt-seed-config
+        - name: zigbee-device
+          hostPath:
+            path: /dev/serial/by-id/usb-SONOFF_SONOFF_Dongle_Plus_MG24_965e1b182075f01187bcae2f1045c30f-if00-port0
+            type: CharDevice
