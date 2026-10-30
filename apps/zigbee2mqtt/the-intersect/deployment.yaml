@@ -28,6 +28,9 @@ spec:
         # Only schedule on the node with the Zigbee dongle (CP210x bridge on
         # the SONOFF Dongle Plus MG24, plugged into worker-02).
         feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: seed-config
           image: koenkk/zigbee2mqtt:2.14.2
@@ -40,6 +43,13 @@ spec:
               mountPath: /app/data
             - name: seed-config
               mountPath: /seed
+          # Runs as root only to match the root-owned data volume the main
+          # container writes; needs no capabilities to copy one file.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           resources:
             requests:
               cpu: 10m
