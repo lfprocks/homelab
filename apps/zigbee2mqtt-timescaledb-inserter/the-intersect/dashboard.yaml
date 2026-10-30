@@ -1,0 +1,399 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zigbee2mqtt-timescaledb-inserter-dashboard
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: zigbee
+    # The dashboard JSON is full of Grafana ${...} variables; Flux must not
+    # substitute them.
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  zigbee-readings.json: |
+    {
+      "uid": "zigbee-readings",
+      "title": "Zigbee readings",
+      "tags": [
+        "zigbee",
+        "timescaledb"
+      ],
+      "editable": true,
+      "graphTooltip": 1,
+      "schemaVersion": 39,
+      "version": 1,
+      "time": {
+        "from": "now-24h",
+        "to": "now"
+      },
+      "refresh": "1m",
+      "timezone": "browser",
+      "annotations": {
+        "list": []
+      },
+      "links": [],
+      "panels": [
+        {
+          "id": 1,
+          "type": "row",
+          "title": "Health",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "panels": []
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Last seen",
+          "description": "Time since each device last reported. Red after 2 hours.",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "aeiuudh9knklcd"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "aeiuudh9knklcd"
+              },
+              "editorMode": "code",
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n)\nSELECT\n  coalesce(n.device_name, z.device_ieee) AS device,\n  extract(epoch FROM now() - max(z.time)) AS age\nFROM sensors.zigbee z\nLEFT JOIN names n USING (device_ieee)\nWHERE z.time > now() - interval '30 days'\n  AND z.device_ieee IN (${device:sqlstring})\nGROUP BY 1\nORDER BY 1",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "decimals": 0,
+              "displayName": "${__data.fields.device}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 7200
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "values": true,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "/^age$/"
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 3,
+          "type": "bargauge",
+          "title": "Battery",
+          "description": "Latest battery level per device.",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "aeiuudh9knklcd"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "aeiuudh9knklcd"
+              },
+              "editorMode": "code",
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n)\nSELECT DISTINCT ON (z.device_ieee)\n  coalesce(n.device_name, z.device_ieee) AS device,\n  z.value AS battery\nFROM sensors.zigbee z\nLEFT JOIN names n USING (device_ieee)\nWHERE z.time > now() - interval '30 days'\n  AND z.metric = 'battery'\n  AND z.device_ieee IN (${device:sqlstring})\nORDER BY z.device_ieee, z.time DESC",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "displayName": "${__data.fields.device}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "green",
+                    "value": 50
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "values": true,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "/^battery$/"
+            },
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Link quality",
+          "description": "Zigbee link quality (LQI, 0-255) per device. Higher is better.",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "aeiuudh9knklcd"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 6
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "aeiuudh9knklcd"
+              },
+              "editorMode": "code",
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n)\nSELECT\n  $__timeGroupAlias(z.time, $__interval),\n  coalesce(n.device_name, z.device_ieee) AS metric,\n  avg(z.value) AS value\nFROM sensors.zigbee z\nLEFT JOIN names n USING (device_ieee)\nWHERE $__timeFilter(z.time)\n  AND z.metric = 'linkquality'\n  AND z.device_ieee IN (${device:sqlstring})\n  AND z.value IS NOT NULL\nGROUP BY 1, 2\nORDER BY 1",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "min": 0,
+              "max": 255,
+              "custom": {
+                "spanNulls": 3600000,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "row",
+          "title": "Readings",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
+          "panels": []
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "$metric",
+          "description": "One panel per selected metric, one series per device.",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "aeiuudh9knklcd"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 15
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "aeiuudh9knklcd"
+              },
+              "editorMode": "code",
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n)\nSELECT\n  $__timeGroupAlias(z.time, $__interval),\n  coalesce(n.device_name, z.device_ieee) AS metric,\n  avg(z.value) AS value\nFROM sensors.zigbee z\nLEFT JOIN names n USING (device_ieee)\nWHERE $__timeFilter(z.time)\n  AND z.metric = ${metric:sqlstring}\n  AND z.device_ieee IN (${device:sqlstring})\n  AND z.value IS NOT NULL\nGROUP BY 1, 2\nORDER BY 1",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "spanNulls": 3600000,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "repeat": "metric",
+          "repeatDirection": "h",
+          "maxPerRow": 2
+        },
+        {
+          "id": 7,
+          "type": "table",
+          "title": "Latest per device",
+          "description": "Most recent value of every metric for each device in the time range.",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "aeiuudh9knklcd"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "aeiuudh9knklcd"
+              },
+              "editorMode": "code",
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n),\nlatest AS (\n  SELECT DISTINCT ON (device_ieee, metric) device_ieee, metric, value, text_value, time\n  FROM sensors.zigbee\n  WHERE $__timeFilter(time) AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, metric, time DESC\n)\nSELECT\n  coalesce(n.device_name, l.device_ieee) AS device,\n  l.metric,\n  coalesce(round(l.value::numeric, 2)::text, l.text_value) AS value,\n  l.time AS updated\nFROM latest l\nLEFT JOIN names n USING (device_ieee)\nORDER BY 1, 2",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "updated"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeFromNow"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm"
+          }
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "device",
+            "label": "Device",
+            "type": "query",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "aeiuudh9knklcd"
+            },
+            "query": "SELECT DISTINCT ON (device_ieee) device_name AS __text, device_ieee AS __value\nFROM sensors.zigbee\nWHERE time > now() - interval '30 days'\nORDER BY device_ieee, time DESC",
+            "definition": "current name per device_ieee",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "sort": 1
+          },
+          {
+            "name": "metric",
+            "label": "Metric",
+            "type": "query",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "aeiuudh9knklcd"
+            },
+            "query": "SELECT DISTINCT metric\nFROM sensors.zigbee\nWHERE time > now() - interval '30 days'\n  AND device_ieee IN (${device:sqlstring})\n  AND value IS NOT NULL\nORDER BY 1",
+            "definition": "numeric metrics of the selected devices",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "sort": 1
+          }
+        ]
+      }
+    }
