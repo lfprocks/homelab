@@ -28,5 +28,7 @@ resources:
 - outline-outline-data.restic.sops.yaml
 - pocket-id-pocket-id-pvc.replicationsource.yaml
 - pocket-id-pocket-id-pvc.restic.sops.yaml
+- zigbee2mqtt-zigbee2mqtt-data.replicationsource.yaml
+- zigbee2mqtt-zigbee2mqtt-data.restic.sops.yaml
 - zwavejs-ui-zwavejs-ui-store.replicationsource.yaml
 - zwavejs-ui-zwavejs-ui-store.restic.sops.yaml

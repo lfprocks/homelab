@@ -88,6 +88,7 @@ stringData:
     SUB_RUSSET_HERON: ENC[AES256_GCM,data:2aeJwdYV5Q==,iv:3ljnqhJjfpVefFwE/k70C7dQwJnUulVcIMac7ZimrGk=,tag:/kZ4GpFJiDSpWVqBfwbdDA==,type:str]
     SUB_SILVER_ATLAS: ENC[AES256_GCM,data:9K96mv8=,iv:70Fk8/HyYLvmgFdrob+azYqhJ2O66BjZWynn5DqDqwQ=,tag:BkK00PUXnUN2WQotogIx/Q==,type:str]
     SUB_OAKEN_LATTICE: ENC[AES256_GCM,data:pnsW,iv:zf6pr2uMSWU0ReR2ugY2tkq2i1lwmRLojMYxy5oKfHU=,tag:4U0IVpojLg/flcePcCqa9w==,type:str]
+    SUB_HOLLOW_QUARTZ: ENC[AES256_GCM,data:6N2rdTJF++Lq1PU=,iv:rqX6o4haYAsYeZBTAwsGmVjbPp2+n4KnLf1KSa09VTM=,tag:2fQgcD0qlD1pM6+tZrd8fw==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -99,7 +100,7 @@ sops:
             NEc5RFlOS2lkTVJBNTU2VW1LUy9yTzgKbghxCeGAw7B6qpQzV5GYuAtoJjZvSoqe
             DRS4G8tSwhojaT29RDfxU5TZvdSGOFUy+uehXyUzRjgRoVxfrs2lMQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-10-23T06:55:17Z"
-    mac: ENC[AES256_GCM,data:7GQoIhb59kgrrOUcgt4r4Orlpo+hnB83e7Q8qm1RamvrizxKt4LOC03+lmPnOTc0u0cmu+9xnszW9Ze7cJrFQNfAN1TJEoRZJBIH799EFX5OHZtsiSY9YD0BKlmny+gtmU5YmjWFkF3K9jgoNo+qyQtIuOYWZaP3rD05QH3MZrA=,iv:lDycPkSKnTC7HdqIcKCAl6l41lXi4wArjSrqPU2SRBI=,tag:uK3GkXr6n5E/YlNzbdbBGA==,type:str]
+    lastmodified: "2026-10-30T16:39:33Z"
+    mac: ENC[AES256_GCM,data:ygRAaE2VvSnwlxM2dE4PZAlHe2oB2e7y3GGbOzXBsSMJ2yy+9iKYJuw/XHROzXe5FGp9f+9vjGr+ADHOK+ru0It5OeZMUah0oLREDXNS7By/PyDz68vXUOL1L9yeljgy5Z5PWEkFlFlsyzcOUqo7fPhG97EWmlf387NW6oED99U=,iv:us16M7nOGpQI9fRiiaOnk6sMmNjoDU8Vt3hh61mCTfQ=,tag:EHARiTCHufMeUhpItnUjkQ==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0

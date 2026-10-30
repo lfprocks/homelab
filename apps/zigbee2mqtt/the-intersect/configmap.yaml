@@ -1,0 +1,53 @@
+---
+# Settings applied on every start. ZIGBEE2MQTT_CONFIG_* env vars override
+# configuration.yaml without being written back to it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zigbee2mqtt-env-configmap
+  namespace: zigbee2mqtt
+data:
+  TZ: "America/Los_Angeles"
+  # EMQX allows anonymous clients in-cluster (same as govee2mqtt).
+  ZIGBEE2MQTT_CONFIG_MQTT_SERVER: "mqtt://emqx.emqx.svc.cluster.local:1883"
+  ZIGBEE2MQTT_CONFIG_MQTT_BASE_TOPIC: "zigbee2mqtt"
+  # SONOFF Dongle Plus MG24 (EFR32MG24) uses the ember driver.
+  ZIGBEE2MQTT_CONFIG_SERIAL_PORT: "/dev/zigbee"
+  ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: "ember"
+  ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE: "115200"
+  ZIGBEE2MQTT_CONFIG_SERIAL_RTSCTS: "false"
+  ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED: "true"
+  ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED: "true"
+  ZIGBEE2MQTT_CONFIG_FRONTEND_PORT: "8080"
+  ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_LEVEL: "info"
+  # Skip the first-run onboarding web page; the seeded config below is used.
+  Z2M_ONBOARD_NO_SERVER: "1"
+---
+# Seeded into /app/data only when no configuration.yaml exists yet. The
+# GENERATE values are replaced by zigbee2mqtt on first start and persisted to
+# the PVC; they must not be set through env vars, which would apply on every
+# start. Losing the PVC means losing the network key (VolSync backs it up).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zigbee2mqtt-seed-config
+  namespace: zigbee2mqtt
+data:
+  configuration.yaml: |
+    version: 4
+    permit_join: false
+    mqtt:
+      base_topic: zigbee2mqtt
+      server: mqtt://emqx.emqx.svc.cluster.local:1883
+    serial:
+      port: /dev/zigbee
+      adapter: ember
+    advanced:
+      network_key: GENERATE
+      pan_id: GENERATE
+      ext_pan_id: GENERATE
+    frontend:
+      enabled: true
+      port: 8080
+    homeassistant:
+      enabled: true

@@ -2,7 +2,7 @@
 
 | What | How | Where | Schedule / retention |
 |---|---|---|---|
-| Tier-1 Ceph PVCs (forgejo repos, outline, homebox, home-assistant, pocket-id, openclaw, zwavejs, flippydrive, emqx, immich photos, grafana) | VolSync restic, from a CSI snapshot (crash-consistent) | GCS `lfpr-p-gcsb-usw1-volsync-backups-szog-ea82375` (versioned, deleted objects recoverable 30 days) | daily 02:00-03:40, keep 7 daily / 4 weekly / 6 monthly |
+| Tier-1 Ceph PVCs (forgejo repos, outline, homebox, home-assistant, pocket-id, openclaw, zwavejs, zigbee2mqtt, flippydrive, emqx, immich photos, grafana) | VolSync restic, from a CSI snapshot (crash-consistent) | GCS `lfpr-p-gcsb-usw1-volsync-backups-szog-ea82375` (versioned, deleted objects recoverable 30 days) | daily 02:00-03:40, keep 7 daily / 4 weekly / 6 monthly |
 | CNPG Postgres (forgejo, immich, outline, transcribe, paperless) | barman base backups + continuous WAL | GCS `cnpg-backups` | daily, 30 days, point-in-time |
 | Everything on olympic's `main` pool (SMB cluster volumes, photos, media, files) | ZFS snapshots + local replication to `vault/backups/main` | olympic (terraform `truenas/snapshots.tf`) | daily 10:00 UTC (30d), weekly Sun 10:15 UTC (12w) |
 | Forgejo package registry (container images) | rclone sync of the `forgejo-packages` RGW bucket (`registry-backup` CronJob) | GCS `lfpr-p-gcsb-usw1-registry-backups-r7g2-8a62ba4/forgejo-packages` (versioned, deleted/overwritten objects kept 30 days) | daily 03:50 UTC |
