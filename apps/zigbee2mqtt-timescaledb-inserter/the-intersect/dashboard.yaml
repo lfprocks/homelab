@@ -267,6 +267,17 @@ data:
               "rawQuery": true,
               "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND metric = 'linkquality' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n)\nSELECT\n  $__timeGroupAlias(z.time, $__interval),\n  coalesce(n.device_name, z.device_ieee) AS metric,\n  avg(z.value) AS value\nFROM sensors.zigbee z\nLEFT JOIN names n USING (device_ieee)\nWHERE $__timeFilter(z.time)\n  AND z.metric = ${metric:sqlstring}\n  AND z.device_ieee IN (${device:sqlstring})\n  AND z.value IS NOT NULL\nGROUP BY 1, 2\nORDER BY 1",
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "aeiuudh9knklcd"
+              },
+              "editorMode": "code",
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT unit\nFROM sensors.zigbee_metric\nWHERE metric = ${metric:sqlstring} AND device_ieee IN (${device:sqlstring})\nGROUP BY unit\nORDER BY count(*) DESC\nLIMIT 1",
+              "refId": "B"
             }
           ],
           "fieldConfig": {
@@ -291,7 +302,25 @@ data:
           },
           "repeat": "metric",
           "repeatDirection": "h",
-          "maxPerRow": 2
+          "maxPerRow": 2,
+          "transformations": [
+            {
+              "id": "configFromData",
+              "options": {
+                "configRefId": "B",
+                "mappings": [
+                  {
+                    "fieldName": "unit",
+                    "handlerKey": "unit"
+                  }
+                ],
+                "applyTo": {
+                  "id": "byFrameRefID",
+                  "options": "A"
+                }
+              }
+            }
+          ]
         },
         {
           "id": 7,
@@ -317,7 +346,7 @@ data:
               "editorMode": "code",
               "format": "table",
               "rawQuery": true,
-              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND metric = 'linkquality' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n),\nlatest AS (\n  SELECT DISTINCT ON (device_ieee, metric) device_ieee, metric, value, text_value, time\n  FROM sensors.zigbee\n  WHERE $__timeFilter(time) AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, metric, time DESC\n)\nSELECT\n  coalesce(n.device_name, l.device_ieee) AS device,\n  l.metric,\n  coalesce(round(l.value::numeric, 2)::text, l.text_value) AS value,\n  l.time AS updated\nFROM latest l\nLEFT JOIN names n USING (device_ieee)\nORDER BY 1, 2",
+              "rawSql": "WITH names AS (\n  SELECT DISTINCT ON (device_ieee) device_ieee, device_name\n  FROM sensors.zigbee\n  WHERE time > now() - interval '30 days' AND metric = 'linkquality' AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, time DESC\n),\nlatest AS (\n  SELECT DISTINCT ON (device_ieee, metric) device_ieee, metric, value, text_value, time\n  FROM sensors.zigbee\n  WHERE $__timeFilter(time) AND device_ieee IN (${device:sqlstring})\n  ORDER BY device_ieee, metric, time DESC\n)\nSELECT\n  coalesce(n.device_name, l.device_ieee) AS device,\n  l.metric,\n  coalesce(trim_scale(round(l.value::numeric, 2))::text || coalesce(' ' || u.unit, ''), l.text_value) AS value,\n  l.time AS updated\nFROM latest l\nLEFT JOIN names n USING (device_ieee)\nLEFT JOIN sensors.zigbee_metric u USING (device_ieee, metric)\nORDER BY 1, 2",
               "refId": "A"
             }
           ],
