@@ -52,6 +52,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: zigbee2mqtt-env-configmap
+            # Frontend auth token; the UI otherwise lets anyone on the LAN
+            # permit joins, remove devices and change settings.
+            - secretRef:
+                name: zigbee2mqtt-env-secret
           ports:
             - name: http
               containerPort: 8080

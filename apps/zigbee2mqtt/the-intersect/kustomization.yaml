@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: zigbee2mqtt
 resources:
   - configmap.yaml
+  - secret.sops.yaml
   - deployment.yaml
   - service.yaml
   - httproute.yaml
