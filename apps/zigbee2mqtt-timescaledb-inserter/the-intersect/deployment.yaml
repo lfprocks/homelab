@@ -62,8 +62,9 @@ spec:
           ports:
             - name: metrics
               containerPort: 8081
-          # No health endpoint; the metrics listener is up once the process
-          # has connected to the database and broker.
+          # No health endpoint. The metrics listener starts before the database
+          # and broker connections, so this only shows the process is alive;
+          # a failed connection at startup exits the process instead.
           livenessProbe:
             tcpSocket:
               port: metrics
