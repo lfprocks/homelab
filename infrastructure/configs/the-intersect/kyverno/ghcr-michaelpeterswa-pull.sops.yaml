@@ -1,0 +1,26 @@
+# Read-only (read:packages) GHCR token for ghcr.io/michaelpeterswa/* images.
+# Kyverno clones this into every namespace (ghcr-michaelpeterswa-pull.yaml).
+# PLACEHOLDER until re-encrypted with a real token (see the PR).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: ghcr-michaelpeterswa-pull
+    namespace: kyverno
+type: kubernetes.io/dockerconfigjson
+stringData:
+    .dockerconfigjson: ENC[AES256_GCM,data:ir3cza0XlZ/dZr28eVXsWnN65auyu0ckOIvX8QAAlzaHIniML1qXLfR4ebthWK6l8DhGW5/IuGp0TXHD2mTE+g6y3g8vn0OwnwcjZRmzmwK+m+mTmf1JMNX5tvoRov0FJ0AdohZgEgU/r3UHztAIN+01AVTV8DfAkR515fFT5MvHno9eXmLOCFmUVwhpk1WyRY0Db8hdWIOd97HZA7dbnOaIwWVGQwhGVM1bvYD3WSDCAY2r7qpTPjwh2LOuVhG2,iv:kYHx1cAHMerTtFwDvCmpJ+5HOFUYYD55xQIG03LoIA0=,tag:IyKbVUTdsuFZ0QFsqyMQng==,type:str]
+sops:
+    age:
+        - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3Y0RUTUcxNFpQZi93S0pW
+            dXFlWWkwcW5ML09kbC9BVk8rSk9Pd0NTRTFJCkw3VFcrMWIvb0NHZGh2V1BvY3Qy
+            UWRGVjFwdnh4VUhMZWlDNmlGUkNMM2MKLS0tIFZIditIVVVEZnRJQkdJbSt2a3hG
+            Q3FoK2JYQ1V1Z0hFSGg1V3dwdElibVEKhdxaA/DNKDuykBdVlHdfa1nDidcAE52T
+            qrN9KKFnqaHvPr+adbF1axuBpq+W84wBkwLf73WOaSWoC9WtStRxVw==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-10-31T19:32:50Z"
+    mac: ENC[AES256_GCM,data:Y0KFC8Uhif2TSa+V947UbuEgRUWISEig/d3WweVQjFgQVdzH9vAS4AbJJ9E7q3+BHIWHvhfUwXo3J2tpn7yIsFGODmePdt9iiZOZ1nS5nPbO5kPOdKB6wogNfy1zp2nT6iyBNyhLsDgykISS/lz/9v+7Unsyk06I+N7VG0pJxE4=,iv:S5Lp+Lx6rYOok8JPsGy9JxzYVfdEEOxZg70iZeRXVvw=,tag:/U97uYyn2RyTPV8mIk4E7A==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

@@ -436,6 +436,7 @@ metadata:
   name: openalert
   labels:
     k8s.lfp.rocks/policy: enforce
+    k8s.lfp.rocks/ghcr-pull: "true"      # Kyverno clones the GHCR pull secret here
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted

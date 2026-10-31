@@ -1,0 +1,87 @@
+# Pull credentials for private ghcr.io/michaelpeterswa/* images, OPT-IN per
+# namespace.
+#
+# Shaped like forgejo-registry-pull.yaml, but scoped: the source Secret
+# (ghcr-michaelpeterswa-pull.sops.yaml, in this namespace) holds a GHCR
+# read:packages token, which can read EVERY private package the account can
+# access. So it goes only to namespaces labelled
+#   k8s.lfp.rocks/ghcr-pull: "true"
+# (set in clusters/the-intersect/namespaces.yaml). Label only namespaces
+# that run such an image.
+#   1. generate: Kyverno clones it into each labelled namespace and keeps it
+#      in sync, so rotating the token is one sops edit. With synchronize,
+#      removing the label (or deleting this rule) makes the trigger stop
+#      matching and Kyverno deletes the downstream Secret.
+#   2. mutate: a Pod in a labelled namespace with an image under
+#      ghcr.io/michaelpeterswa/ gets it in imagePullSecrets. Pods elsewhere are
+#      left alone, so nothing references a Secret that is not there. Pods only
+#      (autogen off), so Deployments in git are never rewritten and Flux never
+#      sees drift.
+# imagePullSecrets is a strategic-merge list keyed on name, so a Pod matching
+# both this and forgejo-registry-pull (or carrying its own pull secret) ends
+# up with every entry rather than one replacing the other.
+# Apps need nothing: reference the image and it pulls.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: ghcr-michaelpeterswa-pull
+  annotations:
+    policies.kyverno.io/title: GHCR (michaelpeterswa) pull credentials
+    policies.kyverno.io/subject: Pod, Secret
+    pod-policies.kyverno.io/autogen-controllers: none
+spec:
+  generateExisting: true
+  rules:
+    - name: clone-pull-secret
+      match:
+        any:
+          - resources:
+              kinds: [Namespace]
+              selector:
+                matchLabels:
+                  k8s.lfp.rocks/ghcr-pull: "true"
+      exclude:
+        any:
+          - resources:
+              names: [kyverno]
+      generate:
+        apiVersion: v1
+        kind: Secret
+        name: ghcr-michaelpeterswa-pull
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        clone:
+          namespace: kyverno
+          name: ghcr-michaelpeterswa-pull
+    - name: add-pull-secret-containers
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/ghcr-pull: "true"
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - <(image): "ghcr.io/michaelpeterswa/*"
+            imagePullSecrets:
+              - name: ghcr-michaelpeterswa-pull
+    - name: add-pull-secret-init-containers
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/ghcr-pull: "true"
+      mutate:
+        patchStrategicMerge:
+          spec:
+            initContainers:
+              - <(image): "ghcr.io/michaelpeterswa/*"
+            imagePullSecrets:
+              - name: ghcr-michaelpeterswa-pull
