@@ -201,6 +201,17 @@ grafana:
               # long enough not to nag and short enough that a notification
               # missed overnight is repeated in the morning.
               repeat_interval: 6h
+            # Garage climate (the server room). Grouped by alertname so heat,
+            # humidity and a dead sensor each notify on their own. Repeats
+            # every 2h: unlike a stale timelapse, a hot server room gets worse
+            # if ignored, so a missed notification should come back soon.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["category", "=", "garage"]
+              group_by: ["alertname"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 2h
             - receiver: pnp-pushover
               object_matchers:
                 - ["category", "=", "lfpweather"]
@@ -605,6 +616,278 @@ grafana:
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
+
+        # The garage holds the servers, so its climate is their inlet air.
+        # Thresholds follow ASHRAE guidance for server inlets: 27 C is the top
+        # of the recommended range and 35 C the top of the allowable one, so
+        # 30 C is a heads-up with room to act and 35 C means the hardware is
+        # already outside spec. Humidity above ~75-80% RH is where condensation
+        # and corrosion start to matter. Cold is harmless to running servers;
+        # near-freezing matters for the building and for condensation when it
+        # warms up again.
+        #
+        # One Zigbee sensor, matched by its zigbee2mqtt friendly name. The
+        # threshold rules treat no data as OK on purpose: a silent sensor is
+        # GarageSensorStale's job, and that rule also fires if the device is
+        # renamed and these queries stop matching anything.
+        #
+        # The sensor reports at least every 15 minutes (measured), so each
+        # query reads the newest value within the last hour and `for` provides
+        # the "sustained" part.
+        - orgId: 1
+          name: garage
+          folder: alerts
+          interval: 5m
+          rules:
+            - uid: garage-temperature-high
+              title: GarageTemperatureHigh
+              condition: fired
+              for: 15m
+              annotations:
+                title: garage is above 30 C
+                summary: >-
+                  The garage, where the servers are, has been above 30 C for 15
+                  minutes. Server inlet air is past the recommended range;
+                  check ventilation before it reaches 35 C.
+              labels:
+                severity: warning
+                category: garage
+              noDataState: OK
+              data:
+                - refId: temperature
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: temperature
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'temperature'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: temperature
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [30]}
+
+            - uid: garage-temperature-critical
+              title: GarageTemperatureCritical
+              condition: fired
+              # Shorter than the warning: at 35 C the hardware is already
+              # outside its allowable range, so waiting costs more.
+              for: 10m
+              annotations:
+                title: garage is above 35 C
+                summary: >-
+                  The garage has been above 35 C for 10 minutes. Server inlet
+                  air is outside the allowable range; cool the garage or shut
+                  machines down.
+              labels:
+                severity: critical
+                category: garage
+              noDataState: OK
+              data:
+                - refId: temperature
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: temperature
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'temperature'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: temperature
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [35]}
+
+            - uid: garage-temperature-low
+              title: GarageTemperatureLow
+              condition: fired
+              for: 30m
+              annotations:
+                title: garage is below 5 C
+                summary: >-
+                  The garage has been below 5 C for 30 minutes and is nearing
+                  freezing. Watch for condensation on the machines when it
+                  warms back up.
+              labels:
+                severity: warning
+                category: garage
+              noDataState: OK
+              data:
+                - refId: temperature
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: temperature
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'temperature'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: temperature
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: lt, params: [5]}
+
+            - uid: garage-humidity-high
+              title: GarageHumidityHigh
+              condition: fired
+              # 30 minutes so a door left open in the rain does not page.
+              for: 30m
+              annotations:
+                title: garage humidity is above 75%
+                summary: >-
+                  The garage has been above 75% relative humidity for 30
+                  minutes. Condensation and corrosion risk for the servers is
+                  rising; ventilate or dehumidify.
+              labels:
+                severity: warning
+                category: garage
+              noDataState: OK
+              data:
+                - refId: humidity
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: humidity
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'humidity'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: humidity
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [75]}
+
+            # Without this the rules above go quiet exactly when they are
+            # needed: a dead battery or a dropped Zigbee link looks like a
+            # garage with nothing wrong. 45 minutes is three missed 15-minute
+            # check-ins. Bounded to a day so the scan stays small; no row in
+            # that day (or a renamed device) coalesces to a day of staleness
+            # rather than NULL, which a threshold would treat as not firing.
+            - uid: garage-sensor-stale
+              title: GarageSensorStale
+              condition: fired
+              for: 5m
+              annotations:
+                title: garage climate sensor has stopped reporting
+                summary: >-
+                  No reading from the garage Zigbee sensor for 45 minutes, so
+                  the garage temperature and humidity alerts cannot fire. Check
+                  its battery, zigbee2mqtt, and the inserter. A renamed device
+                  also causes this.
+              labels:
+                severity: warning
+                category: garage
+              execErrState: Alerting
+              noDataState: Alerting
+              data:
+                - refId: staleness
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: staleness
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time,
+                             coalesce(extract(epoch from (now() - max(time))) / 60, 1440) AS value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'linkquality'
+                        AND time > now() - interval '1 day'
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: staleness
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [45]}
 
         - orgId: 1
           name: timestral
