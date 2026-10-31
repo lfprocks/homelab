@@ -1,0 +1,78 @@
+---
+# Selecting the openalert pod makes Cilium default-deny everything not listed
+# here, in both directions.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: openalert
+  labels:
+    app: openalert
+spec:
+  endpointSelector:
+    matchLabels:
+      app: openalert
+  ingress:
+    # Public HTTP API. Only the Cilium gateway's Envoy (reserved "ingress"
+    # identity) and the node/kubelet (probes) may connect. This is what makes
+    # OPENALERT_TRUSTED_PROXIES=10.244.0.0/16 safe: no other pod can reach
+    # 8080 to send a forged X-Forwarded-For from inside the trusted range.
+    - fromEntities:
+        - ingress
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Admin API: kubectl port-forward only, which arrives from the node via
+    # the kubelet. No pod, gateway, or LAN client may reach it.
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8083"
+              protocol: TCP
+    # MQTT over mutual TLS through the LoadBalancer Service. Cilium runs with
+    # kubeProxyReplacement in SNAT LB mode and externalTrafficPolicy Cluster:
+    # a client hitting the announcing node keeps its address ("world", which
+    # includes the LAN) when the pod is local, and is SNATed to the announcing
+    # node ("remote-node", or "host" on the same node) when it is not.
+    - fromEntities:
+        - world
+        - remote-node
+        - host
+      toPorts:
+        - ports:
+            - port: "8883"
+              protocol: TCP
+    # Prometheus metrics: only Alloy, which scrapes pods by their
+    # prometheus.io/* annotations (infrastructure/configs/the-intersect/grafana/alloy).
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+            k8s:app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    # Cluster DNS.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Future Piper TTS sidecar/Deployment in this namespace (POST /synthesize
+    # on 5000). Nothing listens there yet. The server needs no other egress
+    # today: devices connect in, and tracing/OTLP export is disabled.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: openalert
+      toPorts:
+        - ports:
+            - port: "5000"
+              protocol: TCP

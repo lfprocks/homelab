@@ -7,6 +7,7 @@ resources:
   - persistentvolumeclaim.yaml
   - httproute.yaml
   - lb-svc.yaml
+  - ciliumnetworkpolicy.yaml
   - pull-secret.yaml     # SOPS-encrypted ghcr-michaelpeterswa dockerconfigjson (placeholder until re-encrypted, see PR)
   - secret.sops.yaml     # SOPS-encrypted openalert-env-secret (admin token, URL signing key)
 labels:
