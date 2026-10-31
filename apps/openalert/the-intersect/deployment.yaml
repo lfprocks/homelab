@@ -27,6 +27,9 @@ data:
   OPENALERT_TRUSTED_PROXIES: "10.244.0.0/16"
   # OpenAlert's own Wyoming Piper (piper.yaml in this directory).
   OPENALERT_PIPER_URL: "tcp://piper:10200"
+  # Piper on CPU synthesizes at about 1.2x real time, and the server waits for
+  # the clip before sending an alert. 30s covers the 300-character maximum.
+  OPENALERT_TTS_TIMEOUT: "30s"
 ---
 apiVersion: apps/v1
 kind: Deployment
