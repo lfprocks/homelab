@@ -48,17 +48,18 @@ spec:
         # validated directly.
         skipResourceFilters: false
 
-    # Ships the chart's own dashboard as a ConfigMap labelled
-    # `grafana_dashboard: "1"`, which the grafana sidecar picks up. Without this
-    # the Audit-tier policies are write-only -- which is how the previous setup
-    # decayed into producing findings nobody read.
+    # The Kyverno dashboard is NOT shipped from here. It lives in the private
+    # lfprocks/grafana-sync repo (cluster/kyverno-metrics.json), which Grafana
+    # Git Sync owns. Two provisioners for one dashboard uid fight: Git Sync
+    # refused to delete it ("provisioned dashboard cannot be deleted") while
+    # the sidecar held it. The dashboard is still what keeps the Audit-tier
+    # policies from being write-only; it just has one owner now.
     #
     # `grafanaDashboard.create` stays at its default of false: that renders a
     # GrafanaDashboard CR for grafana-operator (grafana.integreatly.org), and
-    # this cluster does not run it. The CRDs present are grafana-AGENT's
-    # (monitoring.grafana.com), which are unrelated.
+    # this cluster does not run it.
     grafana:
-      enabled: true
+      enabled: false
 
     admissionController:
       # This controller is in the admission path for every workload in the
