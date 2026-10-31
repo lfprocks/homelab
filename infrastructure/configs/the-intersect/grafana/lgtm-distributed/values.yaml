@@ -1856,6 +1856,17 @@ mimir:
         storage_prefix: blocks
         gcs:
           bucket_name: lfpr-p-gcsb-usw1-mimir-blocks-9mk8-0274f6f
+        bucket_store:
+          # The store-gateway's in-memory index cache defaults to 1 GiB. With
+          # a 1Gi container limit that is a guaranteed OOM: the first query
+          # over 30 days of blocks filled it and the pod was OOMKilled
+          # (2026-10-31). 256 MiB of cache inside a 1536Mi limit leaves the
+          # rest for the Go heap and index headers. GOMEMLIMIT on the
+          # store_gateway keeps the GC ahead of the limit.
+          index_cache:
+            backend: inmemory
+            inmemory:
+              max_size_bytes: 268435456
       alertmanager_storage:
         backend: gcs
         gcs:
@@ -2124,7 +2135,7 @@ mimir:
         memory: 256Mi
       limits:
         cpu: "1"
-        memory: 1Gi
+        memory: 1536Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -2136,6 +2147,8 @@ mimir:
     env:
       - name: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/service-account/service-account.json
+      - name: GOMEMLIMIT
+        value: 1200MiB
   minio:
     enabled: false
   rollout_operator:
