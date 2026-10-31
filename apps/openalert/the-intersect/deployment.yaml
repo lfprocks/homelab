@@ -50,7 +50,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "openalert"
-        k8s.lfp.rocks/version: "v1.0.0"
+        k8s.lfp.rocks/version: "v1.1.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
@@ -65,7 +65,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/openalert-server:v1.0.0
+          image: ghcr.io/michaelpeterswa/openalert-server:v1.1.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
