@@ -1,13 +1,22 @@
-# Pull credentials for private ghcr.io/michaelpeterswa/* images, everywhere.
+# Pull credentials for private ghcr.io/michaelpeterswa/* images, OPT-IN per
+# namespace.
 #
-# Same shape as forgejo-registry-pull.yaml. The source Secret
+# Shaped like forgejo-registry-pull.yaml, but scoped: the source Secret
 # (ghcr-michaelpeterswa-pull.sops.yaml, in this namespace) holds a GHCR
-# read-only (read:packages) token.
-#   1. generate: Kyverno clones it into every namespace and keeps it in sync,
-#      so rotating the token is one sops edit.
-#   2. mutate: any Pod with an image under ghcr.io/michaelpeterswa/ gets it in
-#      imagePullSecrets. Pods only (autogen off), so Deployments in git are
-#      never rewritten and Flux never sees drift.
+# read:packages token, which can read EVERY private package the account can
+# access. So it goes only to namespaces labelled
+#   k8s.lfp.rocks/ghcr-pull: "true"
+# (set in clusters/the-intersect/namespaces.yaml). Label only namespaces
+# that run such an image.
+#   1. generate: Kyverno clones it into each labelled namespace and keeps it
+#      in sync, so rotating the token is one sops edit. With synchronize,
+#      removing the label (or deleting this rule) makes the trigger stop
+#      matching and Kyverno deletes the downstream Secret.
+#   2. mutate: a Pod in a labelled namespace with an image under
+#      ghcr.io/michaelpeterswa/ gets it in imagePullSecrets. Pods elsewhere are
+#      left alone, so nothing references a Secret that is not there. Pods only
+#      (autogen off), so Deployments in git are never rewritten and Flux never
+#      sees drift.
 # imagePullSecrets is a strategic-merge list keyed on name, so a Pod matching
 # both this and forgejo-registry-pull (or carrying its own pull secret) ends
 # up with every entry rather than one replacing the other.
@@ -28,6 +37,9 @@ spec:
         any:
           - resources:
               kinds: [Namespace]
+              selector:
+                matchLabels:
+                  k8s.lfp.rocks/ghcr-pull: "true"
       exclude:
         any:
           - resources:
@@ -47,6 +59,9 @@ spec:
           - resources:
               kinds: [Pod]
               operations: [CREATE]
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/ghcr-pull: "true"
       mutate:
         patchStrategicMerge:
           spec:
@@ -60,6 +75,9 @@ spec:
           - resources:
               kinds: [Pod]
               operations: [CREATE]
+              namespaceSelector:
+                matchLabels:
+                  k8s.lfp.rocks/ghcr-pull: "true"
       mutate:
         patchStrategicMerge:
           spec:
