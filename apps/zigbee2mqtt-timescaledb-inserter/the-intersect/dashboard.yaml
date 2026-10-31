@@ -102,7 +102,7 @@ data:
               "calcs": [
                 "lastNotNull"
               ],
-              "fields": "/^age$/"
+              "fields": ""
             },
             "colorMode": "background",
             "graphMode": "none",
@@ -170,7 +170,7 @@ data:
               "calcs": [
                 "lastNotNull"
               ],
-              "fields": "/^battery$/"
+              "fields": ""
             },
             "displayMode": "gradient",
             "orientation": "horizontal",
@@ -385,7 +385,7 @@ data:
             },
             "query": "SELECT DISTINCT ON (device_ieee) device_name AS __text, device_ieee AS __value\nFROM sensors.zigbee\nWHERE time > now() - interval '30 days' AND metric = 'linkquality'\nORDER BY device_ieee, time DESC",
             "definition": "current name per device_ieee",
-            "refresh": 1,
+            "refresh": 2,
             "multi": true,
             "includeAll": true,
             "current": {
