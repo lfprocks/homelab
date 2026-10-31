@@ -3,8 +3,15 @@ grafana:
   # -- Deploy Grafana if enabled. See [upstream readme](https://github.com/grafana/helm-charts/tree/main/charts/grafana#configuration) for full values reference.
   enabled: true
 
+  # 13.x for Git Sync, which is GA from 13.0 and only experimental in 12.1.
+  # Avoid 13.0.0: its unified-storage migration could lose dashboards and
+  # folders when the Git Sync flags below are on (fixed in 13.0.1).
+  #
+  # 13.0 moves dashboards and folders into unified storage on first start.
+  # That is one-way: rolling back means restoring the grafana-data VolSync
+  # snapshot taken before the upgrade, not just lowering this tag.
   image:
-    tag: 12.1.0
+    tag: 13.2.5
 
   resources:
     requests:
