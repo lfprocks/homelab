@@ -11,7 +11,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: csi-driver-nfs
-      version: 4.13.4
+      version: 4.13.6
   valuesFrom:
     - kind: ConfigMap
       name: csi-driver-nfs-values
