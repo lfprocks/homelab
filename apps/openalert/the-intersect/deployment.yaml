@@ -56,8 +56,6 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
     spec:
-      imagePullSecrets:
-        - name: ghcr-michaelpeterswa
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532

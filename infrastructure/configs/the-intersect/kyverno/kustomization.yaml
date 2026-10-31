@@ -7,3 +7,5 @@ resources:
   - sync-version-label.yaml
   - forgejo-registry-pull.sops.yaml
   - forgejo-registry-pull.yaml
+  - ghcr-michaelpeterswa-pull.sops.yaml
+  - ghcr-michaelpeterswa-pull.yaml
