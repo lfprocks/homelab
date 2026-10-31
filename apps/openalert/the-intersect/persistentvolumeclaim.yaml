@@ -1,0 +1,14 @@
+---
+# SQLite database plus the OpenAlert device CA (ca.crt / ca.key) and the
+# embedded broker's server cert. Losing the CA means re-enrolling every
+# device, so this lives on replicated ceph-block rather than local-path.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openalert-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 2Gi

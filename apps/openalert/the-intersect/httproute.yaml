@@ -1,0 +1,18 @@
+---
+# Public HTTP API only (alerts API, enrollment, voice clips, firmware,
+# /healthz). The admin API (8083) and metrics (8081) are deliberately not
+# routed: admin is reached with kubectl port-forward or over the VPN.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openalert-httproute
+  namespace: openalert
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_HAZEL_TRIDENT}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - backendRefs:
+        - name: openalert
+          port: 80
