@@ -2002,6 +2002,14 @@ mimir:
       limits:
         cpu: 20m
         memory: 50Mi
+  # The read path (querier, query_frontend, store_gateway) was sized for
+  # idle: 50-200m CPU and 80-200Mi. Any query reaching back past the
+  # ingesters (~13h) into 30 days of blocks timed out in the store-gateway
+  # ("failed to wait for turn: timeout waiting for concurrency gate"), the
+  # querier reported err-mimir-store-consistency-check-failed, and a 25-day
+  # instant query returned 502. query_frontend peaked at 74Mi of 80Mi.
+  # Requests stay small because these sit idle almost all the time; the
+  # limits leave room for the bursts a long-range dashboard causes.
   querier:
     replicas: 1
     podAnnotations:
@@ -2011,11 +2019,11 @@ mimir:
       prometheus.istio.io/merge-metrics: "false"
     resources:
       requests:
-        cpu: 5m
-        memory: 120Mi
+        cpu: 50m
+        memory: 256Mi
       limits:
-        cpu: 200m
-        memory: 200Mi
+        cpu: "1"
+        memory: 1Gi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -2035,11 +2043,11 @@ mimir:
       prometheus.istio.io/merge-metrics: "false"
     resources:
       requests:
-        cpu: 5m
-        memory: 40Mi
+        cpu: 20m
+        memory: 128Mi
       limits:
-        cpu: 50m
-        memory: 80Mi
+        cpu: 500m
+        memory: 256Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -2112,11 +2120,11 @@ mimir:
       prometheus.istio.io/merge-metrics: "false"
     resources:
       requests:
-        cpu: 10m
-        memory: 50Mi
+        cpu: 50m
+        memory: 256Mi
       limits:
-        cpu: 100m
-        memory: 100Mi
+        cpu: "1"
+        memory: 1Gi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
