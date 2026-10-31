@@ -5,7 +5,6 @@ namespace: zigbee2mqtt-timescaledb-inserter
 resources:
   - deployment.yaml
   - secret.sops.yaml
-  - dashboard.yaml
 labels:
   - includeSelectors: true
     pairs:
