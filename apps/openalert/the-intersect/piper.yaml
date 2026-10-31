@@ -1,0 +1,114 @@
+---
+# OpenAlert's own Piper TTS (Wyoming protocol), separate from Home
+# Assistant's in the wyoming namespace. CPU only. The image's entrypoint
+# (docker_run.sh) already passes --uri tcp://0.0.0.0:10200 --data-dir /data;
+# only the voice is set here. Verified locally to run as uid 65532 with a
+# read-only root filesystem and all capabilities dropped, given a writable
+# /data and /tmp.
+#
+# The voice (~60 MB, from huggingface.co) downloads into /data on first
+# start. A small PVC keeps it across restarts so they don't re-download.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: piper-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name piper
+  labels:
+    app: *name
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  # ReadWriteOnce voice cache: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "piper"
+        k8s.lfp.rocks/version: "2.5.2"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          image: rhasspy/wyoming-piper:2.5.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - --voice
+            - en_US-lessac-medium
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: wyoming
+              containerPort: 10200
+          # The port only opens once the voice is loaded, which on first start
+          # waits for the download. The startup probe allows up to 10 minutes
+          # for that before liveness takes over.
+          startupProbe:
+            tcpSocket:
+              port: wyoming
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: wyoming
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: wyoming
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: piper-data
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name piper
+  labels:
+    app: *name
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: wyoming
+      port: 10200
+      targetPort: wyoming

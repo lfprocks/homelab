@@ -25,8 +25,8 @@ data:
   # node-local Envoy, whose per-node ingress IP is allocated from the
   # cluster pod CIDR (Talos default 10.244.0.0/16, one /24 per node).
   OPENALERT_TRUSTED_PROXIES: "10.244.0.0/16"
-  # OPENALERT_PIPER_URL is left at its default: there is no Piper image yet,
-  # so TTS fails fast and alerts go out tones-only until a sidecar is added.
+  # OpenAlert's own Wyoming Piper (piper.yaml in this directory).
+  OPENALERT_PIPER_URL: "tcp://piper:10200"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -50,7 +50,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "openalert"
-        k8s.lfp.rocks/version: "v1.1.0"
+        k8s.lfp.rocks/version: "v1.2.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
@@ -65,7 +65,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/openalert-server:v1.1.0
+          image: ghcr.io/michaelpeterswa/openalert-server:v1.2.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

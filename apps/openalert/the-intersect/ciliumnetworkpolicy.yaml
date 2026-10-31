@@ -66,13 +66,68 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
-    # Future Piper TTS sidecar/Deployment in this namespace (POST /synthesize
-    # on 5000). Nothing listens there yet. The server needs no other egress
-    # today: devices connect in, and tracing/OTLP export is disabled.
+    # OpenAlert's own Piper (piper.yaml), Wyoming protocol on 10200. Both the
+    # pod port and the Service port are 10200. The server needs no other
+    # egress: devices connect in, and tracing/OTLP export is disabled.
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: openalert
+            k8s:app: piper
       toPorts:
         - ports:
-            - port: "5000"
+            - port: "10200"
+              protocol: TCP
+---
+# Piper: reachable only by the openalert server. Selecting the pod
+# default-denies everything else in both directions.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: piper
+  labels:
+    app: piper
+spec:
+  endpointSelector:
+    matchLabels:
+      app: piper
+  ingress:
+    # The openalert server synthesises speech here. "host" covers the kubelet's
+    # TCP probes.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: openalert
+            k8s:app: openalert
+      toPorts:
+        - ports:
+            - port: "10200"
+              protocol: TCP
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "10200"
+              protocol: TCP
+  egress:
+    # Cluster DNS.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # The first-start voice download from huggingface.co, which redirects to
+    # its CDN. HTTPS to the public internet only: Cilium's `world` includes
+    # the LAN, so private ranges are excepted (same as openclaw). No repo
+    # policy uses toFQDNs yet; pinning this to the Hugging Face names would
+    # need the DNS proxy and every CDN host it redirects through.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+      toPorts:
+        - ports:
+            - port: "443"
               protocol: TCP

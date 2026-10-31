@@ -7,6 +7,7 @@ resources:
   - persistentvolumeclaim.yaml
   - httproute.yaml
   - lb-svc.yaml
+  - piper.yaml
   - ciliumnetworkpolicy.yaml
   - secret.sops.yaml     # SOPS-encrypted openalert-env-secret (admin token, URL signing key)
 labels:
