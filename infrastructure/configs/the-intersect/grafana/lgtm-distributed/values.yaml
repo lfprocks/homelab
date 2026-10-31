@@ -13,13 +13,19 @@ grafana:
   image:
     tag: 13.2.5
 
+  # Sized for 13.x, which does more in-process than 12.1 did: unified
+  # storage, in-memory bleve search indexes, Git Sync polling, and the
+  # Prometheus datasource as a backend plugin. The 12.1 limits (256m CPU,
+  # 512Mi) left 13.2.5 throttled at its CPU limit and at 497Mi within half an
+  # hour of the upgrade; /api/health timed out, the pod went unready, and
+  # alert rules failed to evaluate.
   resources:
     requests:
-      cpu: 10m
-      memory: 150Mi
-    limits:
-      cpu: 256m
+      cpu: 100m
       memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1536Mi
 
   persistence:
     enabled: true
