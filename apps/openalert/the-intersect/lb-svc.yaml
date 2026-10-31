@@ -5,13 +5,15 @@
 # assigns an address from main-pool and L2-announces it on the LAN; the
 # UniFi WAN port forward for 8883 points at that address.
 #
-# Not pinned yet: after the first reconcile, read the assigned IP and pin it
-# with lbipam.cilium.io/ips in a follow-up so the port forward stays valid.
+# Pinned to the address LB-IPAM first assigned, so the port forward
+# (terraform unifi/port_forwards.tf) stays valid if the Service is recreated.
 apiVersion: v1
 kind: Service
 metadata:
   name: openalert-mqtt-lb
   namespace: openalert
+  annotations:
+    lbipam.cilium.io/ips: "10.0.10.107"
   labels:
     app: openalert
     service: openalert-mqtt-lb
