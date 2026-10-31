@@ -28,7 +28,7 @@ data:
   TRACING_ENABLED: "true"
   TRACING_SAMPLERATE: "1.0"
   TRACING_SERVICE: "lfpweather-mcp"
-  TRACING_VERSION: "v1.1.0"
+  TRACING_VERSION: "v1.1.1"
   # Push spans over OTLP gRPC to the cluster Alloy collector, continuing the
   # agent trace into the MCP server and on to lfpweather-api.
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.grafana.svc.cluster.local:4317"
@@ -48,7 +48,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-mcp"
-        k8s.lfp.rocks/version: "v1.1.0"
+        k8s.lfp.rocks/version: "v1.1.1"
     spec:
       affinity:
         nodeAffinity:
