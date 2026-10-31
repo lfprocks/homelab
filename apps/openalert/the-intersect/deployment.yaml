@@ -1,0 +1,134 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openalert-env-configmap
+data:
+  LOG_LEVEL: "info"
+  OPENALERT_BROKER_MODE: "embedded"
+  OPENALERT_DB_DRIVER: "sqlite"
+  OPENALERT_DB_DSN: "file:/data/openalert.db"
+  OPENALERT_CA_CERT: "/data/ca.crt"
+  OPENALERT_CA_KEY: "/data/ca.key"
+  OPENALERT_HTTP_PORT: "8080"
+  OPENALERT_ADMIN_PORT: "8083"
+  OPENALERT_MQTT_PORT: "8883"
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+  OPENALERT_PUBLIC_URL: "https://${SUB_HAZEL_TRIDENT}.${DOMAIN_CORONET_SUMMIT}"
+  # The embedded broker's server cert is issued for these names, and the
+  # server refuses to start unless the MQTT_PUBLIC_URL host is among them.
+  OPENALERT_MQTT_HOSTNAMES: "${SUB_MARBLE_OSPREY}.${DOMAIN_CORONET_SUMMIT}"
+  OPENALERT_MQTT_PUBLIC_URL: "mqtts://${SUB_MARBLE_OSPREY}.${DOMAIN_CORONET_SUMMIT}:8883"
+  # X-Forwarded-For is believed only from these peers (enrollment rate limit
+  # per client). Behind the Cilium gateway every request arrives from the
+  # node-local Envoy, whose per-node ingress IP is allocated from the
+  # cluster pod CIDR (Talos default 10.244.0.0/16, one /24 per node).
+  OPENALERT_TRUSTED_PROXIES: "10.244.0.0/16"
+  # OPENALERT_PIPER_URL is left at its default: there is no Piper image yet,
+  # so TTS fails fast and alerts go out tones-only until a sidecar is added.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name openalert
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  # Single-writer SQLite on a ReadWriteOnce PVC: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "openalert"
+        k8s.lfp.rocks/version: "v1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+    spec:
+      imagePullSecrets:
+        - name: ghcr-michaelpeterswa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          image: ghcr.io/michaelpeterswa/openalert-server:v1.0.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          envFrom:
+            - configMapRef:
+                name: openalert-env-configmap
+            - secretRef:
+                name: openalert-env-secret
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+            # Admin API: no Service and no route point at it. Reach it with
+            # kubectl -n openalert port-forward deploy/openalert 8083:8083.
+            - name: admin
+              containerPort: 8083
+            - name: mqtts
+              containerPort: 8883
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: openalert-data
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name openalert
+  labels:
+    app: *name
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

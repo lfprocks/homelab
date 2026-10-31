@@ -1,0 +1,27 @@
+---
+# MQTT over mutual TLS for the bedside devices. The server terminates TLS
+# itself (device client certs are checked by the embedded broker), so this
+# must be raw TCP and cannot go through the HTTPS gateway. Cilium LB-IPAM
+# assigns an address from main-pool and L2-announces it on the LAN; the
+# UniFi WAN port forward for 8883 points at that address.
+#
+# Not pinned yet: after the first reconcile, read the assigned IP and pin it
+# with lbipam.cilium.io/ips in a follow-up so the port forward stays valid.
+apiVersion: v1
+kind: Service
+metadata:
+  name: openalert-mqtt-lb
+  namespace: openalert
+  labels:
+    app: openalert
+    service: openalert-mqtt-lb
+spec:
+  type: LoadBalancer
+  selector:
+    app: openalert
+  ports:
+    - name: mqtts
+      port: 8883
+      protocol: TCP
+      targetPort: mqtts
+  sessionAffinity: None
