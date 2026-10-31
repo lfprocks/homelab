@@ -1,0 +1,86 @@
+---
+# Every 6 hours: push the tak-tls certificate to the TAK server VM (see
+# tak-feed.sh). Unchanged files are not rewritten, so the VM reloads nginx
+# only after a renewal; cert-manager renews 30 days before expiry, so a
+# renewal reaches the VM within 6 hours. Kick a run by hand:
+#   kubectl -n tak-feed create job --from=cronjob/tak-feed-cert-push cert-push-now
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tak-feed-cert-push
+spec:
+  schedule: "41 */6 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            k8s.lfp.rocks/service: tak-feed-cert-push
+            k8s.lfp.rocks/version: "3.13.17"
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            fsGroup: 65534
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: push
+              # python for the map push's allowlist; the same image here so
+              # both jobs share one pinned base. rsync and ssh: tak-feed.sh.
+              image: docker.io/library/python:3.13.17-alpine3.24@sha256:fa0bb0d0cd7c7d6cef30a69094d32ac2b71c7304c87c6107fec100e1ee4eda02
+              command: ["/bin/sh", "/app/tak-feed.sh", "cert"]
+              env:
+                - name: TAK_HOST
+                  valueFrom: {secretKeyRef: {name: tak-feed-ssh, key: TAK_HOST}}
+                - name: TAK_PORT
+                  valueFrom: {secretKeyRef: {name: tak-feed-ssh, key: TAK_PORT}}
+                - {name: HOME, value: /tmp}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              resources:
+                requests: {cpu: 10m, memory: 32Mi}
+                limits: {memory: 128Mi}
+              volumeMounts:
+                - {name: app, mountPath: /app, readOnly: true}
+                - {name: ssh, mountPath: /ssh, readOnly: true}
+                - {name: tls, mountPath: /tls, readOnly: true}
+                - {name: tools, mountPath: /tools}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: app
+              configMap:
+                name: tak-feed
+                items:
+                  - {key: tak-feed.sh, path: tak-feed.sh}
+            # Only this job's key, never the map push's.
+            - name: ssh
+              secret:
+                secretName: tak-feed-ssh
+                defaultMode: 0440
+                items:
+                  - {key: cert-push, path: key}
+                  - {key: known_hosts, path: known_hosts}
+            - name: tls
+              secret:
+                secretName: tak-tls
+                defaultMode: 0440
+                items:
+                  - {key: tls.crt, path: fullchain.pem}
+                  - {key: tls.key, path: privkey.pem}
+            - name: tools
+              emptyDir: {sizeLimit: 256Mi}
+            - name: tmp
+              emptyDir: {sizeLimit: 16Mi, medium: Memory}

@@ -1,0 +1,150 @@
+"""Writing a finished vector layer in the TAK-ready format for its type.
+
+KMZ for every vector layer (see core.FORMATS): iTAK reads vector overlays
+only as KML/KMZ/GeoPDF, and handles large flat KMZs.
+"""
+import html
+import os
+import re
+import subprocess
+import zipfile
+import xml.etree.ElementTree as ET
+
+from . import core
+
+# Icons TAK clients recognise from Google's KML icon set (iTAK showed the
+# camera as a coloured camera symbol in the owner's test).
+ICONS = {name: f"http://maps.google.com/mapfiles/kml/shapes/{name}.png"
+         for name in ("camera", "hospitals", "firedept", "police", "airports", "hiker", "target", "info",
+                      "placemark_circle", "triangle")}
+HSTORE = re.compile(r'"([^"]+)"=>"([^"]*)"')
+
+
+KML = "http://www.opengis.net/kml/2.2"
+
+
+def _k(tag):
+    return f"{{{KML}}}{tag}"
+
+
+def _kml_colour(rrggbb, alpha):
+    """KML colours are aabbggrr; people write rrggbb."""
+    r, g, b = rrggbb[0:2], rrggbb[2:4], rrggbb[4:6]
+    return f"{alpha}{b}{g}{r}".lower()
+
+
+def _style(geometry, icon, colour=None):
+    style = ET.Element(_k("Style"), id="style")
+    if geometry == "points":
+        icon_style = ET.SubElement(style, _k("IconStyle"))
+        ET.SubElement(icon_style, _k("scale")).text = "1.0"
+        ET.SubElement(ET.SubElement(icon_style, _k("Icon")), _k("href")).text = ICONS[icon or "placemark_circle"]
+        ET.SubElement(ET.SubElement(style, _k("LabelStyle")), _k("scale")).text = "1.0"
+    else:
+        line = ET.SubElement(style, _k("LineStyle"))
+        ET.SubElement(line, _k("color")).text = _kml_colour(colour or "FF8000", "ff")
+        ET.SubElement(line, _k("width")).text = "4"
+        ET.SubElement(ET.SubElement(style, _k("PolyStyle")), _k("color")).text = _kml_colour(colour or "FF8000", "55")
+        ET.SubElement(ET.SubElement(style, _k("LabelStyle")), _k("scale")).text = "0.8"
+    return style
+
+
+def _details(text):
+    """Raw OSM tag dumps become an HTML table; anything else is kept as text."""
+    if text and "=>" in text:
+        rows = "".join(f"<tr><td><b>{html.escape(k)}</b></td><td>{html.escape(v)}</td></tr>"
+                       for k, v in sorted(HSTORE.findall(text)))
+        return f"<table>{rows}</table>"
+    # Plain third-party text (FCC addresses, RepeaterBook locations): TAK
+    # clients render descriptions as HTML, so escape it.
+    return html.escape(text) if text else text
+
+
+def tak_style(kml_text, geometry, icon=None, fallback_name="Feature", title=None, attribution="", colour=None):
+    """Rewrite LIBKML output into one flat Document TAK clients can read.
+
+    iTAK rejects a <Document> nested in a <Document> (LIBKML's layout) as
+    "too large, parsing aborted", even for 50 placemarks; a flat Document
+    of nearly 1,000 imports. So: one Document holding a name, the style and
+    every Placemark, with no Folders, Schemas or Atom elements. Placemarks
+    are edited as XML (only their own <name>/<description>): values are
+    crowdsourced, and markup inside them must never become a label.
+    """
+    source = ET.fromstring(kml_text.encode("utf-8"))
+    ET.register_namespace("", KML)
+    root = ET.Element(_k("kml"))
+    document = ET.SubElement(root, _k("Document"))
+    ET.SubElement(document, _k("name")).text = title or fallback_name
+    if attribution:
+        ET.SubElement(document, _k("description")).text = html.escape(attribution)
+    document.append(_style(geometry, icon, colour))
+    for placemark in source.iter(_k("Placemark")):
+        for extended in placemark.findall(_k("ExtendedData")):
+            placemark.remove(extended)
+        name = placemark.find(_k("name"))
+        if name is None:
+            name = ET.Element(_k("name"))
+            placemark.insert(0, name)
+        if not (name.text or "").strip():
+            name.text = fallback_name
+        description = placemark.find(_k("description"))
+        if description is not None:
+            description.text = _details(description.text)
+        for old in placemark.findall(_k("styleUrl")):
+            placemark.remove(old)
+        style_url = ET.Element(_k("styleUrl"))
+        style_url.text = "#style"
+        placemark.insert(list(placemark).index(name) + 1, style_url)
+        document.append(placemark)
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
+
+
+def count(path):
+    from osgeo import ogr
+    ds = ogr.Open(path)
+    return sum(layer.GetFeatureCount() for layer in ds)
+
+
+def _fields(path):
+    from osgeo import ogr
+    ds = ogr.Open(path)
+    defn = ds.GetLayer(0).GetLayerDefn()
+    return {defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())}
+
+
+def write_layer(gpkg_in, out_noext, geometry, attribution, link="", name_field="name", desc_field="other_tags",
+                allow_empty=False, icon=None, fallback_name=None, colour=None):
+    """Write gpkg_in as out_noext.kmz or .gpkg; returns the path written.
+
+    Fails on an empty layer (unless allow_empty) and on a label/description
+    field missing from the schema: both mean upstream changed under us, and
+    shipping an empty or unlabelled layer would quietly replace a good one.
+    """
+    n = count(gpkg_in)
+    if n == 0 and not allow_empty:
+        raise RuntimeError("conversion produced an empty layer")
+    missing = [f for f in (name_field, desc_field) if f and f not in _fields(gpkg_in)]
+    if missing and n:
+        raise RuntimeError(f"label/description field(s) {missing} not in the layer")
+    fmt = core.FORMATS.get(geometry, "kmz")
+    out = f"{out_noext}.{fmt}"
+    if fmt == "gpkg":
+        subprocess.run(["ogr2ogr", "-overwrite", "-f", "GPKG", out, gpkg_in, "-lco", f"DESCRIPTION={attribution}"],
+                       check=True)
+    else:
+        # Written as plain KML, then zipped as the KMZ's single doc.kml: a
+        # LIBKML-written KMZ puts each layer behind a NetworkLink, which TAK
+        # clients handle unevenly.
+        kml = f"{out_noext}.kml"
+        env = dict(os.environ, LIBKML_NAME_FIELD=name_field or "name", LIBKML_DESCRIPTION_FIELD=desc_field or "")
+        args = ["ogr2ogr", "-f", "LIBKML", kml, gpkg_in, "-dsco", f"AUTHOR_NAME={attribution}"]
+        if link:
+            args += ["-dsco", f"LINK={link}"]
+        subprocess.run(args, check=True, env=env)
+        with open(kml, encoding="utf-8") as f:
+            text = tak_style(f.read(), geometry, icon, fallback_name or os.path.basename(out_noext).split("_")[0],
+                             title=os.path.basename(out_noext), attribution=attribution, colour=colour)
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("doc.kml", text)
+        os.remove(kml)
+    return out

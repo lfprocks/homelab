@@ -1,0 +1,142 @@
+# The geo job writes three olympic shares: the library (keep-class data),
+# library-personal (personal-class data, never served) and library-inbox
+# (manual drops, swept and deleted). All as the cluster's kubernetes SMB
+# account; see terraform/truenas/library.tf and library_shares.tf.
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: geo-library-rw-pv
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=1001
+    - gid=1001
+    - noperm
+    - nobrl
+    - mfsymlinks
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-geo-library-rw
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/library"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: geo-library-rw-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: geo-library-rw-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: geo-personal-rw-pv
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=1001
+    - gid=1001
+    - noperm
+    - nobrl
+    - mfsymlinks
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-geo-personal-rw
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/library-personal"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: geo-personal-rw-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: geo-personal-rw-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: geo-inbox-rw-pv
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=1001
+    - gid=1001
+    - noperm
+    - nobrl
+    - mfsymlinks
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-geo-inbox-rw
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/library-inbox"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: geo-inbox-rw-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: geo-inbox-rw-pv

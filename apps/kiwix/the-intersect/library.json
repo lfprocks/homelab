@@ -1,0 +1,23 @@
+{
+  "wanted": [
+    {"book": "wikipedia_en_all_maxi", "upstream_dir": "zim/wikipedia", "folder": "02_Kiwix/01_Wikipedia", "license": "CC BY-SA 4.0 (Wikimedia)"},
+    {"book": "wiktionary_en_all_nopic", "upstream_dir": "zim/wiktionary", "folder": "02_Kiwix/02_Wiktionary", "license": "CC BY-SA 4.0 (Wikimedia)"},
+    {"book": "serverfault.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "wikipedia_en_medicine_maxi", "upstream_dir": "zim/wikipedia", "folder": "02_Kiwix/04_Medicine", "license": "CC BY-SA 4.0 (Wikimedia)"},
+    {"book": "mdwiki_en_all_maxi", "upstream_dir": "zim/other", "folder": "02_Kiwix/04_Medicine", "license": "CC BY-SA 4.0 (MDWiki)"},
+    {"book": "wikem_en_all_maxi", "upstream_dir": "zim/other", "folder": "02_Kiwix/04_Medicine", "license": "CC BY-SA 3.0 (WikEM)"},
+    {"book": "ifixit_en_all", "upstream_dir": "zim/ifixit", "folder": "02_Kiwix/05_Practical", "license": "CC BY-NC-SA 3.0 (iFixit)"},
+    {"book": "zimgit-post-disaster_en", "upstream_dir": "zim/other", "folder": "02_Kiwix/05_Practical", "license": "Mixed; see each document (zimgit)"},
+    {"book": "zimgit-water_en", "upstream_dir": "zim/other", "folder": "02_Kiwix/05_Practical", "license": "Mixed; see each document (zimgit)"},
+    {"book": "zimgit-food-preparation_en", "upstream_dir": "zim/other", "folder": "02_Kiwix/05_Practical", "license": "Mixed; see each document (zimgit)"},
+    {"book": "zimgit-knots_en", "upstream_dir": "zim/other", "folder": "02_Kiwix/05_Practical", "license": "Mixed; see each document (zimgit)"},
+    {"book": "archlinux_en_all_maxi", "upstream_dir": "zim/other", "folder": "02_Kiwix/06_Tech", "license": "GFDL 1.3 (ArchWiki)"},
+    {"book": "gis.stackexchange.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "ham.stackexchange.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "electronics.stackexchange.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "diy.stackexchange.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "askubuntu.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "stackoverflow.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
+    {"book": "gutenberg_en_all", "upstream_dir": "zim/gutenberg", "folder": "02_Kiwix/07_Books", "license": "Public domain (Project Gutenberg)"}
+  ]
+}

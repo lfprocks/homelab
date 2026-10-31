@@ -1,0 +1,20 @@
+---
+# Let's Encrypt certificate for the TAK server VM's public name. Issued here
+# by cert-manager (Cloudflare DNS-01: the domain is in the issuer's Cloudflare
+# selector) and pushed to the VM by cronjob-cert-push.yaml, where nginx serves
+# it on the enrolment and web UI ports. ECDSA P-256, like the VM's placeholder.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tak-tls
+spec:
+  secretName: tak-tls
+  dnsNames:
+    - "${SUB_OAKEN_LATTICE}.${DOMAIN_CORONET_SUMMIT}"
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always

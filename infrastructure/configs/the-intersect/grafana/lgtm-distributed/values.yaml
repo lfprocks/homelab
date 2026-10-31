@@ -3,16 +3,29 @@ grafana:
   # -- Deploy Grafana if enabled. See [upstream readme](https://github.com/grafana/helm-charts/tree/main/charts/grafana#configuration) for full values reference.
   enabled: true
 
+  # 13.x for Git Sync, which is GA from 13.0 and only experimental in 12.1.
+  # Avoid 13.0.0: its unified-storage migration could lose dashboards and
+  # folders when the Git Sync flags below are on (fixed in 13.0.1).
+  #
+  # 13.0 moves dashboards and folders into unified storage on first start.
+  # That is one-way: rolling back means restoring the grafana-data VolSync
+  # snapshot taken before the upgrade, not just lowering this tag.
   image:
-    tag: 12.1.0
+    tag: 13.2.5
 
+  # Sized for 13.x, which does more in-process than 12.1 did: unified
+  # storage, in-memory bleve search indexes, Git Sync polling, and the
+  # Prometheus datasource as a backend plugin. The 12.1 limits (256m CPU,
+  # 512Mi) left 13.2.5 throttled at its CPU limit and at 497Mi within half an
+  # hour of the upgrade; /api/health timed out, the pod went unready, and
+  # alert rules failed to evaluate.
   resources:
     requests:
-      cpu: 10m
-      memory: 150Mi
-    limits:
-      cpu: 256m
+      cpu: 100m
       memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1536Mi
 
   persistence:
     enabled: true
@@ -201,6 +214,17 @@ grafana:
               # long enough not to nag and short enough that a notification
               # missed overnight is repeated in the morning.
               repeat_interval: 6h
+            # Garage climate (the server room). Grouped by alertname so heat,
+            # humidity and a dead sensor each notify on their own. Repeats
+            # every 2h: unlike a stale timelapse, a hot server room gets worse
+            # if ignored, so a missed notification should come back soon.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["category", "=", "garage"]
+              group_by: ["alertname"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 2h
             - receiver: pnp-pushover
               object_matchers:
                 - ["category", "=", "lfpweather"]
@@ -605,6 +629,278 @@ grafana:
   # env:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
+
+        # The garage holds the servers, so its climate is their inlet air.
+        # Thresholds follow ASHRAE guidance for server inlets: 27 C is the top
+        # of the recommended range and 35 C the top of the allowable one, so
+        # 30 C is a heads-up with room to act and 35 C means the hardware is
+        # already outside spec. Humidity above ~75-80% RH is where condensation
+        # and corrosion start to matter. Cold is harmless to running servers;
+        # near-freezing matters for the building and for condensation when it
+        # warms up again.
+        #
+        # One Zigbee sensor, matched by its zigbee2mqtt friendly name. The
+        # threshold rules treat no data as OK on purpose: a silent sensor is
+        # GarageSensorStale's job, and that rule also fires if the device is
+        # renamed and these queries stop matching anything.
+        #
+        # The sensor reports at least every 15 minutes (measured), so each
+        # query reads the newest value within the last hour and `for` provides
+        # the "sustained" part.
+        - orgId: 1
+          name: garage
+          folder: alerts
+          interval: 5m
+          rules:
+            - uid: garage-temperature-high
+              title: GarageTemperatureHigh
+              condition: fired
+              for: 15m
+              annotations:
+                title: garage is above 30 C
+                summary: >-
+                  The garage, where the servers are, has been above 30 C for 15
+                  minutes. Server inlet air is past the recommended range;
+                  check ventilation before it reaches 35 C.
+              labels:
+                severity: warning
+                category: garage
+              noDataState: OK
+              data:
+                - refId: temperature
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: temperature
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'temperature'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: temperature
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [30]}
+
+            - uid: garage-temperature-critical
+              title: GarageTemperatureCritical
+              condition: fired
+              # Shorter than the warning: at 35 C the hardware is already
+              # outside its allowable range, so waiting costs more.
+              for: 10m
+              annotations:
+                title: garage is above 35 C
+                summary: >-
+                  The garage has been above 35 C for 10 minutes. Server inlet
+                  air is outside the allowable range; cool the garage or shut
+                  machines down.
+              labels:
+                severity: critical
+                category: garage
+              noDataState: OK
+              data:
+                - refId: temperature
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: temperature
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'temperature'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: temperature
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [35]}
+
+            - uid: garage-temperature-low
+              title: GarageTemperatureLow
+              condition: fired
+              for: 30m
+              annotations:
+                title: garage is below 5 C
+                summary: >-
+                  The garage has been below 5 C for 30 minutes and is nearing
+                  freezing. Watch for condensation on the machines when it
+                  warms back up.
+              labels:
+                severity: warning
+                category: garage
+              noDataState: OK
+              data:
+                - refId: temperature
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: temperature
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'temperature'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: temperature
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: lt, params: [5]}
+
+            - uid: garage-humidity-high
+              title: GarageHumidityHigh
+              condition: fired
+              # 30 minutes so a door left open in the rain does not page.
+              for: 30m
+              annotations:
+                title: garage humidity is above 75%
+                summary: >-
+                  The garage has been above 75% relative humidity for 30
+                  minutes. Condensation and corrosion risk for the servers is
+                  rising; ventilate or dehumidify.
+              labels:
+                severity: warning
+                category: garage
+              noDataState: OK
+              data:
+                - refId: humidity
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: humidity
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time, value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'humidity'
+                        AND time > now() - interval '1 hour'
+                      ORDER BY time DESC
+                      LIMIT 1
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: humidity
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [75]}
+
+            # Without this the rules above go quiet exactly when they are
+            # needed: a dead battery or a dropped Zigbee link looks like a
+            # garage with nothing wrong. 45 minutes is three missed 15-minute
+            # check-ins. Bounded to a day so the scan stays small; no row in
+            # that day (or a renamed device) coalesces to a day of staleness
+            # rather than NULL, which a threshold would treat as not firing.
+            - uid: garage-sensor-stale
+              title: GarageSensorStale
+              condition: fired
+              for: 5m
+              annotations:
+                title: garage climate sensor has stopped reporting
+                summary: >-
+                  No reading from the garage Zigbee sensor for 45 minutes, so
+                  the garage temperature and humidity alerts cannot fire. Check
+                  its battery, zigbee2mqtt, and the inserter. A renamed device
+                  also causes this.
+              labels:
+                severity: warning
+                category: garage
+              execErrState: Alerting
+              noDataState: Alerting
+              data:
+                - refId: staleness
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: aeiuudh9knklcd
+                  model:
+                    refId: staleness
+                    format: time_series
+                    rawQuery: true
+                    rawSql: >-
+                      SELECT now() AS time,
+                             coalesce(extract(epoch from (now() - max(time))) / 60, 1440) AS value
+                      FROM sensors.zigbee
+                      WHERE device_name = 'Garage Temperature Sensor'
+                        AND metric = 'linkquality'
+                        AND time > now() - interval '1 day'
+                - refId: latest
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: latest
+                    type: reduce
+                    reducer: last
+                    expression: staleness
+                - refId: fired
+                  relativeTimeRange: {from: 3600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: latest
+                    conditions:
+                      - evaluator: {type: gt, params: [45]}
 
         - orgId: 1
           name: timestral
@@ -1130,6 +1426,108 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [93600]}
+            # Offline Kiwix library (kiwix-sync CronJob, weekly, Sunday 11:00
+            # UTC). Fires when the last fully clean run is over 8 days old:
+            # failed downloads, checksum mismatches and missed schedules all
+            # keep the job from succeeding. NoData alerts too, so this also
+            # fires during the first, hours-long sync until it succeeds once.
+            - uid: kiwix-library-stale
+              title: KiwixLibraryStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Kiwix library stale
+                summary: '{{ `Kiwix library sync has not succeeded in over 8 days. Check: kubectl -n kiwix get jobs -l batch.kubernetes.io/cronjob-name=kiwix-sync; kubectl -n kiwix logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="kiwix", cronjob="kiwix-sync"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [691200]}
+            # Offline library 03_Geo (geo-sync CronJob, weekly, Saturday 11:00 UTC).
+            # Deferred sources are not failures, so a multi-run cold load does not
+            # fire this; real source errors do. NoData alerts too.
+            - uid: geo-library-stale
+              title: GeoLibraryStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Geo library stale
+                summary: '{{ `Geo library stale: geo-sync has not succeeded in over 8 days. Check: kubectl -n geo get jobs -l batch.kubernetes.io/cronjob-name=geo-sync; kubectl -n geo logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="geo", cronjob="geo-sync"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [691200]}
+            # Hourly WFIGS wildfire snapshot (geo-fire CronJob). NoData alerts too.
+            - uid: geo-fire-stale
+              title: GeoFireSnapshotStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: Wildfire snapshot stale
+                summary: '{{ `Wildfire snapshot stale: geo-fire has not succeeded in over 6 hours. Check: kubectl -n geo get jobs -l batch.kubernetes.io/cronjob-name=geo-fire; kubectl -n geo logs job/<latest>` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - max(kube_cronjob_status_last_successful_time{namespace="geo", cronjob="geo-fire"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [21600]}
             - uid: alerting-heartbeat
               title: AlertingHeartbeat
               condition: fired
@@ -1604,6 +2002,14 @@ mimir:
       limits:
         cpu: 20m
         memory: 50Mi
+  # The read path (querier, query_frontend, store_gateway) was sized for
+  # idle: 50-200m CPU and 80-200Mi. Any query reaching back past the
+  # ingesters (~13h) into 30 days of blocks timed out in the store-gateway
+  # ("failed to wait for turn: timeout waiting for concurrency gate"), the
+  # querier reported err-mimir-store-consistency-check-failed, and a 25-day
+  # instant query returned 502. query_frontend peaked at 74Mi of 80Mi.
+  # Requests stay small because these sit idle almost all the time; the
+  # limits leave room for the bursts a long-range dashboard causes.
   querier:
     replicas: 1
     podAnnotations:
@@ -1613,11 +2019,11 @@ mimir:
       prometheus.istio.io/merge-metrics: "false"
     resources:
       requests:
-        cpu: 5m
-        memory: 120Mi
+        cpu: 50m
+        memory: 256Mi
       limits:
-        cpu: 200m
-        memory: 200Mi
+        cpu: "1"
+        memory: 1Gi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -1637,11 +2043,11 @@ mimir:
       prometheus.istio.io/merge-metrics: "false"
     resources:
       requests:
-        cpu: 5m
-        memory: 40Mi
+        cpu: 20m
+        memory: 128Mi
       limits:
-        cpu: 50m
-        memory: 80Mi
+        cpu: 500m
+        memory: 256Mi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:
@@ -1714,11 +2120,11 @@ mimir:
       prometheus.istio.io/merge-metrics: "false"
     resources:
       requests:
-        cpu: 10m
-        memory: 50Mi
+        cpu: 50m
+        memory: 256Mi
       limits:
-        cpu: 100m
-        memory: 100Mi
+        cpu: "1"
+        memory: 1Gi
     extraVolumes:
       - name: lgtm-distributed-service-account-secret
         secret:

@@ -1,0 +1,4 @@
+Output Freq,Input Freq,Offset,Uplink Tone,Downlink Tone,Call,Location,County,State,Lat,Long,Mode,Use,Op Status
+146.820000,146.220000,-0.6 MHz,103.5,103.5,K7TEST,Seattle,King,Washington,47.6062,-122.3321,FM,OPEN,On-Air
+442.875000,447.875000,+5 MHz,123.0,,W7TEST,Sandpoint,Bonner,Idaho,48.2766,-116.5535,FM DMR,OPEN,On-Air
+147.000000,147.600000,+0.6 MHz,,,N7TEST,Winthrop,Okanogan,Washington,48.4779,-120.1862,FM,OPEN,On-Air
