@@ -89,8 +89,8 @@ stringData:
     SUB_SILVER_ATLAS: ENC[AES256_GCM,data:9K96mv8=,iv:70Fk8/HyYLvmgFdrob+azYqhJ2O66BjZWynn5DqDqwQ=,tag:BkK00PUXnUN2WQotogIx/Q==,type:str]
     SUB_OAKEN_LATTICE: ENC[AES256_GCM,data:pnsW,iv:zf6pr2uMSWU0ReR2ugY2tkq2i1lwmRLojMYxy5oKfHU=,tag:4U0IVpojLg/flcePcCqa9w==,type:str]
     SUB_HOLLOW_QUARTZ: ENC[AES256_GCM,data:6N2rdTJF++Lq1PU=,iv:rqX6o4haYAsYeZBTAwsGmVjbPp2+n4KnLf1KSa09VTM=,tag:2fQgcD0qlD1pM6+tZrd8fw==,type:str]
-    SUB_HAZEL_TRIDENT: ENC[AES256_GCM,data:ucnkpQyEckcmr6eB2A==,iv:hf1iShW56IuV9PSCMBTUAKLTMpkHdfxEs6plTlnmLhI=,tag:eG0kAD4yNZLM17/o23jlmw==,type:str]
-    SUB_MARBLE_OSPREY: ENC[AES256_GCM,data:v6DHYHiXrit56s8Y,iv:i1JvTNgCWemDi0k/idGIdLWRtNvF+jauNeUM5YXb1Sk=,tag:n1jwVO6xx90nO8DQ9GXAaA==,type:str]
+    SUB_HAZEL_TRIDENT: ENC[AES256_GCM,data:ocn4oVZBe8bU,iv:Bn3JlGaTIquM6dTbtwzTHw/oNf+O01dtHhxh2zKX9HA=,tag:SPAqDSlr/j4OjVVXGwuI7Q==,type:str]
+    SUB_MARBLE_OSPREY: ENC[AES256_GCM,data:b9DsXYAY28gzti5qAWM=,iv:SYdki+g/MMOL38LGVlOwOJIMBPzTS8Dj9Dl6M+znHQ8=,tag:Q9zhMoZPIXtuq9lC76tIqQ==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -102,7 +102,7 @@ sops:
             NEc5RFlOS2lkTVJBNTU2VW1LUy9yTzgKbghxCeGAw7B6qpQzV5GYuAtoJjZvSoqe
             DRS4G8tSwhojaT29RDfxU5TZvdSGOFUy+uehXyUzRjgRoVxfrs2lMQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-10-31T19:17:44Z"
-    mac: ENC[AES256_GCM,data:10lOESQkW1Eo3HWPjB8aC37SsQU48CpBDFhcZxdLtdsOP3hJqdokTzhpLAthNXfXmI+anumdV5RqO4SlQzo3AOJyl6WR7RZKDiRFpA+dd9wbyPQDdiV7d3fZ1NBiCp2iYqL1CEYNwa7wzAcr0oWhHurESqcy+a79n89rYjh+Kvw=,iv:be50DmPrkIvrZGqlqqBaOm5uOe1tvWxZqMPwdpti11w=,tag:MY2sWu8mv2BtJeP3TZ22sQ==,type:str]
+    lastmodified: "2026-10-31T19:37:33Z"
+    mac: ENC[AES256_GCM,data:UhcZSHqO5JZ+yakiXgmooYCcZe+8Hkuvg3zkFA/2y/TZA9b2pw5ZMYYaNGe+ovUOODZGJkiJ+a6CFkJKjJQOkV3jDj/uOkywvU0lmbhjv/zrSwmG2R6Z4LhsuNBepUOPC5DZwka+hnWw4s6k3Mggrtdf85EKWRcKSTfPrk80VHU=,iv:QdjJA5oGlpHsTAV2r5ekuw7lK/5NbPn/MtNgi0XHxfI=,tag:+3JmBozTB8cT/fUG3rs72w==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0
