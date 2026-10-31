@@ -86,6 +86,9 @@ stringData:
     SUB_CEDAR_SPIRE: ENC[AES256_GCM,data:AUf1HGrTng==,iv:7PRzpFdbXAYNyBkSvi4H02i/qCPS0aGXZxvITHSVu4k=,tag:m5GEonFXyC3nIafO5pfLzA==,type:str]
     DOMAIN_SLATE_FJORD: ENC[AES256_GCM,data:Bw5sY1CgK/bRk+EpnebhlDU1mepQcFyM,iv:ycw88PAZem8K2pOUEpN9acYIqtck/rLVZc6ze0BWYGo=,tag:0qQAj61JtXLZET/lCsPnEQ==,type:str]
     SUB_RUSSET_HERON: ENC[AES256_GCM,data:2aeJwdYV5Q==,iv:3ljnqhJjfpVefFwE/k70C7dQwJnUulVcIMac7ZimrGk=,tag:/kZ4GpFJiDSpWVqBfwbdDA==,type:str]
+    SUB_SILVER_ATLAS: ENC[AES256_GCM,data:9K96mv8=,iv:70Fk8/HyYLvmgFdrob+azYqhJ2O66BjZWynn5DqDqwQ=,tag:BkK00PUXnUN2WQotogIx/Q==,type:str]
+    SUB_OAKEN_LATTICE: ENC[AES256_GCM,data:pnsW,iv:zf6pr2uMSWU0ReR2ugY2tkq2i1lwmRLojMYxy5oKfHU=,tag:4U0IVpojLg/flcePcCqa9w==,type:str]
+    SUB_HOLLOW_QUARTZ: ENC[AES256_GCM,data:6N2rdTJF++Lq1PU=,iv:rqX6o4haYAsYeZBTAwsGmVjbPp2+n4KnLf1KSa09VTM=,tag:2fQgcD0qlD1pM6+tZrd8fw==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -97,7 +100,7 @@ sops:
             NEc5RFlOS2lkTVJBNTU2VW1LUy9yTzgKbghxCeGAw7B6qpQzV5GYuAtoJjZvSoqe
             DRS4G8tSwhojaT29RDfxU5TZvdSGOFUy+uehXyUzRjgRoVxfrs2lMQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-10-14T07:15:44Z"
-    mac: ENC[AES256_GCM,data:NmalqqcWZyzjx3baySV0QnyK1CxwGvjHifNuh7axolEk0v9h0ACe81ZM2yabgEwTxi7YaGFS/9JSKQtZqEO2Yq0+oUxvVoLFcf669VXQ/lKRBbaGJ/Vj/55LL/AAF4GR3hIt1QYhzemxNju6vhVoqZlO5cNnJ79O5oK4C6ezkaw=,iv:lSz02GbdeHLReVmqvxP0qPVeQaYKn8mtUoJ7WUMWf4s=,tag:bEZr/KRe5jXC8SfPI3USmw==,type:str]
+    lastmodified: "2026-10-30T16:39:33Z"
+    mac: ENC[AES256_GCM,data:ygRAaE2VvSnwlxM2dE4PZAlHe2oB2e7y3GGbOzXBsSMJ2yy+9iKYJuw/XHROzXe5FGp9f+9vjGr+ADHOK+ru0It5OeZMUah0oLREDXNS7By/PyDz68vXUOL1L9yeljgy5Z5PWEkFlFlsyzcOUqo7fPhG97EWmlf387NW6oED99U=,iv:us16M7nOGpQI9fRiiaOnk6sMmNjoDU8Vt3hh61mCTfQ=,tag:EHARiTCHufMeUhpItnUjkQ==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0

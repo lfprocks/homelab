@@ -1,0 +1,96 @@
+# The offline library share (vault/library on olympic). Two volumes over the
+# same share: the sync job writes through rw; kiwix-serve reads through ro.
+# Both mount at /library so paths in library.xml resolve in either pod.
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kiwix-library-rw-pv
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=1001
+    - gid=1001
+    - noperm
+    - nobrl
+    - mfsymlinks
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-kiwix-library-rw
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/library"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kiwix-library-rw-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: kiwix-library-rw-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kiwix-library-ro-pv
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - ro
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=1001
+    - gid=1001
+    - noperm
+    - nobrl
+    - mfsymlinks
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-kiwix-library-ro
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/library"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kiwix-library-ro-pvc
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: kiwix-library-ro-pv

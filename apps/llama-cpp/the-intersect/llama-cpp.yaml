@@ -27,6 +27,10 @@ spec:
           env:
             - name: LLAMA_ARG_ENDPOINT_METRICS
               value: "1"
+            # Keep -hf downloads on the models PVC so restarts don't re-fetch
+            # the ~22 GB GGUF (the default cache is the container filesystem).
+            - name: LLAMA_CACHE
+              value: /models
           args:
             - "-hf"
             # - "ggml-org/gpt-oss-20b-GGUF"
@@ -36,7 +40,11 @@ spec:
             # - "Qwen/Qwen2.5-Coder-14B-Instruct-GGUF:Q4_K_M"
             # - "Qwen/Qwen2.5-Coder-14B-Instruct-GGUF:Q8_0"
             # - "unsloth/Qwen3.5-27B-GGUF:Q4_0"
-            - "unsloth/gemma-4-E4B-it-GGUF:UD-Q8_K_XL"
+            # - "unsloth/gemma-4-E4B-it-GGUF:UD-Q8_K_XL"
+            # Qwen3.6-35B-A3B (MoE, ~3B active): ~22 GB at UD-Q4_K_M, split across
+            # both 5060 Tis next to the other GPU apps (~6 GB). Fallback if VRAM
+            # is tight: UD-Q4_K_S (20.9 GB).
+            - "unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M"
             - "--ctx-size"
             - "32768"
             - "--jinja"
@@ -52,14 +60,20 @@ spec:
             - "1.0"
             - "--top-p"
             - "0.95"
+            # Qwen3.6 recommended general-purpose sampling.
             - "--top-k"
-            - "64"
+            - "20"
+            - "--min-p"
+            - "0.0"
+            - "--presence-penalty"
+            - "1.5"
             - "--api-key-file"
             - "/etc/llama-keys/api-keys"
             - "--no-webui"
           resources:
             limits:
-              memory: "8Gi"
+              # Headroom for page cache while the 22 GB GGUF is mmapped at load.
+              memory: "12Gi"
             requests:
               cpu: "250m"
               memory: "3Gi"

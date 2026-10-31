@@ -5,6 +5,10 @@ image:
 
 runtimeClassName: nvidia
 
+resources:
+  limits:
+    nvidia.com/gpu: 1
+
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

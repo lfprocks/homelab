@@ -10,7 +10,7 @@ nodeSelector:
   kubernetes.io/hostname: the-intersect-worker-03
 
 podAnnotations:
-  k8s.v1.cni.cncf.io/networks: kube-system/macvlan-eno1
+  k8s.v1.cni.cncf.io/networks: kube-system/macvlan-bond0
 
 persistence:
   enabled: true

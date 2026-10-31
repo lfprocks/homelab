@@ -52,6 +52,7 @@ spec:
           resources:
             limits:
               memory: "512Mi"
+              nvidia.com/gpu: 1
             requests:
               cpu: "50m"
               memory: "128Mi"

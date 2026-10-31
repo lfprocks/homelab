@@ -1,0 +1,71 @@
+# kiwix-serve over the offline library, read-only. --monitorLibrary picks up
+# each library.xml the sync job renames into place, without a restart.
+#
+# kiwix-serve exits if library.xml is missing, so before the first sync has
+# run the container waits for it instead of crash-looping. The sync writes an
+# empty library.xml in its first seconds, before any download.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiwix-serve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiwix-serve
+  template:
+    metadata:
+      labels:
+        app: kiwix-serve
+        k8s.lfp.rocks/service: kiwix-serve
+        k8s.lfp.rocks/version: "3.8.2"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: kiwix-serve
+          image: ghcr.io/kiwix/kiwix-serve:3.8.2
+          # The image's start.sh adds --port=8080 itself.
+          command: ["sh", "-c"]
+          args:
+            - |
+              lib=/library/02_Kiwix/library.xml
+              until [ -f "$lib" ]; do echo "waiting for $lib (first kiwix-sync run)"; sleep 15; done
+              exec /usr/local/bin/start.sh --monitorLibrary --library "$lib"
+          ports:
+            - {name: http, containerPort: 8080}
+          # Nothing listens while the container waits for library.xml, so
+          # liveness and readiness hold off until this succeeds: up to 24h
+          # for the first sync to write it.
+          startupProbe:
+            httpGet: {path: /catalog/v2/root.xml, port: http}
+            periodSeconds: 15
+            failureThreshold: 5760
+          # 5s, not the 1s default: closing a 100+ GB file on the share
+          # stalled this node's SMB traffic for ~50s (2026-10-22) and the
+          # 1s checks took the site offline although kiwix-serve was fine.
+          readinessProbe:
+            httpGet: {path: /catalog/v2/root.xml, port: http}
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 4
+          livenessProbe:
+            httpGet: {path: /catalog/v2/root.xml, port: http}
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 4
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 50m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          volumeMounts:
+            - {name: library, mountPath: /library, readOnly: true}
+      volumes:
+        - name: library
+          persistentVolumeClaim: {claimName: kiwix-library-ro-pvc, readOnly: true}

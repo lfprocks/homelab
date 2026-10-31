@@ -4,6 +4,10 @@ kind: ConfigMap
 metadata:
   name: lfpweather-frontend-env-configmap
 data:
+  # Seasonal sections now show and hide by date on their own (SEASONS in
+  # lib/sections.ts in lfpweather.com). DISABLED_SECTIONS hides a section
+  # whatever the season; ENABLED_SECTIONS shows one out of season.
+  DISABLED_SECTIONS: ""
   FORECAST_INFERENCE_API_BASE_URL: https://${SUB_COMBAT_PILGRIM}.${DOMAIN_COMMON_STAR}
   # The AskBar route handler proxies chat to the broker over in-cluster DNS.
   BROKER_URL: http://lfpweather-broker.lfpweather.svc.cluster.local
@@ -26,7 +30,7 @@ spec:
     metadata:
       labels:
         k8s.lfp.rocks/service: "lfpweather-frontend"
-        k8s.lfp.rocks/version: "v1.13.1"
+        k8s.lfp.rocks/version: "v1.19.0"
     spec:
       affinity:
         nodeAffinity:
@@ -39,7 +43,7 @@ spec:
                       - enabled
       containers:
         - name: *name
-          image: ghcr.io/michaelpeterswa/lfpweather.com:v1.13.1
+          image: ghcr.io/michaelpeterswa/lfpweather.com:v1.19.0
           env:
             - name: KEEP_ALIVE_TIMEOUT
               value: "70000"

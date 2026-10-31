@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kiwix
+
+resources:
+  - persistentvolumes.yaml
+  - cronjob.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+configMapGenerator:
+  - name: kiwix-sync
+    files:
+      - kiwix_sync.py
+      - library.json
+      # Shared with geo-sync: one register for the whole library.
+      - ../../library/register.json
+      - ../../library/common/library_common.py
+labels:
+  - includeSelectors: false
+    pairs:
+      env: prod
+      proj: kiwix
