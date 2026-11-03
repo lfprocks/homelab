@@ -30,6 +30,14 @@ spec:
     cephFileSystemVolumeSnapshotClass:
       enabled: true
     cephClusterSpec:
+      # Rook 1.21 defaults requireMsgr2 to true, which stops the mons listening
+      # on v1 (6789). Every CSI kernel mount is mapped in legacy v1 mode against
+      # 6789 (CephConnection monitors), so flipping it in place would cut their
+      # mon sessions cluster-wide. Keep v1 until the clients move to
+      # ms_mode=prefer-crc on 3300, then remove this.
+      network:
+        connections:
+          requireMsgr2: false
       # TEMPORARY - remove once Rook runs a Ceph release containing the Tentacle
       # backport of ceph#79674 (tracker #79725; not in 20.2.4).
       # Ceph 20.2.4's fix for CVE-2026-54330 rejects SigV4 requests carrying an
