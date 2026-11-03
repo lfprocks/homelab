@@ -9,10 +9,10 @@ isolation via a gVisor/Kata RuntimeClass.
 
 ## What this installs
 
-- Vendored upstream release manifest, pinned to **v1.0.5**
+- Vendored upstream release manifest, pinned to **v1.0.9**
   (`sandbox-with-extensions.yaml`): namespace `agent-sandbox-system`, the 4 CRDs,
   RBAC, and the controller Deployment
-  (`registry.k8s.io/agent-sandbox/agent-sandbox-controller:v1.0.5`).
+  (`registry.k8s.io/agent-sandbox/agent-sandbox-controller:v1.0.9`).
 - Wired into Flux via `infrastructure/controllers/the-intersect/kustomization.yaml`.
 
 ## gVisor prerequisite
