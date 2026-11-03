@@ -41,7 +41,7 @@ spec:
         fsGroup: 1000  # registration Secret (0440) + data readable by the runner (uid 1000)
       initContainers:
         - name: render-config
-          image: code.forgejo.org/forgejo/runner:13.2.0
+          image: code.forgejo.org/forgejo/runner:13.2.1
           command: ["sh", "-ec"]
           args:
             - sed "s/__RUNNER_UUID__/$(cat /registration/uuid)/" /config-template/config.yml > /data/config.yml
@@ -61,7 +61,7 @@ spec:
             - {name: data, mountPath: /data}
       containers:
         - name: runner
-          image: code.forgejo.org/forgejo/runner:13.2.0
+          image: code.forgejo.org/forgejo/runner:13.2.1
           command: ["forgejo-runner", "daemon", "--config", "/data/config.yml"]
           env:
             - {name: DOCKER_HOST, value: unix:///var/run/dind/docker.sock}
