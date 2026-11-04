@@ -6,7 +6,9 @@ metadata:
   labels:
     app: *name
 spec:
-  replicas: 1
+  # Off: the GPUs moved to other work. Set back to 1 to restore; the model PVC,
+  # keys and routes are kept.
+  replicas: 0
   selector:
     matchLabels:
       app: *name
