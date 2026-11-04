@@ -5,7 +5,7 @@
   {"path": "02_Kiwix/01_Wikipedia", "state": "in-use", "purpose": "English Wikipedia with images"},
   {"path": "02_Kiwix/02_Wiktionary", "state": "in-use", "purpose": "English Wiktionary (text only)"},
   {"path": "02_Kiwix/03_Stack_Exchange", "state": "in-use", "purpose": "Stack Exchange sites"},
-  {"path": "02_Kiwix/04_Medicine", "state": "in-use", "purpose": "Medical references: WikiMed, MDWiki, WikEM"},
+  {"path": "02_Kiwix/04_Medicine", "state": "in-use", "purpose": "Medical references: WikiMed, MDWiki"},
   {"path": "02_Kiwix/05_Practical", "state": "in-use", "purpose": "Repair and self-reliance: iFixit, post-disaster, water, food, knots"},
   {"path": "02_Kiwix/06_Tech", "state": "in-use", "purpose": "Technical references: ArchWiki"},
   {"path": "02_Kiwix/07_Books", "state": "in-use", "purpose": "Project Gutenberg public-domain books"},

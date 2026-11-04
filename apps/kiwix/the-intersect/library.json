@@ -5,7 +5,6 @@
     {"book": "serverfault.com_en_all", "upstream_dir": "zim/stack_exchange", "folder": "02_Kiwix/03_Stack_Exchange", "license": "CC BY-SA (Stack Exchange)"},
     {"book": "wikipedia_en_medicine_maxi", "upstream_dir": "zim/wikipedia", "folder": "02_Kiwix/04_Medicine", "license": "CC BY-SA 4.0 (Wikimedia)"},
     {"book": "mdwiki_en_all_maxi", "upstream_dir": "zim/other", "folder": "02_Kiwix/04_Medicine", "license": "CC BY-SA 4.0 (MDWiki)"},
-    {"book": "wikem_en_all_maxi", "upstream_dir": "zim/other", "folder": "02_Kiwix/04_Medicine", "license": "CC BY-SA 3.0 (WikEM)"},
     {"book": "ifixit_en_all", "upstream_dir": "zim/ifixit", "folder": "02_Kiwix/05_Practical", "license": "CC BY-NC-SA 3.0 (iFixit)"},
     {"book": "zimgit-post-disaster_en", "upstream_dir": "zim/other", "folder": "02_Kiwix/05_Practical", "license": "Mixed; see each document (zimgit)"},
     {"book": "zimgit-water_en", "upstream_dir": "zim/other", "folder": "02_Kiwix/05_Practical", "license": "Mixed; see each document (zimgit)"},
