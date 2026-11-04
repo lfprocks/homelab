@@ -22,7 +22,7 @@ data:
   # LLM provider configuration
   LLM_PROVIDER: "openai"
   # OPENAI_API_KEY is set in .env file
-  OPENAI_MODEL: "unsloth/Qwen3.5-27B-GGUF:Q4_0"
+  OPENAI_MODEL: "Qwen3.8-Flash-Next"
   OPENAI_NO_THINK: "true"
   # OPENAI_BASE_URL: "" # Optional: for OpenAI-compatible APIs
 
