@@ -38,6 +38,9 @@ spec:
         k8s.lfp.rocks/service: "decider"
         k8s.lfp.rocks/version: "v0.1.0"
     spec:
+      # The decider Service would otherwise inject DECIDER_PORT=tcp://..., which
+      # the server reads as its own port setting and crashes on.
+      enableServiceLinks: false
       runtimeClassName: nvidia
       securityContext:
         runAsNonRoot: true
