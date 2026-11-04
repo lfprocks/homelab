@@ -225,6 +225,15 @@ grafana:
               group_wait: 30s
               group_interval: 15m
               repeat_interval: 2h
+            # DGX Spark inference. Repeats less often than the server room: a
+            # stopped model server gets no worse by being ignored.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["category", "=", "spark"]
+              group_by: ["alertname"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 12h
             - receiver: pnp-pushover
               object_matchers:
                 - ["category", "=", "lfpweather"]
@@ -630,6 +639,89 @@ grafana:
   #   - name: "GF_PANELS_DISABLE_SANITIZE_HTML"
   #     value: "true"
 
+        # DGX Spark inference, scraped by alloy on the host (lfprocks/ansible).
+        # The engine's own start script stops it if memory falls too low during
+        # load; the compose stack has no equivalent, so this is what notices.
+        #
+        # Stopping the model server on purpose fires SparkInferenceDown after 10
+        # minutes: silence it for the duration. NoData alerts too, because the
+        # series disappearing means alloy or the host is gone.
+        - orgId: 1
+          name: spark
+          folder: alerts
+          interval: 1m
+          rules:
+            - uid: spark-inference-down
+              title: SparkInferenceDown
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 10m
+              annotations:
+                title: Spark inference is down
+                summary: >-
+                  The model server on the DGX Spark has not answered a scrape
+                  for 10 minutes. Check: ssh spark, then docker compose ps and
+                  docker compose logs server in ~/tensorfold.
+              labels:
+                severity: warning
+                category: spark
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      min(up{job="tensorfold", instance="spark-f4b2"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: lt, params: [1]}
+            # The engine sizes its pool to keep 10 GiB free, so sustained
+            # MemAvailable under 5 GiB means something else has taken the unified
+            # memory and the server is at risk of being OOM-killed.
+            - uid: spark-memory-low
+              title: SparkMemoryLow
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 5m
+              annotations:
+                title: Spark memory is low
+                summary: >-
+                  The DGX Spark has had under 5 GiB of memory available for 5
+                  minutes. Find what else is running: ssh spark, then docker ps
+                  and nvidia-smi.
+              labels:
+                severity: warning
+                category: spark
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      min(node_memory_MemAvailable_bytes{instance="spark-f4b2"}) / 2^30
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: lt, params: [5]}
         # The garage holds the servers, so its climate is their inlet air.
         # Thresholds follow ASHRAE guidance for server inlets: 27 C is the top
         # of the recommended range and 35 C the top of the allowable one, so
