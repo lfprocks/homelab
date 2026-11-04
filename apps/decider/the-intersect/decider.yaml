@@ -1,0 +1,157 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: decider-models
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name decider
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "decider"
+        k8s.lfp.rocks/version: "v0.1.0"
+    spec:
+      runtimeClassName: nvidia
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/lfprocks/decider-server:v0.1.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: HOME
+              value: /tmp
+            # Pinned to GPU 1. This needs about 12 GiB at the length limit, which
+            # would not safely fit beside asr and piper on GPU 0 (about 3.9 GiB).
+            - name: CUDA_VISIBLE_DEVICES
+              value: "1"
+            - name: DECIDER_MAX_LENGTH
+              value: "8192"
+          envFrom:
+            - secretRef:
+                name: decider-env-secret
+          ports:
+            - name: api
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          # /healthz answers once the model has loaded and passed a test
+          # decision. The first start also downloads about 8.5 GiB.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: api
+            periodSeconds: 10
+            failureThreshold: 180
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: api
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: api
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "8Gi"
+              # One slice on each GPU, the same as llama-cpp had, so that
+              # CUDA_VISIBLE_DEVICES below can choose the emptier one.
+              nvidia.com/gpu: 2
+            requests:
+              cpu: "250m"
+              memory: "3Gi"
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: decider-models
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: decider
+  labels:
+    app: decider
+    service: decider
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: api
+  selector:
+    app: decider
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: decider-httproute
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+      sectionName: default-https
+  hostnames: ["${SUB_QUIET_LARCH}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    # Only the decision endpoint: health and metrics are not exposed.
+    - matches:
+        - path:
+            type: Exact
+            value: /v1/decide
+          method: POST
+      backendRefs:
+        - name: decider
+          port: 80
