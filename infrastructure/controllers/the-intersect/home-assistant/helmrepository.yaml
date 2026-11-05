@@ -4,5 +4,5 @@ metadata:
   name: pajikos
   namespace: home-assistant
 spec:
-  interval: 1m0s
-  url: http://pajikos.github.io/home-assistant-helm-chart/
+  interval: 1h0m0s
+  url: https://pajikos.github.io/home-assistant-helm-chart/

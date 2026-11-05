@@ -15,4 +15,4 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: home-assistant-values
-  interval: 1m0s
+  interval: 1h0m0s

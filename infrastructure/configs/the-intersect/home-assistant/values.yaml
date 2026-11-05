@@ -46,8 +46,10 @@ configuration:
     logger:
       default: warning
       logs:
-        homeassistant.components.homekit: debug
-        pyhap: debug
+        # The chart merges this into the existing file, so deleting a key
+        # leaves its old value in place. Set a level to change it.
+        homeassistant.components.homekit: warning
+        pyhap: warning
 
 ingress:
   external: true # required to set the trusted proxies
