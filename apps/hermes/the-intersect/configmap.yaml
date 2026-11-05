@@ -32,6 +32,13 @@ data:
     platforms:
       api_server:
         enabled: false
+    # Scheduled jobs read untrusted web content with nobody watching, so they only get
+    # web tools and lfpweather. Naming one MCP server excludes the others. Telegram
+    # chats aren't affected.
+    platform_toolsets:
+      cron:
+        - web
+        - lfpweather
     mcp_servers:
       wsdot:
         url: http://mcp-wsdot.mcp-wsdot.svc.cluster.local:8080/mcp
