@@ -63,4 +63,9 @@ Hermes keeps jobs on the volume, so editing the prompt in git doesn't change the
 - **Tokens:** an injected Hermes could likely read its tokens and send them out over the open internet, and only Hermes itself enforces the Telegram allowlist. The response is to rotate them, using the table above.
 - **Home Assistant token:** the token carries its user's full REST API rights, not just the entities exposed through MCP. The HTTP rule enforces the MCP-only limit from this pod. Anyone holding a leaked token gets those full rights from wherever else Home Assistant is reachable.
 - **Prompt injection:** the policy limits where Hermes connects, not what it does with access it holds. When an MCP failed in testing, it probed other ports by itself, and the policy contained that.
+- **Injection drill:** in three runs from a `hermes chat` session, a test page told Hermes to switch on a device. It made no Home Assistant calls and flagged the text each time. That's evidence about one simple page on this model, not a guarantee, so repeat it after a model or version change.
+- **Home Assistant exposure:** Hermes can control every entity exposed to Home Assistant's assistant settings, and OpenClaw's token has the same reach. Review that list before exposing anything sensitive, such as locks or alarms.
+- **Group chats:** access follows the person, so Hermes would answer the owner in any group it joined, where others could read the reply. Group joins are turned off in `@BotFather`. Keep them off.
+- **Telegram allowlist:** tested by calling Hermes's authorization code with other user IDs, not with a real message from a second account.
+- **Briefing accuracy:** the model has invented a unit and made spelling slips in briefing text. Check anything that matters against the source.
 - **Memory:** Hermes writes its own memory and skills, so an injected instruction could persist. Backups are the way back.
