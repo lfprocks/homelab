@@ -6,7 +6,7 @@ connection to each. Exits 0 if all match, 1 on any mismatch, 2 on bad input. Std
 only. Targets stay outside git, because this repo is public:
 
     kubectl -n hermes exec -i hermes -c hermes -- \
-      python3 -c "$(cat verify_egress.py)" < targets.json
+      python3 -I -c "$(cat verify_egress.py)" < targets.json
 """
 import json
 import socket
@@ -15,12 +15,21 @@ import sys
 TIMEOUT_SECONDS = 5
 
 
-def reachable(host, port):
+def probe(host, port):
+    """allow on connect, deny only on a timeout, which is how the policy's silent drop looks.
+
+    A refusal proves the packet arrived, and a DNS or other error proves nothing, so
+    neither may pass as denied.
+    """
     try:
         with socket.create_connection((host, port), timeout=TIMEOUT_SECONDS):
-            return True
+            return "allow"
+    except TimeoutError:
+        return "deny"
+    except ConnectionRefusedError:
+        return "refused"
     except OSError:
-        return False
+        return "error"
 
 
 def main():
@@ -31,7 +40,7 @@ def main():
 
     mismatches = 0
     for target in targets:
-        result = "allow" if reachable(target["host"], target["port"]) else "deny"
+        result = probe(target["host"], target["port"])
         matched = result == target["expect"]
         mismatches += not matched
         status = "ok" if matched else "MISMATCH"
