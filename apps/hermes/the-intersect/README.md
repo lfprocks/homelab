@@ -44,6 +44,14 @@ TCP checks can't prove the gateways are closed. Connections to a gateway's LoadB
 - **`kubectl port-forward`** doesn't work under gVisor.
 - **`kubectl exec`** can stay open after a command ends under gVisor, so use a timeout.
 
+## Morning briefing
+
+The `declare-cron` sidecar creates `morning-briefing` from `briefing-prompt.md` when the job is missing. It runs at 06:45 Pacific and delivers to the Telegram home channel. If the pod is down at that time, it runs once on return, up to 2 hours late.
+
+The briefing reads news feeds with nobody watching, so `platform_toolsets.cron` limits scheduled jobs to web tools and `lfpweather`. They get no terminal, memory, skills, delegation or Home Assistant. A poisoned feed could still distort the briefing's text, so treat it as untrusted.
+
+Hermes keeps jobs on the volume, so editing the prompt in git doesn't change the existing job. To apply an edit, remove the job with `hermes cron remove` and regenerate the Sandbox.
+
 ## What's different from OpenClaw
 
 - **gVisor start:** needs the memory-backed `/run` and the s6 option in `sandbox.yaml`, and a Hermes-owned `home/` subdirectory on the volume. A restore has to keep that subdirectory.

@@ -7,3 +7,11 @@ resources:
   - pvc.yaml
   - sandbox.yaml
   - ciliumnetworkpolicy.yaml
+configMapGenerator:
+  - name: hermes-briefing-prompt
+    files:
+      - briefing-prompt.md
+    options:
+      disableNameSuffixHash: true
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
