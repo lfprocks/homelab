@@ -18,9 +18,6 @@ data:
   # volume. Manual mode (the default, stated here on purpose) rejects anyone
   # else until the owner adds them.
   ACTUAL_USER_CREATION_MODE: "manual"
-  # 30 days, in seconds. The default never expires; "openid-provider" would
-  # follow Pocket-ID's short access token lifetime and force frequent logins.
-  ACTUAL_TOKEN_EXPIRATION: "2592000"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -72,6 +69,13 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          env:
+            # 30 days, in seconds. The default never expires; "openid-provider"
+            # would follow Pocket-ID's short access token lifetime and force
+            # frequent logins. Not a secret, but Trivy KSV-0109 flags any
+            # ConfigMap key containing TOKEN, so it is set here instead.
+            - name: ACTUAL_TOKEN_EXPIRATION
+              value: "2592000"
           envFrom:
             - configMapRef:
                 name: actual-budget-env-configmap
