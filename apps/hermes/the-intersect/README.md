@@ -19,6 +19,11 @@ kubectl -n hermes exec -i <pod> -- \
 
 Home Assistant is limited by path as well as port, because its token isn't limited to MCP. Without a token, `/api/mcp` should return 405 for a GET, and `/api/states` should return 403 from the policy. A 401 on `/api/states` means the request reached Home Assistant, so the rule isn't working.
 
+TCP checks can't prove the gateways are closed. Connections to a gateway's LoadBalancer IP succeed, and its Envoy then applies this policy to each request:
+
+- **Internal gateway routes:** these return 403 "Access denied", even though the same request from an unrestricted pod reaches the service. Routes that only match certain paths or methods return the gateway's own 404 otherwise, so test them with a matching request.
+- **Public routes:** the hostnames resolve to public addresses, so this pod reaches them the way any internet client does. Each app's own login is the only protection.
+
 ## Secrets
 
 `secret.sops.yaml` holds `hermes-env`, with base64 values under `data`. To rotate a value, use `sops set`, then regenerate the Sandbox.
