@@ -52,6 +52,51 @@ spec:
             - name: config
               mountPath: /config
               readOnly: true
+        # Declares the briefing from git. Hermes keeps jobs on the volume, so this only
+        # creates the job when its name is missing. Editing the prompt in git doesn't
+        # change an existing job; see the README.
+        - name: declare-cron
+          image: nousresearch/hermes-agent:v0.22.7@sha256:e6d81ae52ebf6a43efa529701405509f20054ba818f179ddd748bed4f8af584c
+          restartPolicy: Always
+          command:
+            - sh
+            - -c
+            - |
+              cd /tmp
+              until jobs="$(hermes cron list --all 2>&1)"; do
+                echo "can't list cron jobs; retrying in 15s"
+                sleep 15
+              done
+              case "$jobs" in
+                *morning-briefing*) echo "morning-briefing already exists" ;;
+                *)
+                  until hermes cron create "45 6 * * *" "$(cat /briefing/briefing-prompt.md)" \
+                      --name morning-briefing --deliver telegram \
+                      --timezone America/Los_Angeles --catch-up on --grace-minutes 120; do
+                    echo "can't create morning-briefing; retrying in 15s"
+                    sleep 15
+                  done
+                  ;;
+              esac
+              exec sleep infinity
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+              subPath: home
+            - name: briefing-prompt
+              mountPath: /briefing
+              readOnly: true
       containers:
         - name: hermes
           image: nousresearch/hermes-agent:v0.22.7@sha256:e6d81ae52ebf6a43efa529701405509f20054ba818f179ddd748bed4f8af584c
@@ -89,6 +134,9 @@ spec:
         - name: config
           configMap:
             name: hermes-config
+        - name: briefing-prompt
+          configMap:
+            name: hermes-briefing-prompt
         - name: run
           emptyDir:
             medium: Memory
