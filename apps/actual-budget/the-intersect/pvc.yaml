@@ -1,0 +1,14 @@
+---
+# ceph-block (the default class), NOT an SMB share from olympic: Actual keeps
+# its state in SQLite, and SQLite over SMB/NFS corrupts. Backed up off-site by
+# the VolSync ReplicationSource in infrastructure/configs.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: actual-budget-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

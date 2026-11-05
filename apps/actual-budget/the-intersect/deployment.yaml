@@ -1,0 +1,106 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: actual-budget-env-configmap
+data:
+  # Pocket-ID is the only way in. With OPENID_ENFORCE the server bootstraps
+  # itself into OpenID mode on an empty volume and refuses password bootstrap.
+  ACTUAL_LOGIN_METHOD: "openid"
+  ACTUAL_ALLOWED_LOGIN_METHODS: "openid"
+  ACTUAL_OPENID_ENFORCE: "true"
+  ACTUAL_OPENID_DISCOVERY_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/.well-known/openid-configuration"
+  # Pocket-ID's registered callback is this URL plus /openid/callback.
+  ACTUAL_OPENID_SERVER_HOSTNAME: "https://${SUB_TALLOW_BEACON}.${DOMAIN_COBRA_LANTERN}"
+  # The first OpenID login becomes the server owner. Manual mode (the default,
+  # stated here on purpose) rejects anyone else until the owner adds them.
+  ACTUAL_USER_CREATION_MODE: "manual"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name actual-budget
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  revisionHistoryLimit: 10
+  replicas: 1
+  # SQLite on a ReadWriteOnce volume: never let two pods mount it at once.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "actual-budget"
+        k8s.lfp.rocks/version: "26.10.0"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      securityContext:
+        # The image's own "actual" user. fsGroup makes the new volume writable.
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          image: actualbudget/actual-server:26.10.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          envFrom:
+            - configMapRef:
+                name: actual-budget-env-configmap
+            - secretRef:
+                name: actual-budget-oidc
+          ports:
+            - name: http
+              containerPort: 5006
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              cpu: "50m"
+              memory: "256Mi"
+          volumeMounts:
+            # server-files (account.sqlite, including bank sync credentials)
+            # and user-files (one SQLite-backed file per budget).
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: actual-budget-pvc
+        - name: tmp
+          emptyDir: {}

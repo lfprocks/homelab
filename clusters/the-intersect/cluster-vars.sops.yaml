@@ -93,6 +93,7 @@ stringData:
     SUB_MARBLE_OSPREY: ENC[AES256_GCM,data:b9DsXYAY28gzti5qAWM=,iv:SYdki+g/MMOL38LGVlOwOJIMBPzTS8Dj9Dl6M+znHQ8=,tag:Q9zhMoZPIXtuq9lC76tIqQ==,type:str]
     SUB_HOLLOW_TANKARD: ENC[AES256_GCM,data:gXCsCw==,iv:s18N/uMJDaOj6z4QSY/9C3qTOn8rIAy1p6HCosxPIps=,tag:IONwRIOiyB9CAiuYl77o+w==,type:str]
     SUB_QUIET_LARCH: ENC[AES256_GCM,data:/G6/7n25Zw==,iv:gY1OMJlzDPOaHGpVACA6UPpO8Di+Xyy11leaaqLpqyM=,tag:I/2S+5wCg0y2EpPzzIU0yw==,type:str]
+    SUB_TALLOW_BEACON: ENC[AES256_GCM,data:2RjygfCz,iv:21GZ8J/V8RYr7fVroWKNM/byBxDjXyFVzkOnbtP1ptI=,tag:0XgrJDFXA4FSDtoQni3sow==,type:str]
 sops:
     age:
         - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
@@ -104,7 +105,7 @@ sops:
             NEc5RFlOS2lkTVJBNTU2VW1LUy9yTzgKbghxCeGAw7B6qpQzV5GYuAtoJjZvSoqe
             DRS4G8tSwhojaT29RDfxU5TZvdSGOFUy+uehXyUzRjgRoVxfrs2lMQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-04T20:29:31Z"
-    mac: ENC[AES256_GCM,data:2KEnHrCNyfdhHjbpccC0UCzf/MCc5zGnn6B0LlWTmPH/ckclV0NGZkLZjWUuSUe2Bd5IeI+CtR7PZUx3aY+55tVLiU8lx3XjC9HhO6bQx4z14Ounhv7U/3aU10dSEwSILdt7jTBkLQIMKYBD12y8LjnGisBmadBTCwkoIrp/gtk=,iv:CWGG04b7vpP/iMP/QBEM5wHCPRjgEMFZb5b2hThHExU=,tag:IksN38Z9HalMDnlEnMYCDA==,type:str]
+    lastmodified: "2026-11-05T17:01:43Z"
+    mac: ENC[AES256_GCM,data:uIiXEuE2AbuMJAfJr28276H8x5UQlySmd9DzLsB43kUlxSfY5pgJC1pRuiFdlf+y99dS7gBgsoBf7+n6r+PISHe8VeD5sWigE7bk+duQTbB/PoEaMaaaykNYyZLdJgt4BAC73B/tqbYsQGXrBjuq8zh+qJTUKrTxX6wNByg6dKQ=,iv:fs9pKPEw1cIstrNhRgtXMzCyhm4Zn++KHaaFNrxt5V4=,tag:z5iJTwDDtbyqKpmV/RZP8w==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0
