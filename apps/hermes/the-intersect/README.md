@@ -17,6 +17,8 @@ kubectl -n hermes exec -i <pod> -- \
   python3 -I -c "$(cat verify/verify_egress.py)" < targets.json
 ```
 
+Home Assistant is limited by path as well as port, because its token isn't limited to MCP. Without a token, `/api/mcp` should return 405 for a GET, and `/api/states` should return 403 from the policy. A 401 on `/api/states` means the request reached Home Assistant, so the rule isn't working.
+
 ## Secrets
 
 `secret.sops.yaml` holds `hermes-env`, with base64 values under `data`. To rotate a value, use `sops set`, then regenerate the Sandbox.
@@ -46,5 +48,6 @@ kubectl -n hermes exec -i <pod> -- \
 ## Accepted risks
 
 - **Tokens:** an injected Hermes could likely read its tokens and send them out over the open internet, and only Hermes itself enforces the Telegram allowlist. The response is to rotate them, using the table above.
+- **Home Assistant token:** the token carries its user's full REST API rights, not just the entities exposed through MCP. The HTTP rule enforces the MCP-only limit from this pod. Anyone holding a leaked token gets those full rights from wherever else Home Assistant is reachable.
 - **Prompt injection:** the policy limits where Hermes connects, not what it does with access it holds. When an MCP failed in testing, it probed other ports by itself, and the policy contained that.
 - **Memory:** Hermes writes its own memory and skills, so an injected instruction could persist. Backups are the way back.
