@@ -1,7 +1,7 @@
 # VolSync restic backups of Tier-1 PVCs to GCS
 # (lfpr-p-gcsb-usw1-volsync-backups-szog-ea82375). One sops Secret
 # (restic-<pvc>: repository gs:<bucket>:/<ns>/<pvc>, shared restic password,
-# GCS key) + one ReplicationSource per PVC. Daily, staggered 02:00-03:30;
+# GCS key) + one ReplicationSource per PVC. Daily, staggered 02:00-04:00;
 # keep 7 daily / 4 weekly / 6 monthly. Movers run as the app's own uid
 # (root only for the four root-owned volumes) with no added capabilities.
 # Restore: create a ReplicationDestination pointing at the same Secret.
@@ -32,3 +32,5 @@ resources:
 - zigbee2mqtt-zigbee2mqtt-data.restic.sops.yaml
 - zwavejs-ui-zwavejs-ui-store.replicationsource.yaml
 - zwavejs-ui-zwavejs-ui-store.restic.sops.yaml
+- actual-budget-actual-budget-pvc.replicationsource.yaml
+- actual-budget-actual-budget-pvc.restic.sops.yaml
