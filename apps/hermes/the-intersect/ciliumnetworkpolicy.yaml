@@ -67,7 +67,7 @@ spec:
               protocol: TCP
           rules:
             http:
-              - path: "/api/mcp(/.*)?"
+              - path: "/api/mcp"
     # lfpweather MCP server. Service port 80 maps to pod port 8080.
     - toEndpoints:
         - matchLabels:
