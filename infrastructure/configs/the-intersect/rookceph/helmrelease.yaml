@@ -50,6 +50,12 @@ spec:
       cephConfig:
         client.rgw.ceph.objectstore.a:
           rgw_sigv4_insecure: "true"
+        # The default holds BLUESTORE_SLOW_OP_ALERT for 24h after the last slow op.
+        # These consumer SSDs hit it on any large write, such as a model download,
+        # and then the alert stays up long after latency recovers. One hour still
+        # alerts on ongoing slowness.
+        osd:
+          bluestore_slow_ops_warn_lifetime: "3600"
       resources:
         mon:
           limits:
