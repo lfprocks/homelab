@@ -51,8 +51,10 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
-    # Home Assistant MCP server. Service port 8080 maps to pod port 8123, and both
-    # are allowed to cover Cilium service translation.
+    # Home Assistant MCP server only. The token Hermes holds can use the whole REST
+    # API, so this HTTP rule is what keeps Hermes to the MCP path; requests to any
+    # other path get a 403 from Envoy. Service port 8080 maps to pod port 8123, and
+    # both are allowed to cover Cilium service translation.
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: home-assistant
@@ -63,6 +65,9 @@ spec:
               protocol: TCP
             - port: "8123"
               protocol: TCP
+          rules:
+            http:
+              - path: "/api/mcp(/.*)?"
     # lfpweather MCP server. Service port 80 maps to pod port 8080.
     - toEndpoints:
         - matchLabels:
