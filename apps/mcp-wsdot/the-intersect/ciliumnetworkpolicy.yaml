@@ -21,6 +21,14 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    # hermes agent -> MCP endpoint.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: hermes
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
     # kubelet/node liveness + readiness probes (/healthz, /readyz).
     - fromEntities:
         - host

@@ -456,10 +456,18 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+<<<<<<< HEAD
   name: actual-budget
   labels:
     k8s.lfp.rocks/policy: enforce
     shared-gateway-access: "true"
     pod-security.kubernetes.io/enforce: restricted
+=======
+  name: hermes
+  labels:
+    k8s.lfp.rocks/policy: enforce
+    # Hardened and gVisor-sandboxed. Same levels as openclaw.
+    pod-security.kubernetes.io/enforce: baseline
+>>>>>>> 2afa482 (feat(hermes): deploy hermes agent in a gvisor sandbox)
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-data
+  labels:
+    app: hermes
+# Owned here rather than by the Sandbox, so regenerating the Sandbox keeps Hermes's
+# memory and sessions. They live in the home/ subdirectory (see sandbox.yaml).
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  labels:
+    app: hermes
+  annotations:
+    # Hermes expands ${VAR} itself. Flux would otherwise blank these.
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  config.yaml: |
+    model:
+      default: Qwen3.8-Flash-Next
+      provider: custom
+      base_url: http://10.0.2.100:8000/v1
+      key_env: SPARK_API_KEY
+      context_length: 262144
+    providers:
+      custom:
+        request_timeout_seconds: 120
+    agent:
+      # Report a Spark outage in about 2 minutes. The defaults retry silently for
+      # far longer, which looks like the bot ignoring you. You resend afterwards.
+      api_max_retries: 1
+      auto_recovery_cycles: 0
+    database:
+      # gVisor's filesystem doesn't give SQLite WAL the shared memory it needs.
+      journal_mode: delete
+    terminal:
+      # The sandbox is the isolation boundary, so no nested container.
+      backend: local
+    platforms:
+      api_server:
+        enabled: false
+    mcp_servers:
+      wsdot:
+        url: http://mcp-wsdot.mcp-wsdot.svc.cluster.local:8080/mcp
+        headers:
+          Authorization: Bearer ${WSDOT_MCP_TOKEN}
+      homeassistant:
+        url: http://home-assistant.home-assistant.svc.cluster.local:8080/api/mcp
+        headers:
+          Authorization: Bearer ${HA_MCP_TOKEN}
+      lfpweather:
+        url: http://lfpweather-mcp.lfpweather.svc.cluster.local:80/mcp
+        headers:
+          Authorization: Bearer ${LFP_MCP_TOKEN}

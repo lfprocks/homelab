@@ -1,0 +1,76 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-sandbox
+  labels:
+    app: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      sandbox: hermes
+  # No inbound access: Telegram is long polling, and Hermes's local API server binds
+  # to loopback. This rule only exists because Cilium enforces default deny on a
+  # direction that has a rule. Nothing listens here, and `ingress: [{}]` would be
+  # allow-all.
+  ingress:
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8642"
+              protocol: TCP
+  egress:
+    # Cluster DNS.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Public internet only. `world` includes the LAN, so private ranges are excepted.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+    # The model on the DGX Spark, and only its API port.
+    - toCIDR:
+        - 10.0.2.100/32
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    # WSDOT MCP server.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: mcp-wsdot
+            k8s:app: mcp-wsdot
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Home Assistant MCP server. Service port 8080 maps to pod port 8123, and both
+    # are allowed to cover Cilium service translation.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: home-assistant
+            k8s:app.kubernetes.io/name: home-assistant
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "8123"
+              protocol: TCP
+    # lfpweather MCP server. Service port 80 maps to pod port 8080.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lfpweather
+            k8s:app: lfpweather-mcp
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP

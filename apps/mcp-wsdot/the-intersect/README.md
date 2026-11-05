@@ -17,8 +17,8 @@ Image: `ghcr.io/michaelpeterswa/mcp-wsdot:v1.1.0`
 | metrics      | `:8081/metrics`                                          | none (scraped)    |
 
 The server is **cluster-internal only** (ClusterIP, no HTTPRoute). Access is
-gated two ways: a `CiliumNetworkPolicy` that only admits the `openclaw`
-namespace (plus node probes and the `grafana` metrics scraper), and a bearer
+gated two ways: a `CiliumNetworkPolicy` that only admits the `openclaw` and
+`hermes` namespaces (plus node probes and the `grafana` metrics scraper), and a bearer
 token every MCP request must carry.
 
 ## Secret
