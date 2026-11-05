@@ -1,0 +1,95 @@
+apiVersion: agents.x-k8s.io/v1beta1
+kind: Sandbox
+metadata:
+  name: hermes
+  labels:
+    app: hermes
+# Editing this doesn't roll the pod. Apply changes with:
+#   kubectl -n hermes delete sandbox hermes
+# The hermes-data PVC isn't owned by the Sandbox, so state survives that.
+spec:
+  operatingMode: Running
+  shutdownPolicy: Retain
+  podTemplate:
+    metadata:
+      labels:
+        # The CiliumNetworkPolicy selects this.
+        sandbox: hermes
+        k8s.lfp.rocks/service: hermes
+        k8s.lfp.rocks/version: "v0.22.7"
+    spec:
+      runtimeClassName: gvisor
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 10000
+        runAsGroup: 10000
+        fsGroup: 10000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Hermes refuses a home owned by another uid, and a volume's root is uid 0,
+        # so it lives in a subdirectory this non-root container creates. Config comes
+        # from git on every start. Memory, sessions and skills are left alone.
+        - name: init-home
+          image: nousresearch/hermes-agent:v0.22.7@sha256:e6d81ae52ebf6a43efa529701405509f20054ba818f179ddd748bed4f8af584c
+          command:
+            - sh
+            - -c
+            - mkdir -p /volume/home && cp -L /config/config.yaml /volume/home/config.yaml
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          volumeMounts:
+            - name: data
+              mountPath: /volume
+            - name: config
+              mountPath: /config
+              readOnly: true
+      containers:
+        - name: hermes
+          image: nousresearch/hermes-agent:v0.22.7@sha256:e6d81ae52ebf6a43efa529701405509f20054ba818f179ddd748bed4f8af584c
+          imagePullPolicy: IfNotPresent
+          args: ["gateway", "run"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            # s6-overlay's documented option for Kubernetes, where a non-root pod
+            # can't own an emptyDir at /run. The image's /init stays in charge.
+            - name: S6_YES_I_WANT_A_WORLD_WRITABLE_RUN_BECAUSE_KUBERNETES
+              value: "1"
+          envFrom:
+            - secretRef:
+                name: hermes-env
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              memory: 3Gi
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+              subPath: home
+            - name: run
+              mountPath: /run
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-data
+        - name: config
+          configMap:
+            name: hermes-config
+        - name: run
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
