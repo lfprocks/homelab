@@ -12,9 +12,15 @@ data:
   ACTUAL_OPENID_DISCOVERY_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}/.well-known/openid-configuration"
   # Pocket-ID's registered callback is this URL plus /openid/callback.
   ACTUAL_OPENID_SERVER_HOSTNAME: "https://${SUB_TALLOW_BEACON}.${DOMAIN_COBRA_LANTERN}"
-  # The first OpenID login becomes the server owner. Manual mode (the default,
-  # stated here on purpose) rejects anyone else until the owner adds them.
+  # The first OpenID login on an empty volume becomes the permanent owner, so
+  # restrict the Pocket-ID client to a group holding only the intended owner
+  # before first start, and again before restoring or recreating an empty
+  # volume. Manual mode (the default, stated here on purpose) rejects anyone
+  # else until the owner adds them.
   ACTUAL_USER_CREATION_MODE: "manual"
+  # 30 days, in seconds. The default never expires; "openid-provider" would
+  # follow Pocket-ID's short access token lifetime and force frequent logins.
+  ACTUAL_TOKEN_EXPIRATION: "2592000"
 ---
 apiVersion: apps/v1
 kind: Deployment
