@@ -24,6 +24,8 @@ resources:
 - immich-immich-ceph-pvc.restic.sops.yaml
 - openclaw-openclaw-data.replicationsource.yaml
 - openclaw-openclaw-data.restic.sops.yaml
+- hermes-hermes-data.replicationsource.yaml
+- hermes-hermes-data.restic.sops.yaml
 - outline-outline-data.replicationsource.yaml
 - outline-outline-data.restic.sops.yaml
 - pocket-id-pocket-id-pvc.replicationsource.yaml
