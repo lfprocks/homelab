@@ -38,6 +38,14 @@ spec:
         prometheus.istio.io/merge-metrics: "false"
     spec:
       automountServiceAccountToken: false
+      # The image has no USER (runs as root by default); the static Go binary
+      # writes no files and listens on unprivileged ports, so run as nobody.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -73,6 +81,7 @@ spec:
               containerPort: 8081
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           livenessProbe:
