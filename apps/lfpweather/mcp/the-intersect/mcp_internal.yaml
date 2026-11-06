@@ -1,0 +1,145 @@
+# In-cluster-only copy of lfpweather-mcp for Home Assistant's voice assistant.
+#
+# Home Assistant's MCP client (2026.10) authenticates only via OAuth and cannot
+# send the static bearer token the public lfpweather-mcp requires, so this copy
+# runs with MCP_AUTH_TOKEN unset. It has no HTTPRoute; the CiliumNetworkPolicy
+# below admits only the home-assistant pod (plus kubelet probes and metrics
+# scraping). The tools are read-only weather data already public on
+# lfpweather.com.
+#
+# Home Assistant URL: http://lfpweather-mcp-internal.lfpweather.svc.cluster.local/mcp
+#
+# Keep the image tag in step with lfpweather-mcp in mcp.yaml.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name lfpweather-mcp-internal
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "lfpweather-mcp-internal"
+        k8s.lfp.rocks/version: "v1.1.1"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.istio.io/merge-metrics: "false"
+    spec:
+      automountServiceAccountToken: false
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: NotIn
+                    values:
+                      - enabled
+      containers:
+        - name: lfpweather-mcp
+          image: ghcr.io/michaelpeterswa/lfpweather-mcp:v1.1.1
+          imagePullPolicy: IfNotPresent
+          # Shares the public deployment's config, but takes only the API key
+          # from its secret: MCP_AUTH_TOKEN is deliberately not set here.
+          envFrom:
+            - configMapRef:
+                name: lfpweather-mcp-env-configmap
+          env:
+            - name: SERVER_NAME
+              value: "lfpweather-mcp-internal"
+            - name: TRACING_SERVICE
+              value: "lfpweather-mcp-internal"
+            - name: LFPWEATHER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lfpweather-mcp-env-secret
+                  key: LFPWEATHER_API_KEY
+          ports:
+            - name: mcp
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: mcp
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: mcp
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "20m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lfpweather-mcp-internal
+  labels:
+    app: lfpweather-mcp-internal
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: mcp
+  selector:
+    app: lfpweather-mcp-internal
+---
+# Unauthenticated, so ingress is limited to Home Assistant. Selecting the pod
+# with an ingress policy denies every other source.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lfpweather-mcp-internal
+  labels:
+    app: lfpweather-mcp-internal
+spec:
+  endpointSelector:
+    matchLabels:
+      app: lfpweather-mcp-internal
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: home-assistant
+            k8s:app.kubernetes.io/name: home-assistant
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # kubelet probes.
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Metrics scraping by Grafana Alloy.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
