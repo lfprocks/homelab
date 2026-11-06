@@ -1,0 +1,165 @@
+# ComfyUI (replaces the AUTOMATIC1111 stable-diffusion app). Image built from
+# github.com/alpineworks/stable-diffusion-containerized: ComfyUI pinned to a
+# release, non-root, everything it writes under --base-directory /data.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: comfyui-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      # models/ (checkpoints are 7-24 GB each), plus custom_nodes, input,
+      # output, temp and user.
+      storage: 100Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name comfyui
+  labels:
+    app: *name
+    # Pocket-ID login via the oauth2-proxy sidecar (components/oauth2-proxy).
+    oauth2.lfp.rocks/inject: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  # ReadWriteOnce volume: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "comfyui"
+        k8s.lfp.rocks/version: "v2.0.0"
+    spec:
+      runtimeClassName: nvidia
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.lfp.rocks/gpu
+                    operator: In
+                    values:
+                      - enabled
+      containers:
+        - name: *name
+          image: ghcr.io/alpineworks/stable-diffusion-containerized:v2.0.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --base-directory=/data
+            # No calls to Comfy's cloud API or partner (paid) nodes.
+            - --offline
+            # Share GPU 0 with asr and piper: move models to RAM after each
+            # run instead of holding VRAM, and keep 2 GB free for the others
+            # (DynamicVRAM counts other processes' usage).
+            - --disable-smart-memory
+            - --vram-headroom=2
+          env:
+            # One slice on each GPU (see the limit below); use GPU 0, which
+            # has ~12 GB free. GPU 1 holds decider (~12 GB) and whisper.
+            - name: CUDA_DEVICE_ORDER
+              value: PCI_BUS_ID
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            - name: PYTORCH_CUDA_ALLOC_CONF
+              value: "expandable_segments:True"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 8188
+          # First start initialises the database and custom node registry.
+          startupProbe:
+            httpGet:
+              path: /system_stats
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /system_stats
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /system_stats
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "4Gi"
+            limits:
+              # Models offloaded from VRAM live here between runs.
+              memory: "12Gi"
+              # Two time-sliced slots: the device plugin's "distributed"
+              # policy puts them on different GPUs, so CUDA_VISIBLE_DEVICES
+              # above can pick the emptier one (the decider pattern).
+              nvidia.com/gpu: 2
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: comfyui-data
+        - name: tmp
+          emptyDir:
+            sizeLimit: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name comfyui
+  labels:
+    app: *name
+    oauth2.lfp.rocks/inject: "true"
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# Public hostname, but every request goes through the oauth2-proxy sidecar
+# (port 4180) and needs a Pocket-ID login; ComfyUI itself has no auth. Same
+# domain as glance and cookcli, so the session cookie is shared (SSO).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: comfyui-httproute
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames: ["${SUB_SABLE_FORGE}.${DOMAIN_CORONET_SUMMIT}"]
+  rules:
+    - backendRefs:
+        - name: comfyui
+          port: 4180
