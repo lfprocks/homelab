@@ -4,6 +4,7 @@ namespace: lfpweather
 
 resources:
   - ../base/
+  - mcp_internal.yaml
 
 labels:
   - includeSelectors: true
