@@ -11,7 +11,6 @@ resources:
   - ../../../controllers/the-intersect/immich
   - ../../../controllers/the-intersect/openwebui
   - ../../../controllers/the-intersect/pulsar
-  - ../../../controllers/the-intersect/stable-diffusion
   - ../../../controllers/the-intersect/home-assistant
   - ../../../controllers/the-intersect/forgejo
   - ../../../controllers/the-intersect/emqx
