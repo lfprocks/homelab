@@ -38,7 +38,7 @@ spec:
             - name: push
               # python for the map push's allowlist; the same image here so
               # both jobs share one pinned base. rsync and ssh: tak-feed.sh.
-              image: docker.io/library/python:3.13.17-alpine3.24@sha256:fa0bb0d0cd7c7d6cef30a69094d32ac2b71c7304c87c6107fec100e1ee4eda02
+              image: docker.io/library/python:3.15.1-alpine3.24@sha256:54448f67d7c31c39e5cdd3ea2d6382395ce142806c284425f8e897d78a0465b3
               command: ["/bin/sh", "/app/tak-feed.sh", "cert"]
               env:
                 - name: TAK_HOST
