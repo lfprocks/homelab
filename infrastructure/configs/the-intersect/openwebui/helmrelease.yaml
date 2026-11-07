@@ -53,7 +53,12 @@ spec:
                           - --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
                           - --cookie-secure=true
                           - --cookie-samesite=lax
-                          - --cookie-name=_oauth2_proxy
+                          # Own cookie name: this proxy uses Google and a different
+                          # cookie secret from the Pocket-ID apps (components/oauth2-proxy),
+                          # which share _oauth2_proxy on the same domain. With the same
+                          # name, it failed to decrypt their cookie and cleared it,
+                          # logging those apps out every few seconds.
+                          - --cookie-name=_oauth2_proxy_openwebui
                           - --cookie-expire=168h
                           - --cookie-refresh=1h
                           - --set-xauthrequest=true
