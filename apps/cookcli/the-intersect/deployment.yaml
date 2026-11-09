@@ -4,6 +4,11 @@ kind: ConfigMap
 metadata:
   name: cookcli-env-configmap
 data:
+  # cookcli >=0.38 answers only localhost/IP Host headers unless the host is
+  # named as a CORS origin (DNS-rebinding guard); oauth2-proxy forwards the
+  # public Host, so name the public origin. Also lets the browser's https
+  # Origin pass the write/CSRF check. Resolved by Flux postBuild substitution.
+  COOK_CORS_ORIGIN: "https://${SUB_RUGGED_COMET}.${DOMAIN_CORONET_SUMMIT}"
 ---
 apiVersion: apps/v1
 kind: Deployment
