@@ -45,8 +45,10 @@ service:
 ## @param httpRoute.matches.path.value Path value for matching incoming requests
 ## @param httpRoute.matches.timeouts Object containing timeouts.
 ## @param httpRoute.filters Filters to apply on HTTP requests, such as header rewrites or request redirects
+# Disabled: httproute.yaml routes the web UI through Anubis and the API and
+# registry straight to Forgejo. The settings below are unused while disabled.
 httpRoute:
-  enabled: true
+  enabled: false
   annotations: {}
   parentRefs:
     - name: external-gateway-https
@@ -175,11 +177,16 @@ gitea:
   config:
     APP_NAME: "Intersect Computer Git"
     # Access model: Pocket-ID SSO is the way in (gitea.oauth below). Local
-    # registration is closed (it was open to the internet by default) and
-    # nothing is visible without signing in.
+    # registration is closed (it was open to the internet by default).
+    # Public repos, orgs and users are browsable without signing in; private
+    # ones (including every GitHub mirror, see MIRRORS.md) are not. Packages
+    # follow their OWNER's visibility, not the repo's: anything published under
+    # a public owner (your user) is anonymously pullable, so the mirror orgs
+    # are 'limited' and private projects must not publish images there. The web UI
+    # sits behind Anubis (anubis.yaml) to keep scrapers off it.
     service:
       DISABLE_REGISTRATION: true
-      REQUIRE_SIGNIN_VIEW: true
+      REQUIRE_SIGNIN_VIEW: false
       # Pocket-ID only. No password sign-in on the web (403 for everyone,
       # admins included) and no password over HTTP Basic auth (API, git over
       # HTTPS, registry): access tokens still work as the Basic-auth password.
@@ -187,6 +194,10 @@ gitea:
       ENABLE_INTERNAL_SIGNIN: false
       ENABLE_BASIC_AUTHENTICATION: false
       DEFAULT_KEEP_EMAIL_PRIVATE: true
+    # Don't list accounts (the bots: cluster-pull, ci-publisher, intersect-admin)
+    # on Explore. Profiles of public users stay reachable by URL.
+    service.explore:
+      DISABLE_USERS_PAGE: true
     # First Pocket-ID login creates the account, or links an existing local
     # account whose email/username matches.
     oauth2_client:

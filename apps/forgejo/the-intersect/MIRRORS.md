@@ -11,6 +11,20 @@ push-mirror it back to GitHub.
 As of 2026-10-07: 307 mirrors (267 public, 40 private). kcesar's one private
 repo is not mirrored yet (no token).
 
+**Every mirror is private on Forgejo** (since 2026-11-13), whatever its GitHub
+visibility. Forgejo is browsable without signing in, and anonymous visitors
+should see only native repos; the public copies live on GitHub. You still see
+the mirrors when signed in, and they keep syncing. The mirror orgs are
+**limited** (visible only when signed in): they hold nothing public, and
+packages follow their owner's visibility, so any image ever published under one
+stays behind sign-in. `mirror-github.sh` creates new mirrors private and new
+orgs limited. To fix any that slip through (dry run first):
+
+```bash
+apps/forgejo/scripts/make-mirrors-private.sh           # lists public mirrors and mirror-only orgs
+apps/forgejo/scripts/make-mirrors-private.sh --apply   # mirrors private, those orgs limited
+```
+
 ## Adding repos
 
 `apps/forgejo/scripts/mirror-github.sh` is idempotent. Re-run it to pick up new
