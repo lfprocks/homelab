@@ -1,0 +1,96 @@
+---
+# Anubis (proof-of-work bot challenge) in front of Forgejo's web UI, now that
+# public repos are browsable without signing in. Browsers (Mozilla user
+# agents) solve a short challenge once; git, docker/containerd, the runners
+# and other non-browser clients pass through untouched under Anubis's default
+# policy. The API and the container registry bypass Anubis entirely (see
+# httproute.yaml). Client IPs come from Envoy's X-Forwarded-For.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anubis
+  labels:
+    app: anubis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anubis
+  template:
+    metadata:
+      labels:
+        app: anubis
+        k8s.lfp.rocks/service: anubis
+        k8s.lfp.rocks/version: v1.28.2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: anubis
+          image: ghcr.io/techarohq/anubis:v1.28.2@sha256:5fcbce70ee6168be5b226d19bec90111d0acd0daf13028fa06b044cf3ebbbd5f
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BIND
+              value: ":8923"
+            - name: METRICS_BIND
+              value: ":9090"
+            - name: TARGET
+              value: http://forgejo-http.forgejo.svc.cluster.local:3000
+            - name: DIFFICULTY
+              value: "4"
+            # Serve a robots.txt that disallows AI scrapers by name, then all.
+            - name: SERVE_ROBOTS_TXT
+              value: "true"
+          # The anubis-key Secret supplies the signing key, fixed so passed
+          # challenges survive pod restarts.
+          envFrom:
+            - secretRef:
+                name: anubis-key
+          ports:
+            - name: http
+              containerPort: 8923
+            - name: metrics
+              containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: anubis
+  labels:
+    app: anubis
+spec:
+  selector:
+    app: anubis
+  ports:
+    - name: http
+      port: 8923
+      targetPort: http

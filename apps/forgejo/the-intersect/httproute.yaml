@@ -1,0 +1,46 @@
+---
+# Replaces the chart's single catch-all route (httpRoute.enabled: false in
+# values.yaml). The web UI goes through Anubis; the API (runners, tokens,
+# scripts) and the container registry (multi-GB layer pushes) go straight to
+# Forgejo, so a challenge page can never break a non-browser client and big
+# uploads skip the extra hop.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: forgejo-web
+spec:
+  parentRefs:
+    - name: external-gateway-https
+      namespace: cilium-ingress
+  hostnames:
+    - ${SUB_COBRA_TIDE}.${DOMAIN_CORONET_SUMMIT}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/
+        - path:
+            type: PathPrefix
+            value: /v2/
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: X-Forwarded-Proto
+                value: https
+      backendRefs:
+        - name: forgejo-http
+          port: 3000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: X-Forwarded-Proto
+                value: https
+      backendRefs:
+        - name: anubis
+          port: 8923
