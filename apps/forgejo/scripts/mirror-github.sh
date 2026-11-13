@@ -8,7 +8,8 @@
 #   - forks are skipped; archived repos are mirrored but NOT flagged archived:
 #     Forgejo refuses to archive a mirror (422 "repo is a mirror, cannot
 #     archive/un-archive"); they never change upstream, so syncing is free
-#   - visibility is preserved; only PRIVATE repos store a GitHub token (it is
+#   - every mirror is created PRIVATE on Forgejo (anonymous visitors see only
+#     native repos); only repos private on GitHub store a GitHub token (it is
 #     needed on every sync); public ones are fetched anonymously
 #   - wikis are not mirrored (GitHub reports has_wiki for empty wikis, and a
 #     missing wiki fails the migration)
@@ -109,9 +110,11 @@ import json, os
 priv = os.environ["PRIV"] == "true"
 p = {"clone_addr": os.environ["URL"], "repo_owner": os.environ["OWNER"], "repo_name": os.environ["NAME"],
      "service": "github" if priv else "git", "mirror": True, "mirror_interval": os.environ["INT"],
-     "private": os.environ["PRIV"] == "true", "description": os.environ["DESC"][:2048],
+     # Every mirror is private on Forgejo, whatever its GitHub visibility:
+     # Forgejo is browsable anonymously and should show only native repos.
+     "private": True, "description": os.environ["DESC"][:2048],
      "lfs": True, "wiki": False}
-if p["private"]:
+if priv:
     p["auth_token"] = os.environ["TOK"]
 print(json.dumps(p))')
     code=$(fapi POST /repos/migrate "$payload"); payload=""

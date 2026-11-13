@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: anubis-key
+    labels:
+        app: anubis
+type: Opaque
+stringData:
+    #ENC[AES256_GCM,data:5R7L1TzerTgi4e8kvQ/FsLiml4Zw//v4NYrcG+KwE811tw6f9th0vXhMAFnUCD160sCYR1aIuC0Es6BDTMAA2xKDTu17StP527Lw54dt,iv:FwpXylkhwUN7Db16tYT8e2meZXnAyDihBti7oQJhnlY=,tag:XG28L0MFiE/4KmFNPLeUEg==,type:comment]
+    ED25519_PRIVATE_KEY_HEX: ENC[AES256_GCM,data:UYCa6bnH0qgnyx9zs1EPTXzPDlFLNZyVlFGm36NCPmCXK96cMLqGBjZ7ORbCgbPv1lQlzsjwqsv7GYSBfrD8ZQ==,iv:Xzk3C0V2XslYXuJ8ATmX3JzF4kBXjhcy206t0HvSxaY=,tag:k0xK887U8CwrL9Vfk9Jkdw==,type:str]
+sops:
+    age:
+        - recipient: age123w4afwqywmqdvkvlmdm8nqwv7a4jl2mgx6alu2phpa4qnsk6cuq4p0gas
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA0K2N5T3JFRWNieHgwTXNs
+            c2YyTUt6c3EzTmsxMUJVSUs4bk1LS1Q3Z0JJCk1FOHdmNmhDM0JIVGxCRkRoRXZt
+            ZWVTaGpXTVhhdkJxcEtVNVRlYUZjT28KLS0tIGRyeWNTYWtuQ3J0cUROZ2E4SzhD
+            QlhSdmVmR3o0TXUvRU1BTngrRG1nM0kKp29w8dkuS2p0Udf50IlOagGHn8n8q9c6
+            m6Orb6AwV5FMEbtOa+TigOrpvIwwsUGkeFwU483103DSoIsqLtKqHQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-11-13T22:02:18Z"
+    mac: ENC[AES256_GCM,data:RV5sp7/5eLUspZRacj/s/i7EJQwKMMdFBzsvRpJzd+y0G5SkTqFpoQEsmvWhW9J1dPADwj9a+ZbWhFWZ92NJVs+kOuqFXz28qe7Mvqs33BxV59KEuIOApBV+uvQPs64Jn6/EG2y2GtfcPDZUnsb+Y7azwKx5t2nLMsHdbVIjprY=,iv:mFxs+DeAtodEVAhb8QW/sJ2591F8ADxW/Gbt1QTXLUk=,tag:FJrrmXhLZQSFKK/9C1TOgg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

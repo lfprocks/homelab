@@ -11,6 +11,9 @@ resources:
   - objectbucketclaim.yaml
   - package-cleanup-rules.yaml
   - registry-backup.yaml
+  - anubis-key.sops.yaml
+  - anubis.yaml
+  - httproute.yaml
 configMapGenerator:
   - name: forgejo-values
     files:
