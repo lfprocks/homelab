@@ -49,12 +49,11 @@ spec:
             # Serve a robots.txt that disallows AI scrapers by name, then all.
             - name: SERVE_ROBOTS_TXT
               value: "true"
-            # A fixed key so passed challenges survive pod restarts.
-            - name: ED25519_PRIVATE_KEY_HEX
-              valueFrom:
-                secretKeyRef:
-                  name: anubis-key
-                  key: ED25519_PRIVATE_KEY_HEX
+          # The anubis-key Secret supplies the signing key, fixed so passed
+          # challenges survive pod restarts.
+          envFrom:
+            - secretRef:
+                name: anubis-key
           ports:
             - name: http
               containerPort: 8923
