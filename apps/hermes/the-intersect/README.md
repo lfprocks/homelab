@@ -44,12 +44,13 @@ TCP checks can't prove the gateways are closed. Connections to a gateway's LoadB
 - **Logs:** `kubectl -n hermes logs hermes -c hermes`. Message text goes only to `gateway.log` on the volume, not to the pod's output.
 - **`kubectl port-forward`** doesn't work under gVisor.
 - **`kubectl exec`** can stay open after a command ends under gVisor, so use a timeout.
+- **Web search:** goes through the `brave` MCP server only. The built-in `web_search` (Nous's Perplexity gateway) is disabled, and `tools.tool_search` is off so MCP tools are visible to the model directly; with it on, Hermes defers every MCP tool behind a search bridge and the model tends to probe the server from the terminal instead.
 
 ## Morning briefing
 
 The `declare-cron` sidecar creates `morning-briefing` from `briefing-prompt.md` when the job is missing. It runs at 06:45 Pacific and delivers to the Telegram home channel. If the pod is down at that time, it runs once on return, up to 2 hours late.
 
-The briefing reads news feeds with nobody watching, so `platform_toolsets.cron` limits scheduled jobs to web tools and `lfpweather`. They get no terminal, memory, skills, delegation or Home Assistant. A poisoned feed could still distort the briefing's text, so treat it as untrusted.
+The briefing reads news feeds with nobody watching, so `platform_toolsets.cron` limits scheduled jobs to web tools and `lfpweather`. The built-in `web_search` is disabled everywhere (`agent.disabled_toolsets: [search]`), so in practice that means `web_extract` for fetching the feeds. They get no terminal, memory, skills, delegation or Home Assistant. A poisoned feed could still distort the briefing's text, so treat it as untrusted.
 
 Hermes keeps jobs on the volume, so editing the prompt in git doesn't change the existing job. To apply an edit, remove the job with `hermes cron remove` and regenerate the Sandbox.
 
