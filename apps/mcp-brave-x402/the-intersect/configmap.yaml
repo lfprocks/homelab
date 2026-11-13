@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-brave-x402-env
+  namespace: mcp-brave-x402
+  labels:
+    app: mcp-brave-x402
+data:
+  LOG_LEVEL: "info"
+
+  # Streamable HTTP; MCP at /mcp on 8080, probes at /healthz + /readyz.
+  TRANSPORT: "streamablehttp"
+
+  # Prometheus metrics on 8081, scraped via the pod annotations. Do not set
+  # LOCAL=true: it switches metrics to OTLP and allows plain-http URLs.
+  METRICS_ENABLED: "true"
+
+  # Daily spend cap in USDC (each search costs 0.005). Resets at Pacific
+  # midnight. Everything else (offer allowlist, proxy, RPC, poll interval)
+  # stays at the server defaults.
+  DAILY_BUDGET_USDC: "1.00"
