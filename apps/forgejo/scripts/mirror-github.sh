@@ -133,7 +133,7 @@ mirror_owner "$GH_USER" user "$FORGEJO_USER"
 for org in "$@"; do
   forg=$(echo "$org" | tr '[:upper:]' '[:lower:]')
   if [ "$(fapi GET "/orgs/$forg")" != 200 ]; then
-    code=$(fapi POST "/admin/users/$FORGEJO_USER/orgs" "{\"username\":\"$forg\",\"visibility\":\"public\"}")
+    code=$(fapi POST "/admin/users/$FORGEJO_USER/orgs" "{\"username\":\"$forg\",\"visibility\":\"limited\"}")
     [ "$code" = 201 ] || { echo "create org $forg failed: HTTP $code $(head -c 160 "$BODY")" >&2; failed=$((failed+1)); continue; }
     echo "== created org $forg"
   fi

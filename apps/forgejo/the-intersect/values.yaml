@@ -179,7 +179,10 @@ gitea:
     # Access model: Pocket-ID SSO is the way in (gitea.oauth below). Local
     # registration is closed (it was open to the internet by default).
     # Public repos, orgs and users are browsable without signing in; private
-    # ones (including every GitHub mirror, see MIRRORS.md) are not. The web UI
+    # ones (including every GitHub mirror, see MIRRORS.md) are not. Packages
+    # follow their OWNER's visibility, not the repo's: anything published under
+    # a public owner (your user) is anonymously pullable, so the mirror orgs
+    # are 'limited' and private projects must not publish images there. The web UI
     # sits behind Anubis (anubis.yaml) to keep scrapers off it.
     service:
       DISABLE_REGISTRATION: true
