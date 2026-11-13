@@ -23,6 +23,18 @@ data:
       # far longer, which looks like the bot ignoring you. You resend afterwards.
       api_max_retries: 1
       auto_recovery_cycles: 0
+      # Drop the built-in web_search (Nous's Perplexity gateway) so searches go
+      # through the brave MCP server, with its cap, metrics and alerts. The
+      # `search` toolset is web_search alone, so web_extract (URL fetch, which
+      # the briefing's feeds use) stays.
+      disabled_toolsets:
+        - search
+    tools:
+      # tool_search always defers MCP tools behind a search/describe bridge, and
+      # the model then probed the brave server from the terminal instead of
+      # calling its tools. Keep every tool directly visible (~9k extra tokens).
+      tool_search:
+        enabled: off
     database:
       # gVisor's filesystem doesn't give SQLite WAL the shared memory it needs.
       journal_mode: delete
