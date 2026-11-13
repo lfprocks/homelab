@@ -4,7 +4,7 @@
 # agents) solve a short challenge once; git, docker/containerd, the runners
 # and other non-browser clients pass through untouched under Anubis's default
 # policy. The API and the container registry bypass Anubis entirely (see
-# httproute.yaml). Client IPs come from Envoy's X-Forwarded-For.
+# httproute.yaml). The gateway sets X-Real-IP to the client's address.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -49,13 +49,9 @@ spec:
             # Serve a robots.txt that disallows AI scrapers by name, then all.
             - name: SERVE_ROBOTS_TXT
               value: "true"
-            # Take the client IP from the connection. Cilium's gateway Envoy
-            # doesn't carry the real client IP (X-Forwarded-For holds only an
-            # in-cluster address), and without X-Real-IP Anubis rejects every
-            # request ("X-Real-IP header is not set"). Every client therefore
-            # looks like the gateway to Anubis; the challenge still works.
-            - name: USE_REMOTE_ADDRESS
-              value: "true"
+            # Client IP: the gateway sets X-Real-IP (httproute.yaml), so
+            # USE_REMOTE_ADDRESS is off; with it on, every client would look
+            # like the gateway.
           # The anubis-key Secret supplies the signing key, fixed so passed
           # challenges survive pod restarts.
           envFrom:

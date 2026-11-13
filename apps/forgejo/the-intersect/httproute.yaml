@@ -41,6 +41,12 @@ spec:
             set:
               - name: X-Forwarded-Proto
                 value: https
+              # The client's address, from Envoy's own view of the
+              # connection. `set` (not `add`) overwrites any X-Real-IP a
+              # client sends. Anubis needs it: its own X-Forwarded-For
+              # handling loses private (LAN) client IPs (TecharoHQ/anubis#1270).
+              - name: X-Real-IP
+                value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
       backendRefs:
         - name: anubis
           port: 8923
