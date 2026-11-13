@@ -49,6 +49,13 @@ spec:
             # Serve a robots.txt that disallows AI scrapers by name, then all.
             - name: SERVE_ROBOTS_TXT
               value: "true"
+            # Take the client IP from the connection. Cilium's gateway Envoy
+            # doesn't carry the real client IP (X-Forwarded-For holds only an
+            # in-cluster address), and without X-Real-IP Anubis rejects every
+            # request ("X-Real-IP header is not set"). Every client therefore
+            # looks like the gateway to Anubis; the challenge still works.
+            - name: USE_REMOTE_ADDRESS
+              value: "true"
           # The anubis-key Secret supplies the signing key, fixed so passed
           # challenges survive pod restarts.
           envFrom:
