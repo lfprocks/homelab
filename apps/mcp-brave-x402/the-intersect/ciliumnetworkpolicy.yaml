@@ -1,0 +1,59 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: mcp-brave-x402
+  namespace: mcp-brave-x402
+  labels:
+    app: mcp-brave-x402
+# Default-deny once this selects the pod: only the flows below are allowed.
+spec:
+  endpointSelector:
+    matchLabels:
+      app: mcp-brave-x402
+  ingress:
+    # hermes agent -> MCP endpoint.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: hermes
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # kubelet/node liveness + readiness probes (/healthz, /readyz).
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Prometheus metrics scrape from grafana-alloy.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    # Cluster DNS, to resolve the Brave proxy and Base RPC hostnames.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Public internet only (Brave x402 proxy + Base RPC, both 443). Cilium's `world` entity INCLUDES the LAN (anything
+    # outside the cluster, e.g. olympic 10.0.0.10 and the router were reachable),
+    # so private ranges are excepted explicitly. Cluster DNS and the in-cluster
+    # services this pod needs are allowed by their own rules.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

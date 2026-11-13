@@ -1651,6 +1651,171 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [0]}
+        - orgId: 1
+          name: brave-x402
+          folder: alerts
+          interval: 1m
+          rules:
+            # mcp-brave-x402 (paid Brave search over x402 from a hot wallet).
+            # Spend-80 filters in PromQL (Grafana thresholds have no gte). Metric
+            # names are as exported (the gauge timestamp gains a _seconds
+            # suffix). Series are pre-initialised at 0, so increase() catches the
+            # first occurrence. Summaries use the backtick escape; no $vars.
+            - uid: brave-x402-spend-80
+              title: BraveX402Spend80
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                title: Brave x402 spend at 80% of the daily cap
+                summary: '{{ `Brave search spend today is at or above 80% of the daily cap. Check: kubectl -n mcp-brave-x402 logs deploy/mcp-brave-x402; look for a runaway agent or cron loop, or raise DAILY_BUDGET_USDC in the ConfigMap if the usage is legitimate` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      brave_x402_spend_today / brave_x402_budget_daily >= 0.8
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: brave-x402-cap-hit
+              title: BraveX402CapHit
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                title: Brave x402 daily cap hit
+                summary: '{{ `Brave search calls were refused because the daily cap is exhausted; searches fail until the budget day rolls over at Pacific midnight. Check: kubectl -n mcp-brave-x402 logs deploy/mcp-brave-x402; raise DAILY_BUDGET_USDC in the ConfigMap if the usage is legitimate` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      increase(brave_x402_calls_total{outcome="refused_cap"}[15m])
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: brave-x402-low-balance
+              title: BraveX402LowBalance
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 15m
+              annotations:
+                title: Brave x402 wallet balance low
+                summary: '{{ `Brave x402 wallet USDC balance is under 2. Top up the hot wallet on Base (balance is read from the last successful poll; see the mcp-brave-x402 README)` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      brave_x402_wallet_balance
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: lt, params: [2]}
+            - uid: brave-x402-balance-stale
+              title: BraveX402BalanceStale
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 0m
+              annotations:
+                title: Brave x402 balance poll stale
+                summary: '{{ `The Brave x402 wallet balance has not been read successfully for over 30 minutes, so the low-balance alert is blind. Check: kubectl -n mcp-brave-x402 logs deploy/mcp-brave-x402 for RPC errors; the public Base RPC may be down or rate limiting` }}'
+              labels:
+                severity: warning
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      time() - brave_x402_wallet_balance_last_success_seconds
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [1800]}
+            - uid: brave-x402-offer-refused
+              title: BraveX402OfferRefused
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                title: Brave x402 payment offer refused
+                summary: '{{ `The server refused a Brave payment offer that did not match the allowlist (network, asset, payee, amount or timeout). Brave may have changed its offer, or something is tampering with the proxy. No money was signed. Check: kubectl -n mcp-brave-x402 logs deploy/mcp-brave-x402; do not widen ALLOWED_* until the new offer is verified` }}'
+              labels:
+                severity: critical
+                category: cluster-health
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      increase(brave_x402_calls_total{outcome="refused_offer"}[15m])
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
 
   plugins:
     - https://grafana.com/api/plugins/operato-windrose-panel/versions/1.2.0/download;operato-windrose-panel

@@ -1173,6 +1173,35 @@ spec:
       - kind: Secret
         name: cluster-vars
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps-mcp-brave-x402
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  retryInterval: 2m
+  dependsOn:
+    - name: infra-network-config
+    - name: infra-storage-config
+    - name: infra-policy-config
+    - name: infra-app-sources
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: apps/mcp-brave-x402/the-intersect
+  prune: true
+  wait: true
+  timeout: 5m0s
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-vars
+---
 # The media stack moved to olympic as a TrueNAS compose app, managed in the terraform repo (truenas/media_stack.tf).
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
