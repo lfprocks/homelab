@@ -79,3 +79,12 @@ spec:
               protocol: TCP
             - port: "8080"
               protocol: TCP
+    # Brave search MCP server (pays per call from its own wallet).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: mcp-brave-x402
+            k8s:app: mcp-brave-x402
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

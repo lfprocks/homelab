@@ -8,7 +8,7 @@ Telegram only, through its own bot, using long polling. Only the owner's ID in `
 
 ## Network
 
-`ciliumnetworkpolicy.yaml` allows outbound access to the public internet and to these local destinations only: cluster DNS, the Spark on port 8000, and the `mcp-wsdot`, `home-assistant` and `lfpweather-mcp` MCP servers. `mcp-wsdot` has its own ingress allowlist that names this namespace.
+`ciliumnetworkpolicy.yaml` allows outbound access to the public internet and to these local destinations only: cluster DNS, the Spark on port 8000, and the `mcp-wsdot`, `home-assistant`, `lfpweather-mcp` and `mcp-brave-x402` MCP servers. `mcp-wsdot` and `mcp-brave-x402` have their own ingress allowlists that name this namespace.
 
 Check it from a fresh pod carrying the `sandbox: hermes` label, so the result doesn't depend on a container the agent has used. Keep targets out of this public repo. Only a timeout counts as denied, because a refusal means the packet got through:
 
@@ -36,6 +36,7 @@ TCP checks can't prove the gateways are closed. Connections to a gateway's LoadB
 | `WSDOT_MCP_TOKEN` | `mcp-wsdot` bearer | Yes, with OpenClaw | `apps/mcp-wsdot`, then both agents |
 | `LFP_MCP_TOKEN` | `lfpweather-mcp` bearer | Yes, with OpenClaw | `apps/lfpweather/mcp`, then both agents |
 | `HA_MCP_TOKEN` | Home Assistant long-lived token | Yes, with OpenClaw | Home Assistant profile, then both agents |
+| `BRAVE_MCP_TOKEN` | `mcp-brave-x402` bearer | No | `apps/mcp-brave-x402` (`MCP_AUTH_TOKEN`), then here |
 
 ## Operations
 
@@ -69,3 +70,4 @@ Hermes keeps jobs on the volume, so editing the prompt in git doesn't change the
 - **Telegram allowlist:** tested by calling Hermes's authorization code with other user IDs, not with a real message from a second account.
 - **Briefing accuracy:** the model has invented a unit and made spelling slips in briefing text. Check anything that matters against the source.
 - **Memory:** Hermes writes its own memory and skills, so an injected instruction could persist. Backups are the way back.
+- **Paid search:** an injected Hermes could burn the Brave search budget, up to the daily cap that `mcp-brave-x402` enforces (default $1/day), and alerts fire at 80% and at the cap. The wallet key stays in that pod, so Hermes can't reach the wallet itself. Scheduled jobs don't get the tool.
