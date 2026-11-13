@@ -52,3 +52,9 @@ data:
         url: http://lfpweather-mcp.lfpweather.svc.cluster.local:80/mcp
         headers:
           Authorization: Bearer ${LFP_MCP_TOKEN}
+      # Paid Brave search ($0.005/call, daily cap enforced server-side). Not in
+      # platform_toolsets.cron, so scheduled jobs can't spend money.
+      brave:
+        url: http://mcp-brave-x402.mcp-brave-x402.svc.cluster.local:8080/mcp
+        headers:
+          Authorization: Bearer ${BRAVE_MCP_TOKEN}
