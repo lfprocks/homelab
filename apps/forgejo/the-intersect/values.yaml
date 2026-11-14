@@ -175,7 +175,7 @@ gitea:
           key: AWS_SECRET_ACCESS_KEY
 
   config:
-    APP_NAME: "Intersect Computer Git"
+    APP_NAME: "the intersect computer"
     # Access model: Pocket-ID SSO is the way in (gitea.oauth below). Local
     # registration is closed (it was open to the internet by default).
     # Public repos, orgs and users are browsable without signing in; private
@@ -207,6 +207,19 @@ gitea:
     openid:
       ENABLE_OPENID_SIGNIN: false
       ENABLE_OPENID_SIGNUP: false
+    # Look: one custom dark theme (custom/theme-intersect.css), the only one
+    # offered. Homepage: custom/home.tmpl. No Forgejo slogan anywhere.
+    ui:
+      THEMES: intersect
+      DEFAULT_THEME: intersect
+    # Public site: don't advertise the exact Forgejo version or render timings.
+    other:
+      SHOW_FOOTER_VERSION: false
+      SHOW_FOOTER_TEMPLATE_LOAD_TIME: false
+    ui.meta:
+      AUTHOR: the intersect computer
+      DESCRIPTION: the intersect computer — public projects
+      KEYWORDS: git,forgejo,projects
     api:
       ENABLE_SWAGGER: false
     # Runners: apps/forgejo-runners. `uses: actions/checkout@v4` resolves on

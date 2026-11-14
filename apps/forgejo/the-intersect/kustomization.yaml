@@ -18,5 +18,11 @@ configMapGenerator:
   - name: forgejo-values
     files:
       - values.yaml=values.yaml
+  # Theme and homepage (custom/). Mounted into Forgejo's custom dir via
+  # helmrelease.yaml; the hashed name rolls the pod when either file changes.
+  - name: forgejo-custom
+    files:
+      - home.tmpl=custom/home.tmpl
+      - theme-intersect.css=custom/theme-intersect.css
 configurations:
   - kustomizeconfig.yaml

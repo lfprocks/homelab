@@ -1,0 +1,146 @@
+/*
+ * "intersect": the intersect computer's Forgejo theme. Builds on Forgejo's own
+ * dark theme and overrides its colors: near-black surfaces, one green accent,
+ * monospace for accents (brand, repo names, hashes, branches, code).
+ * Served from custom/public/assets/css/; selected by [ui] THEMES/DEFAULT_THEME.
+ */
+@import "./theme-forgejo-dark.css";
+
+:root {
+  /* Accent: green-400, with Forgejo's lighter (dark-N) and darker (light-N) steps. */
+  --color-primary: #4ade80;
+  --color-primary-contrast: #052e16;
+  --color-primary-dark-1: #86efac;
+  --color-primary-dark-2: #86efac;
+  --color-primary-dark-3: #bbf7d0;
+  --color-primary-dark-4: #bbf7d0;
+  --color-primary-dark-5: #dcfce7;
+  --color-primary-dark-6: #dcfce7;
+  --color-primary-dark-7: #f0fdf4;
+  --color-primary-light-1: #22c55e;
+  --color-primary-light-2: #16a34a;
+  --color-primary-light-3: #15803d;
+  --color-primary-light-4: #166534;
+  --color-primary-light-5: #166534;
+  --color-primary-light-6: #14532d;
+  --color-primary-light-7: #14532d;
+  --color-primary-alpha-10: #4ade8019;
+  --color-primary-alpha-20: #4ade8033;
+  --color-primary-alpha-30: #4ade804b;
+  --color-primary-alpha-40: #4ade8066;
+  --color-primary-alpha-50: #4ade8080;
+  --color-primary-alpha-60: #4ade8099;
+  --color-primary-alpha-70: #4ade80b3;
+  --color-primary-alpha-80: #4ade80cc;
+  --color-primary-alpha-90: #4ade80e1;
+  --color-accent: var(--color-primary);
+  --color-small-accent: var(--color-primary-light-5);
+
+  /* Surfaces: near-black, slightly blue-grey. */
+  --color-body: #0b0d10;
+  --color-nav-bg: #0b0d10;
+  --color-nav-hover-bg: #161b22;
+  --color-secondary-nav-bg: #0b0d10;
+  --color-footer: #0b0d10;
+  --color-box-header: #12171e;
+  --color-box-body: #0f1216;
+  --color-box-body-highlight: #161b22;
+  --color-menu: #10141a;
+  --color-button: #161b22;
+  --color-hover: #1a2029;
+  --color-active: #1c222b;
+  --color-input-background: #10141a;
+  --color-input-border: #262c36;
+  --color-input-border-hover: #384250;
+  --color-secondary: #1c222b;
+  --color-secondary-dark-1: #262c36;
+  --color-secondary-dark-2: #2c3440;
+  --color-secondary-bg: #161b22;
+  --color-code-bg: #0f1216;
+  --color-markup-code-block: #0f1216;
+  --color-markup-code-inline: #161b22;
+  --color-timeline: #1c222b;
+
+  /* Text. */
+  --color-text: #e6e8ee;
+  --color-text-light: #c8ccd6;
+  --color-text-light-1: #c8ccd6;
+  --color-text-light-2: #8b93a7;
+  --color-text-light-3: #8b93a7;
+}
+
+/* Brand: "~/intersect" in place of the Forgejo logo. */
+#navbar-logo img { display: none; }
+#navbar-logo::after {
+  content: "~/intersect";
+  font-family: var(--fonts-monospace);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Monospace accents. */
+.intersect-mono,
+.repo-header .flex-item-title,
+.repo-title,
+.flex-item-title a,
+.branch-dropdown-button,
+.ui.sha.label,
+.commit-id,
+code, pre, kbd { font-family: var(--fonts-monospace); }
+
+/* Primary buttons: green with dark text. */
+.ui.primary.button, .ui.primary.buttons .button {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+.ui.primary.button:hover, .ui.primary.buttons .button:hover {
+  background: var(--color-primary-dark-1);
+  color: var(--color-primary-contrast);
+}
+
+/* Active tab underline in the accent. */
+.ui.secondary.pointing.menu .active.item,
+.ui.secondary.pointing.menu .active.item:hover { border-color: var(--color-primary); }
+
+/* Subtle separator under the top bar. */
+#navbar { border-bottom: 1px solid #1a1f27; }
+
+/* Homepage (custom home.tmpl). */
+.intersect-home { max-width: 960px; margin: 0 auto; padding: 72px 24px 96px; }
+.intersect-hero h1 { font-size: 2.2rem; font-weight: 600; margin: 0; color: var(--color-text); }
+.intersect-accent { color: var(--color-primary); }
+.intersect-sub { color: var(--color-text-light-2); margin: 12px 0 4px; font-size: 1.05rem; }
+.intersect-links { margin: 8px 0 0; }
+.intersect-links a { color: var(--color-primary); }
+.intersect-projects { margin-top: 56px; }
+.intersect-label {
+  font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #5d6577; margin-bottom: 14px;
+}
+.intersect-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.intersect-card {
+  display: block; background: #10141a; border: 1px solid #1c222b; border-radius: 10px;
+  padding: 16px; color: var(--color-text);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+a.intersect-card:hover {
+  text-decoration: none; color: var(--color-text);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, #1c222b);
+  box-shadow: 0 0 0 1px var(--color-primary-alpha-10), 0 8px 28px var(--color-primary-alpha-10);
+  transform: translateY(-1px);
+}
+.intersect-name { font-weight: 600; color: var(--color-text); }
+.intersect-desc { color: var(--color-text-light-2); margin-top: 6px; line-height: 1.45; font-size: 0.92rem; }
+.intersect-meta { display: flex; gap: 14px; margin-top: 12px; font-size: 0.8rem; color: #5d6577; }
+.intersect-lang::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-primary); margin-right: 6px; vertical-align: 0;
+}
+.intersect-ghost {
+  border-style: dashed; color: #4a5263; display: flex; align-items: center; justify-content: center;
+  min-height: 96px;
+}
+@media (max-width: 640px) {
+  .intersect-home { padding: 40px 16px 64px; }
+  .intersect-hero h1 { font-size: 1.6rem; }
+}
