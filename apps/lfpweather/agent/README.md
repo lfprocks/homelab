@@ -29,7 +29,7 @@ frontend ──▶ lfpweather-broker ──▶ Agent Sandbox (agent) ──▶ l
 
 - [x] **Secret encrypted.** `the-intersect/agent_secret.yaml` holds the SOPS-
   encrypted `ANTHROPIC_API_KEY` (dedicated workspace, $20/mo cap) and
-  `MCP_BEARER_TOKEN` (the lfpweather-mcp bearer OpenClaw uses).
+  `MCP_BEARER_TOKEN` (the lfpweather-mcp bearer Hermes uses).
 - [x] **Image pinned** to `:v1.2.0` (broker Deployment + SandboxTemplate patch).
 - [x] **Telemetry.** The broker and the agent push metrics and traces over OTLP
   gRPC to `alloy.grafana.svc.cluster.local:4317`. `ciliumnetworkpolicy.yaml`

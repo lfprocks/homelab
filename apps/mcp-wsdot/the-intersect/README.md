@@ -2,7 +2,7 @@
 
 A Model Context Protocol (MCP) server for the Washington State Ferries (WSDOT)
 API, hosted in-cluster over the **streamable HTTP** transport and consumed by
-the [openclaw](../../openclaw/the-intersect/) agent.
+the [Hermes](../../hermes/the-intersect/) agent.
 
 Image: `ghcr.io/michaelpeterswa/mcp-wsdot:v1.1.0`
 (source: <https://github.com/michaelpeterswa/mcp-wsdot>)
@@ -17,8 +17,8 @@ Image: `ghcr.io/michaelpeterswa/mcp-wsdot:v1.1.0`
 | metrics      | `:8081/metrics`                                          | none (scraped)    |
 
 The server is **cluster-internal only** (ClusterIP, no HTTPRoute). Access is
-gated two ways: a `CiliumNetworkPolicy` that only admits the `openclaw` and
-`hermes` namespaces (plus node probes and the `grafana` metrics scraper), and a bearer
+gated two ways: a `CiliumNetworkPolicy` that only admits the `hermes`
+namespace (plus node probes and the `grafana` metrics scraper), and a bearer
 token every MCP request must carry.
 
 ## Secret
@@ -40,7 +40,7 @@ SOPS_AGE_KEY_FILE=age.agekey \
   '["stringData"]["WSDOT_API_KEY"]' '"YOUR_REAL_KEY"'
 ```
 
-Read the bearer token back (needed to wire openclaw, below):
+Read the bearer token back (Hermes holds it as `WSDOT_MCP_TOKEN`):
 
 ```sh
 SOPS_AGE_KEY_FILE=age.agekey \
@@ -48,24 +48,12 @@ SOPS_AGE_KEY_FILE=age.agekey \
   | grep MCP_AUTH_TOKEN
 ```
 
-## Wiring openclaw to use this server
+## Wiring a client
 
-openclaw's egress policy has been extended (in
-`apps/openclaw/the-intersect/ciliumnetworkpolicy.yaml`) so the sandbox may
-reach this service on port 8080; DNS resolution was already permitted. That is
-the only cluster-side change needed.
-
-The server itself is registered **from within openclaw at runtime** (via the
-Control UI), not through this repo. Use these connection details:
-
-| field       | value                                                    |
-|-------------|----------------------------------------------------------|
-| transport   | `streamable-http`                                        |
-| url         | `http://mcp-wsdot.mcp-wsdot.svc.cluster.local:8080/mcp`   |
-| auth header | `Authorization: Bearer <MCP_AUTH_TOKEN>`                 |
-
-Retrieve `MCP_AUTH_TOKEN` with the `sops -d` command under
-[Secret](#secret) above.
+Hermes is the only client: `apps/hermes/the-intersect` registers this server in
+its `config.yaml` (`mcp_servers.wsdot`, bearer `${WSDOT_MCP_TOKEN}`) and its
+egress policy allows this service on port 8080. A new client needs both, plus
+an ingress rule for its namespace in `ciliumnetworkpolicy.yaml` here.
 
 ## Configuration
 

@@ -103,9 +103,6 @@ pages:
                   - title: EMQX
                     url: http://${SUB_GRANITE_KEYSTONE}.${DOMAIN_COBRA_LANTERN}
                     icon: di:emqx
-                  - title: OpenClaw
-                    url: http://openclaw.${DOMAIN_COBRA_LANTERN}
-                    icon: di:openclaw
               - type: monitor
                 title: Media
                 cache: 1m

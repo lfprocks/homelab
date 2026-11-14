@@ -1,8 +1,9 @@
 name: renovate-approved
 
-# Approving a Renovate PR is the merge decision. The approval can come from the
-# GitHub UI or from openclaw over Telegram (it reviews as the owner through a
-# fine-grained PAT that cannot push or merge). This turns on auto-merge, and
+# Approving a Renovate PR is the merge decision. The approval comes from the
+# GitHub UI. (Approving over Telegram went through OpenClaw, decommissioned
+# 2026-11-13; it is planned for Hermes, reviewing as the owner through a
+# fine-grained PAT that cannot push or merge.) This turns on auto-merge, and
 # GitHub merges once the required `validate` check passes.
 #
 # Only Renovate's PRs, and only the owner's approval, count. Other

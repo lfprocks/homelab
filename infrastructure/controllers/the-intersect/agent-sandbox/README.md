@@ -42,7 +42,7 @@ applied cluster-wide). See the Talos repo `the-intersect/gvisor/` for that setup
   cluster DNS — the agent can't resolve anything) and only allows ingress from a
   `sandbox-router` component that this install does **not** deploy. Set
   `spec.networkPolicyManagement: Unmanaged` on the `SandboxTemplate` and supply
-  your own policy. See `apps/openclaw/the-intersect/ciliumnetworkpolicy.yaml` for
+  your own policy. See `apps/hermes/the-intersect/ciliumnetworkpolicy.yaml` for
   a working example (Cilium `ingress` entity + DNS/world egress).
 - **Editing a `SandboxTemplate` does not roll existing pods.** The WarmPool
   captured the template when it created its `Sandbox` objects; deleting the *pod*
@@ -51,9 +51,9 @@ applied cluster-wide). See the Talos repo `the-intersect/gvisor/` for that setup
   and gives fresh `volumeClaimTemplates` PVCs).
 - **Reaching a sandbox:** `kubectl port-forward` does not work with gVisor pods
   (the listener is in gVisor's netstack, not the host pod-netns loopback). Expose
-  via a Service + HTTPRoute (see the openclaw app), not port-forward.
+  via a Service + HTTPRoute (OpenClaw did; Hermes needs no inbound), not port-forward.
 
-`apps/openclaw/the-intersect/` is the reference workload for all of the above.
+`apps/hermes/the-intersect/` is the reference workload for all of the above (OpenClaw, the first one, was decommissioned 2026-11-13).
 
 ## Smoke test (manual)
 
