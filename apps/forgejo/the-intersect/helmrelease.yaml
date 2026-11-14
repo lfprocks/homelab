@@ -15,6 +15,24 @@ spec:
     - kind: Secret
       name: forgejo-values-secret
   interval: 1m0s
+  # Theme and homepage files from the forgejo-custom ConfigMap, mounted into
+  # Forgejo's custom dir (GITEA_CUSTOM=/data/gitea). Inline here, not in
+  # values.yaml, so kustomize can swap in the generated (hashed) ConfigMap name
+  # (kustomizeconfig.yaml); a changed file therefore rolls the pod.
+  values:
+    extraVolumes:
+      - name: forgejo-custom
+        configMap:
+          name: forgejo-custom
+    extraContainerVolumeMounts:
+      - name: forgejo-custom
+        mountPath: /data/gitea/templates/home.tmpl
+        subPath: home.tmpl
+        readOnly: true
+      - name: forgejo-custom
+        mountPath: /data/gitea/public/assets/css/theme-intersect.css
+        subPath: theme-intersect.css
+        readOnly: true
   # The kyverno require-labels policy needs these on the POD, and this chart
   # gives us no safe values-level way to do it. It exposes no `podLabels`; the
   # only label injection point is `.Values.deployment.labels`, and the template

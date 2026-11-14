@@ -1,0 +1,73 @@
+{{/*
+  Custom homepage for "the intersect computer". Replaces Forgejo's stock
+  templates/home.tmpl (v15.0.11); re-check it against the stock template when
+  upgrading Forgejo. Project cards load from the public API, which returns only
+  public repos to anonymous visitors, so making a repo public lists it here.
+*/}}
+{{template "base/head" .}}
+<div role="main" aria-label="{{ctx.Locale.Tr "home"}}" class="page-content home intersect-home">
+	<section class="intersect-hero">
+		<h1 class="intersect-mono"><span class="intersect-accent">$</span> the intersect computer</h1>
+		<p class="intersect-sub">public projects below</p>
+		<p class="intersect-links intersect-mono"><a href="{{AppSubUrl}}/explore/repos">explore →</a></p>
+	</section>
+	<section class="intersect-projects">
+		<div class="intersect-label intersect-mono">public projects</div>
+		<div class="intersect-grid" id="intersect-projects">
+			<div class="intersect-card intersect-ghost intersect-mono">loading…</div>
+		</div>
+		<noscript><p class="intersect-sub"><a href="{{AppSubUrl}}/explore/repos">browse public projects →</a></p></noscript>
+	</section>
+</div>
+<script>
+(() => {
+  const grid = document.getElementById('intersect-projects');
+  const base = '{{AppSubUrl}}';
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text) n.textContent = text;
+    return n;
+  };
+  const ago = (iso) => {
+    const s = (Date.now() - new Date(iso).getTime()) / 1000;
+    const units = [[31536000, 'year'], [2592000, 'month'], [86400, 'day'], [3600, 'hour'], [60, 'minute']];
+    for (const [secs, name] of units) {
+      const v = Math.floor(s / secs);
+      if (v >= 1) return `updated ${v} ${name}${v > 1 ? 's' : ''} ago`;
+    }
+    return 'updated just now';
+  };
+  fetch(`${base}/api/v1/repos/search?limit=24&sort=updated&order=desc&private=false&archived=false`, { credentials: 'omit' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then(({ data }) => {
+      grid.replaceChildren();
+      const repos = (data || []).filter((r) => !r.private && !r.mirror && !r.fork);
+      if (!repos.length) {
+        grid.append(el('div', 'intersect-card intersect-ghost intersect-mono', 'more soon'));
+        return;
+      }
+      for (const r of repos) {
+        const card = el('a', 'intersect-card');
+        card.href = r.html_url;
+        card.append(el('div', 'intersect-name intersect-mono', r.name));
+        if (r.description) card.append(el('div', 'intersect-desc', r.description));
+        const meta = el('div', 'intersect-meta');
+        if (r.language) {
+          const lang = el('span', 'intersect-lang', r.language);
+          meta.append(lang);
+        }
+        meta.append(el('span', '', ago(r.updated_at)));
+        card.append(meta);
+        grid.append(card);
+      }
+    })
+    .catch(() => {
+      grid.replaceChildren();
+      const a = el('a', 'intersect-card intersect-ghost intersect-mono', 'browse public projects →');
+      a.href = `${base}/explore/repos`;
+      grid.append(a);
+    });
+})();
+</script>
+{{template "base/footer" .}}
