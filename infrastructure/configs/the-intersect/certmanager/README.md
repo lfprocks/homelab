@@ -26,7 +26,7 @@ ClusterIssuers + the DNS-01 provider credentials.
 `cert-manager.io/cluster-issuer: letsencrypt-prod` gateway-shim annotation — so
 the wildcard cert (`cobra-lantern-tls`) is issued automatically via Cloudflare.
 Any internal app under that domain just needs an `HTTPRoute` on
-`internal-gateway-http` (see `apps/openclaw`); no per-app cert work.
+`internal-gateway-http` (see `apps/actual-budget`); no per-app cert work.
 
 > The internal domain is Cloudflare-hosted; the public ones are on Route53. If a
 > DNS-01 challenge fails with "zone not found in Route 53", the zone is on the

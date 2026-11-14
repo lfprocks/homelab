@@ -1,6 +1,6 @@
 # hermes
 
-[Hermes Agent](https://github.com/NousResearch/hermes-agent) in an agent-sandbox `Sandbox` under gVisor. It answers the owner's Telegram questions and sends a morning briefing, using the model on the DGX Spark. It runs beside `apps/openclaw`, and the design is in `docs/superpowers/specs/2026-11-04-hermes-agent-design.md`.
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) in an agent-sandbox `Sandbox` under gVisor. It answers the owner's Telegram questions and sends a morning briefing, using the model on the DGX Spark. It replaced OpenClaw (decommissioned 2026-11-13); the design is in `docs/superpowers/specs/2026-11-04-hermes-agent-design.md`.
 
 ## Access
 
@@ -33,9 +33,9 @@ TCP checks can't prove the gateways are closed. Connections to a gateway's LoadB
 | `TELEGRAM_BOT_TOKEN` | Hermes's bot | No | `@BotFather` |
 | `TELEGRAM_ALLOWED_USERS`, `TELEGRAM_HOME_CHANNEL`, `TELEGRAM_OWNER_ID` | Owner's ID | No | Not secret-sensitive, but kept out of git |
 | `SPARK_API_KEY` | Spark server key | Yes, one key per server | `ansible` repo, then every caller |
-| `WSDOT_MCP_TOKEN` | `mcp-wsdot` bearer | Yes, with OpenClaw | `apps/mcp-wsdot`, then both agents |
-| `LFP_MCP_TOKEN` | `lfpweather-mcp` bearer | Yes, with OpenClaw | `apps/lfpweather/mcp`, then both agents |
-| `HA_MCP_TOKEN` | Home Assistant long-lived token | Yes, with OpenClaw | Home Assistant profile, then both agents |
+| `WSDOT_MCP_TOKEN` | `mcp-wsdot` bearer | No | `apps/mcp-wsdot`, then here |
+| `LFP_MCP_TOKEN` | `lfpweather-mcp` bearer | Yes, with `apps/lfpweather/agent` | `apps/lfpweather/mcp`, then both |
+| `HA_MCP_TOKEN` | Home Assistant long-lived token | No | Home Assistant profile, then here |
 | `BRAVE_MCP_TOKEN` | `mcp-brave-x402` bearer | No | `apps/mcp-brave-x402` (`MCP_AUTH_TOKEN`), then here |
 
 ## Operations
@@ -66,7 +66,7 @@ Hermes keeps jobs on the volume, so editing the prompt in git doesn't change the
 - **Home Assistant token:** the token carries its user's full REST API rights, not just the entities exposed through MCP. The HTTP rule enforces the MCP-only limit from this pod. Anyone holding a leaked token gets those full rights from wherever else Home Assistant is reachable.
 - **Prompt injection:** the policy limits where Hermes connects, not what it does with access it holds. When an MCP failed in testing, it probed other ports by itself, and the policy contained that.
 - **Injection drill:** in three runs from a `hermes chat` session, a test page told Hermes to switch on a device. It made no Home Assistant calls and flagged the text each time. That's evidence about one simple page on this model, not a guarantee, so repeat it after a model or version change.
-- **Home Assistant exposure:** Hermes can control every entity exposed to Home Assistant's assistant settings, and OpenClaw's token has the same reach. Review that list before exposing anything sensitive, such as locks or alarms.
+- **Home Assistant exposure:** Hermes can control every entity exposed to Home Assistant's assistant settings. Review that list before exposing anything sensitive, such as locks or alarms.
 - **Group chats:** access follows the person, so Hermes would answer the owner in any group it joined, where others could read the reply. Group joins are turned off in `@BotFather`. Keep them off.
 - **Telegram allowlist:** tested by calling Hermes's authorization code with other user IDs, not with a real message from a second account.
 - **Briefing accuracy:** the model has invented a unit and made spelling slips in briefing text. Check anything that matters against the source.

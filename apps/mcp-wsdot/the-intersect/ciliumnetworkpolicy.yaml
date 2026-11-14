@@ -6,21 +6,13 @@ metadata:
   labels:
     app: mcp-wsdot
 # Default-deny once this selects the pod: only the flows below are allowed.
-# Pairs with the egress rule added to the openclaw sandbox policy so the agent
-# can reach this server in-cluster.
+# Pairs with the egress rule in the hermes sandbox policy so the agent can
+# reach this server in-cluster.
 spec:
   endpointSelector:
     matchLabels:
       app: mcp-wsdot
   ingress:
-    # openclaw agent -> MCP endpoint.
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: openclaw
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
     # hermes agent -> MCP endpoint.
     - fromEndpoints:
         - matchLabels:

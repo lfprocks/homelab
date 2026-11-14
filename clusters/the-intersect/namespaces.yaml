@@ -284,18 +284,6 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: openclaw
-  labels:
-    k8s.lfp.rocks/policy: enforce
-    shared-gateway-access: "true"
-    # Hardened + gVisor-sandboxed agent; stricter than the repo's privileged default.
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: mcp-wsdot
   labels:
     k8s.lfp.rocks/policy: enforce
