@@ -24,5 +24,10 @@ configMapGenerator:
     files:
       - home.tmpl=custom/home.tmpl
       - theme-intersect.css=custom/theme-intersect.css
+    # home.tmpl's script uses JS template literals (${...}); Flux's postBuild
+    # substitution would treat them as variables and fail the build.
+    options:
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
 configurations:
   - kustomizeconfig.yaml
