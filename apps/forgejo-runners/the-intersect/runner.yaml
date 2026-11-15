@@ -82,10 +82,11 @@ spec:
             - {name: DOCKER_TLS_CERTDIR, value: ""}
           resources:
             # Jobs run inside this container's cgroup: 3 x (2 CPU / 4 GiB).
-            # ephemeral-storage request: schedule only where the docker-data
-            # emptyDir has room on the node's NVMe.
-            requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 10Gi}
-            limits: {memory: 14Gi}
+            # ephemeral-storage = the docker-data sizeLimit, so the scheduler
+            # reserves the full cache on the node's (shared) NVMe system disk
+            # and a job filling it evicts this pod rather than starving the node.
+            requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 50Gi}
+            limits: {memory: 14Gi, ephemeral-storage: 50Gi}
           securityContext:
             privileged: true
           volumeMounts:
