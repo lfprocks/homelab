@@ -3,17 +3,6 @@
 # no access to its socket, and the pod's egress is limited to the internet
 # (network-policy.yaml). Residual risk: a container-escape exploit in a job
 # would be root on this node.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: docker-data
-spec:
-  accessModes: [ReadWriteOnce]
-  storageClassName: ceph-block
-  resources:
-    requests:
-      storage: 60Gi  # DinD image/layer cache, survives restarts
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,7 +12,7 @@ metadata:
 spec:
   replicas: 1  # one registration = one runner; scale with runner.capacity
   strategy:
-    type: Recreate  # RWO docker-data
+    type: Recreate  # one registration: never run two runners with the same uuid
   selector:
     matchLabels:
       app: forgejo-runner
@@ -93,8 +82,11 @@ spec:
             - {name: DOCKER_TLS_CERTDIR, value: ""}
           resources:
             # Jobs run inside this container's cgroup: 3 x (2 CPU / 4 GiB).
-            requests: {cpu: 500m, memory: 1Gi}
-            limits: {memory: 14Gi}
+            # ephemeral-storage = the docker-data sizeLimit, so the scheduler
+            # reserves the full cache on the node's (shared) NVMe system disk
+            # and a job filling it evicts this pod rather than starving the node.
+            requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 50Gi}
+            limits: {memory: 14Gi, ephemeral-storage: 50Gi}
           securityContext:
             privileged: true
           volumeMounts:
@@ -113,5 +105,10 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        # DinD image/layer cache. Node-local (NVMe system disk), not Ceph:
+        # CI pulls/extracts wrote ~32 MiB/s of 4 MiB transactions to the RBD
+        # volume and tripped BLUESTORE_SLOW_OP_ALERT on the 870 EVO OSDs.
+        # Throwaway: lost when the pod is recreated, kept across container
+        # restarts. Exceeding sizeLimit evicts the pod (and running jobs).
         - name: docker-data
-          persistentVolumeClaim: {claimName: docker-data}
+          emptyDir: {sizeLimit: 50Gi}
