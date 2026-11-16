@@ -34,7 +34,7 @@ spec:
           containers:
             - name: push
               # Only needs ssh and sha256sum; alpine/git ships both.
-              image: alpine/git:v2.52.0@sha256:4a0e72d49596a1f5d3701aeedafdadc5c0da4062be4657c7bdc4017387f591cc
+              image: alpine/git:v2.54.0@sha256:6a1fdb962814ca11508ca8d1bab94375b5b7ac4e4a9a40981c29fc32c02f095d
               command: ["/bin/sh", "/app/push_cert.sh"]
               env:
                 - name: HOME
