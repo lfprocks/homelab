@@ -493,6 +493,7 @@ metadata:
   name: cardingest
   labels:
     k8s.lfp.rocks/policy: enforce
+    shared-gateway-access: "true"
     # privileged: cardingest mounts camera cards itself (mount/umount, i.e.
     # SYS_ADMIN), exFAT through FUSE (/dev/fuse; Talos has no kernel exFAT),
     # and needs hostPath /dev to see hotplugged USB card readers.

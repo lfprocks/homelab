@@ -1,0 +1,28 @@
+---
+# Per-app config for the shared oauth2-proxy component. cardingest's dashboard
+# authenticates via Pocket-ID (OIDC); the sidecar reverse-proxies authenticated
+# requests to cardingest on the pod's loopback. Same issuer and scopes as
+# glance/cookcli/comfyui. ${SUB_AMBER_MERIDIAN}/${DOMAIN_CORONET_SUMMIT} are
+# resolved by Flux postBuild substitution from cluster-vars.
+#
+# The proxy forwards the browser's Host header unchanged (--pass-host-header
+# defaults to true), so cardingest sees the route hostname: it must be listed
+# in HTTP_ALLOWED_HOSTS (deployment.yaml), and the mutation guard's Origin ==
+# Host check passes for same-origin requests from the dashboard.
+#
+# SSE (the dashboard's live event stream): Go's reverse proxy, which
+# oauth2-proxy uses, flushes text/event-stream responses immediately, so no
+# --flush-interval override is needed.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+data:
+  OAUTH2_PROXY_PROVIDER: "oidc"
+  OAUTH2_PROXY_OIDC_ISSUER_URL: "https://${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
+  OAUTH2_PROXY_SCOPE: "openid email profile groups"
+  OAUTH2_PROXY_UPSTREAMS: "http://127.0.0.1:8080"
+  # Pocket-ID is passkey-based and never runs an email-verification flow, so it
+  # issues email_verified=false. Trust it (admin-set emails, not self-asserted);
+  # the authenticated-emails allowlist still applies. Required for Pocket-ID apps.
+  OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"

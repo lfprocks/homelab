@@ -10,12 +10,13 @@ data:
   STATE_PATH: "/state/cardingest.db"
   MOUNT_ROOT: "/run/cardingest/mnt"
   HTTP_PORT: "8080"
-  # HTTP_ALLOWED_HOSTS is unset on purpose: the API always accepts IP literals
-  # and "localhost", which covers kubectl port-forward and the kubelet probes
-  # (Host is the pod IP). Add the hostname here if an HTTPRoute is added later,
-  # or the UI answers 421. The API has no authentication: any HTTPRoute must go
-  # behind components/oauth2-proxy, with ciliumnetworkpolicy.yaml allowing only
-  # the gateway (`ingress` entity) to the proxy port.
+  # Host names the API answers to besides IP literals and "localhost" (which
+  # already cover kubectl port-forward and the kubelet probes). oauth2-proxy
+  # passes the browser's Host through, so this is the dashboard's route
+  # hostname; anything else gets 421. The API has no authentication of its
+  # own: it is reachable only through the oauth2-proxy sidecar (httproute.yaml,
+  # ciliumnetworkpolicy.yaml).
+  HTTP_ALLOWED_HOSTS: "${SUB_TALLOW_MERIDIAN}.${DOMAIN_COBRA_LANTERN}"
   METRICS_ENABLED: "true"
   METRICS_PORT: "8081"
   TZ: "UTC"
@@ -26,6 +27,7 @@ metadata:
   name: &name cardingest
   labels:
     app: *name
+    oauth2.lfp.rocks/inject: "true"   # adds the oauth2-proxy sidecar
   annotations:
     reloader.stakater.com/auto: "true"
 spec:

@@ -6,19 +6,25 @@ metadata:
     app: cardingest
 # Default-deny once this selects the pod: only the flows below are allowed.
 # cardingest's HTTP API is unauthenticated and drives a privileged pod that
-# erases cards and moves archive files, so no other pod may reach it.
+# erases cards and moves archive files, so nothing but the oauth2-proxy sidecar
+# (over the pod's loopback, which policy never sees) may reach 8080 for real
+# requests.
 #
-# kubectl port-forward is not affected: the container runtime dials the port
-# on loopback inside the pod's network namespace, which policy never sees.
-#
-# If an HTTPRoute is added later, put it behind components/oauth2-proxy and
-# allow only the `ingress` entity to the oauth2-proxy port (as comfyui does),
-# never straight to 8080.
+# kubectl port-forward is not affected either: the container runtime dials the
+# port on loopback inside the pod's network namespace.
 spec:
   endpointSelector:
     matchLabels:
       app: cardingest
   ingress:
+    # The internal gateway's Envoy (reserved "ingress" identity) -> the
+    # oauth2-proxy sidecar only, as comfyui does.
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "4180"
+              protocol: TCP
     # kubelet liveness + readiness probes (/api/v1/healthz).
     - fromEntities:
         - host
@@ -35,8 +41,8 @@ spec:
             - port: "8081"
               protocol: TCP
   egress:
-    # Cluster DNS only. No SMB egress: the SMB CSI node plugin mounts the
-    # shares on the node, and the pod only sees the resulting mounts.
+    # Cluster DNS. No SMB egress: the SMB CSI node plugin mounts the shares on
+    # the node, and the pod only sees the resulting mounts.
     # TODO: when notify is enabled, allow the pulsar writer
     # (k8s:io.kubernetes.pod.namespace: pnp, app: pnp-writer) on TCP 8080.
     - toEndpoints:
@@ -48,4 +54,16 @@ spec:
             - port: "53"
               protocol: UDP
             - port: "53"
+              protocol: TCP
+    # oauth2-proxy -> the Pocket-ID issuer (OIDC discovery, token exchange,
+    # JWKS). The issuer is on an external-gateway hostname that resolves to the
+    # public address, so the pod reaches it as the internet, not in-cluster.
+    # Public internet only, as in mcp-wsdot: Cilium's `world` includes the LAN,
+    # so private ranges are excepted. No policy here uses toFQDNs yet.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+      toPorts:
+        - ports:
+            - port: "443"
               protocol: TCP
