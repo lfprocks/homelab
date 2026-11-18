@@ -1,0 +1,129 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cardingest-env-configmap
+data:
+  READER_MODE: "real"
+  LOG_LEVEL: "info"
+  CONFIG_PATH: "/config/config.yaml"
+  STATE_PATH: "/state/cardingest.db"
+  MOUNT_ROOT: "/run/cardingest/mnt"
+  HTTP_PORT: "8080"
+  # HTTP_ALLOWED_HOSTS is unset on purpose: the API always accepts IP literals
+  # and "localhost", which covers kubectl port-forward and the kubelet probes
+  # (Host is the pod IP). Add the hostname here if an HTTPRoute is added later,
+  # or the UI answers 421.
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+  TZ: "UTC"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name cardingest
+  labels:
+    app: *name
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  # One reader, one SQLite file on an RWO volume: never two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "cardingest"
+        k8s.lfp.rocks/version: "0.1.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+    spec:
+      # The USB card reader is plugged into this node.
+      nodeSelector:
+        kubernetes.io/hostname: the-intersect-worker-01
+      containers:
+        - name: *name
+          image: git.intersect.computer/michaelpeterswa/cairn-cardingest:0.1.0
+          imagePullPolicy: IfNotPresent
+          # privileged: cardingest mounts and unmounts cards itself (SYS_ADMIN),
+          # exFAT through FUSE (/dev/fuse; Talos has no kernel exFAT), and opens
+          # block devices that appear after the pod starts. The namespace is
+          # Pod Security "privileged" for this reason.
+          securityContext:
+            privileged: true
+          # The host /dev is mounted over /dev, so keep the termination log
+          # off it rather than have the runtime create a file in the node's
+          # devtmpfs.
+          terminationMessagePath: /tmp/termination-log
+          envFrom:
+            - configMapRef:
+                name: cardingest-env-configmap
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            # Card copy hashes every file and runs FUSE: bursty CPU, so a
+            # modest request and no CPU limit (repo convention).
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            # Whole /dev, not single devices: card device nodes are hotplugged
+            # after the container starts and found via /dev/disk/by-path.
+            - name: dev
+              mountPath: /dev
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: state
+              mountPath: /state
+            # Card mountpoints. Mounts made here stay in the pod's mount
+            # namespace (no propagation to or from the host).
+            - name: mnt
+              mountPath: /run/cardingest/mnt
+            - name: footage
+              mountPath: /data/dest
+            - name: lightroom
+              mountPath: /data/lightroom
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: config
+          configMap:
+            name: cardingest-config
+        - name: state
+          persistentVolumeClaim:
+            claimName: cardingest-state
+        - name: mnt
+          emptyDir: {}
+        - name: footage
+          persistentVolumeClaim:
+            claimName: cardingest-footage-pvc
+        - name: lightroom
+          persistentVolumeClaim:
+            claimName: cardingest-lightroom-pvc

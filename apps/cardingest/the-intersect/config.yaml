@@ -1,0 +1,80 @@
+# cardingest ingest policy, from cairn config/cardingest/config.yaml with the
+# in-cluster paths. Bootstrap settings (READER_MODE, paths, ports) come from
+# env in deployment.yaml, not here.
+
+destination:
+  # Default share (footage) for categories that don't set their own dest.
+  # Layout tokens: {category} {year} {month} {day} {date}(=YYYY-MM-DD).
+  path: /data/dest
+  layout: "{category}/{year}/{date}"   # e.g. jpeg/2026/2026-07-04/…
+  date_source: exif_then_mtime
+  timezone: America/Los_Angeles   # archive dates render in this zone
+  # Sentinel that must exist on each share for ingest to proceed, so nothing is
+  # written (or erased from a card) unless the SMB share is really mounted.
+  # Created once per share by hand; see the PR checklist.
+  marker: .cardingest-ok
+
+# Per-category routing. RAW goes to the lightroom share in Lightroom's nested
+# date layout; everything else lands on the footage share.
+categories:
+  raw:
+    ext: [".arw", ".dng", ".cr2", ".cr3", ".nef"]
+    dest: /data/lightroom      # lightroom SMB share
+    layout: "{year}/{date}"    # -> lightroom/2026/2026-07-04/GUH09283.ARW
+  jpeg: [".jpg", ".jpeg"]      # -> /data/dest/jpeg/2026/2026-07-04/…
+  video: [".mp4", ".mov"]
+  other: ["*"]                 # catch-all; omit to skip unknowns
+
+rules:                          # ordered, first match wins
+  - name: skip thumbnails
+    match:
+      ext: [".thm"]
+      path_glob: "**/THMBNL/**"
+    action: skip
+  - name: skip tiny files
+    match:
+      max_size: 100KB
+    action: skip
+  - name: keep media
+    match:
+      ext:
+        - ".arw"
+        - ".dng"
+        - ".cr2"
+        - ".cr3"
+        - ".nef"
+        - ".jpg"
+        - ".jpeg"
+        - ".mp4"
+        - ".mov"
+    action: keep
+  - default: skip
+
+card:
+  erase_ingested: true
+  erase_skipped: false          # opt-in; off to avoid rule-typo data loss
+  eject_when_done: true
+
+reader:
+  # Lexar RW530 dual-slot reader. Each slot is a separate USB mass-storage
+  # bridge, so both VID:PIDs are allowlisted.
+  usb_ids:
+    - "05e3:0764"               # SD slot (Genesys bridge)
+    - "174c:2362"               # CFexpress slot (ASMedia bridge, UAS)
+
+drive:
+  # Field SSDs to offload. IDs must not overlap reader.usb_ids.
+  # TODO: add the field SSD's VID:PID once known (plug it into
+  # the-intersect-worker-01 and read it from lsusb / sysfs).
+  usb_ids: []
+  auto_offload: false
+
+# TODO: notifications are off until the writer token and Pushover user key are
+# in a sops Secret. To enable: add NOTIFY_PULSAR_TOKEN (a writer token also
+# listed in the pnp writer-secrets) to a sops-encrypted Secret in this app,
+# reference it from the Deployment, add the decryption block to the Flux
+# Kustomization, and add a notifier here pointing at
+# http://pnp-writer.pnp.svc.cluster.local. The user_key is credential-like:
+# keep it out of this public file (cardingest reads it only from this config,
+# so the config itself would then need to come from a sops Secret).
+notify: []

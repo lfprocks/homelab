@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cardingest
+
+resources:
+  - persistentvolumes.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+
+# config.yaml is the ingest policy (cairn config/cardingest/config.yaml).
+# Mounted read-only: change it here, not in the web UI (the UI's save writes
+# next to CONFIG_PATH and fails on a ConfigMap mount).
+configMapGenerator:
+  - name: cardingest-config
+    files:
+      - config.yaml
+    options:
+      annotations:
+        # The file has no ${...} tokens today; keep Flux from rewriting any
+        # that get added later.
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: cardingest

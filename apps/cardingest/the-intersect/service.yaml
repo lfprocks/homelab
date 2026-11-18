@@ -1,0 +1,15 @@
+---
+# ClusterIP only: no HTTPRoute yet, reach it with kubectl port-forward.
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name cardingest
+  labels:
+    app: *name
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
