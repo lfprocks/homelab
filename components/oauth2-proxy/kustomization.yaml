@@ -17,7 +17,9 @@
 #        OAUTH2_PROXY_OIDC_ISSUER_URL: https://<idp-host>
 #        OAUTH2_PROXY_SCOPE:        "openid email profile groups"
 #   3. Secrets `oauth2-proxy-secrets` (client-id/client-secret/cookie-secret) and
-#      `oauth2-proxy-emails` (authenticated-emails.txt). Reusing one client +
+#      `oauth2-proxy-emails` (authenticated-emails.txt, one email per line).
+#      That file is the allowlist: only the emails in it can sign in, whatever
+#      accounts exist on the IdP. Reusing one client +
 #      cookie-secret across apps yields SSO (cookie-domain is the wildcard
 #      *.${DOMAIN_CORONET_SUMMIT}).
 #   4. its external HTTPRoute pointed at the Service's `oauth2-proxy` port (4180).
@@ -51,7 +53,19 @@ patches:
           args:
             # provider + upstream + (for oidc) issuer/scope come from the
             # per-app oauth2-proxy-config ConfigMap via envFrom below.
-            - --email-domain=*
+            #
+            # Authorization: the authenticated-emails file is the ONLY gate.
+            # Do not add --email-domain (or OAUTH2_PROXY_EMAIL_DOMAINS): an
+            # email passes if it matches any email-domain OR is in the file, so
+            # `*` admits every account the IdP authenticates. With no
+            # email-domain, only listed emails pass (oauth2-proxy validator.go),
+            # and startup only requires one of the two (validation/options.go).
+            #
+            # args/0 holds the default value explicitly. It keeps the indexes
+            # below stable for apps that JSON-patch them by position with
+            # `test` guards (cookie-domain is args/2, whitelist-domain
+            # args/10). Keep it, or update those patches, if you reorder.
+            - --skip-jwt-bearer-tokens=false
             - --authenticated-emails-file=/etc/oauth2-proxy/authenticated-emails.txt
             - --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
             - --cookie-secure=true
