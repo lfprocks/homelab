@@ -7,6 +7,7 @@ resources:
   - pvc.yaml
   - deployment.yaml
   - service.yaml
+  - ciliumnetworkpolicy.yaml
 
 # config.yaml is the ingest policy (cairn config/cardingest/config.yaml).
 # Mounted read-only: change it here, not in the web UI (the UI's save writes

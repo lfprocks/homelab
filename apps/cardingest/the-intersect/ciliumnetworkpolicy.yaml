@@ -1,0 +1,51 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cardingest
+  labels:
+    app: cardingest
+# Default-deny once this selects the pod: only the flows below are allowed.
+# cardingest's HTTP API is unauthenticated and drives a privileged pod that
+# erases cards and moves archive files, so no other pod may reach it.
+#
+# kubectl port-forward is not affected: the container runtime dials the port
+# on loopback inside the pod's network namespace, which policy never sees.
+#
+# If an HTTPRoute is added later, put it behind components/oauth2-proxy and
+# allow only the `ingress` entity to the oauth2-proxy port (as comfyui does),
+# never straight to 8080.
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cardingest
+  ingress:
+    # kubelet liveness + readiness probes (/api/v1/healthz).
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Prometheus metrics scrape from grafana-alloy.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    # Cluster DNS only. No SMB egress: the SMB CSI node plugin mounts the
+    # shares on the node, and the pod only sees the resulting mounts.
+    # TODO: when notify is enabled, allow the pulsar writer
+    # (k8s:io.kubernetes.pod.namespace: pnp, app: pnp-writer) on TCP 8080.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP

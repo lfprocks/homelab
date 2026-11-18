@@ -1,5 +1,7 @@
 ---
 # ClusterIP only: no HTTPRoute yet, reach it with kubectl port-forward.
+# ciliumnetworkpolicy.yaml blocks every other pod from this port: the API is
+# unauthenticated.
 apiVersion: v1
 kind: Service
 metadata:

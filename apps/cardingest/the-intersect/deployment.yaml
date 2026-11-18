@@ -13,7 +13,9 @@ data:
   # HTTP_ALLOWED_HOSTS is unset on purpose: the API always accepts IP literals
   # and "localhost", which covers kubectl port-forward and the kubelet probes
   # (Host is the pod IP). Add the hostname here if an HTTPRoute is added later,
-  # or the UI answers 421.
+  # or the UI answers 421. The API has no authentication: any HTTPRoute must go
+  # behind components/oauth2-proxy, with ciliumnetworkpolicy.yaml allowing only
+  # the gateway (`ingress` entity) to the proxy port.
   METRICS_ENABLED: "true"
   METRICS_PORT: "8081"
   TZ: "UTC"
