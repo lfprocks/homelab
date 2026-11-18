@@ -71,11 +71,11 @@ drive:
 
 # Notifications through the pulsar-notification-pipeline writer. Credentials
 # come from env, never this file: the writer bearer token from
-# NOTIFY_PULSAR_TOKEN and (cairn >= 0.1.1) the Pushover user key from
-# NOTIFY_PUSHOVER_USER_KEY, both in the sops Secret cardingest-notify.
-# A notifier that can't be built (e.g. 0.1.0, which still expects user_key in
-# this file, or placeholder credentials) is logged as a warning; ingest and the
-# pod are unaffected.
+# NOTIFY_PULSAR_TOKEN and the Pushover user key from NOTIFY_PUSHOVER_USER_KEY,
+# both in the sops Secret cardingest-notify. Env names must match NOTIFY_*, and
+# notifier url/env/on can't be changed from the web UI (cairn 0.1.1).
+# A notifier that can't be built is logged at error level and counted in
+# cardingest_notifier_build_errors (alerted); ingest and the pod are unaffected.
 notify:
   - type: pulsar
     url: http://pnp-writer.pnp.svc.cluster.local
