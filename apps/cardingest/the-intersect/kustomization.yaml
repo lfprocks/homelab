@@ -38,6 +38,13 @@ patches:
       - op: test
         path: /spec/template/spec/containers/1/name
         value: oauth2-proxy
+      # Build-enforced dependency on #492: the shared component must no longer
+      # pass --email-domain=* (which admits every Pocket-ID account). #492
+      # puts this no-op in args/0; until it is merged this build fails rather
+      # than deploying the dashboard open to any account.
+      - op: test
+        path: /spec/template/spec/containers/1/args/0
+        value: --skip-jwt-bearer-tokens=false
       - op: test
         path: /spec/template/spec/containers/1/args/10
         value: --whitelist-domain=.${DOMAIN_CORONET_SUMMIT}
@@ -61,6 +68,21 @@ configMapGenerator:
       annotations:
         # The file has no ${...} tokens today; keep Flux from rewriting any
         # that get added later.
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+  # Grafana dashboard, loaded by the grafana sidecar, which watches all
+  # namespaces for ConfigMaps labelled grafana_dashboard: "1"
+  # (infrastructure/configs/the-intersect/grafana/lgtm-distributed/values.yaml).
+  # Datasource uid `prom` (Mimir), the one defined in git. Alert rules live
+  # centrally in that values.yaml, group `cardingest`.
+  - name: cardingest-grafana-dashboard
+    files:
+      - dashboards/cardingest.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: cardingest
         kustomize.toolkit.fluxcd.io/substitute: disabled
 
 labels:
