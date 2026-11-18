@@ -25,10 +25,9 @@ patches:
   #     the external domain; here only to this dashboard's exact host.
   #   - --cookie-domain removed: the session cookie is host-only (no Domain
   #     attribute), so no other host on the internal domain receives it.
-  #   - --email-domain=* removed: oauth2-proxy admits an email that matches
-  #     the domain list OR the authenticated-emails file, so `*` admitted every
-  #     Pocket-ID account. Without it, only the file grants access (plus the
-  #     group check in oauth2-proxy-config.yaml).
+  # `--email-domain=*` is gone from the component itself (PR #492, which must
+  # merge first): oauth2-proxy admits an email matching the domain list OR the
+  # authenticated-emails file, so `*` admitted every Pocket-ID account.
   # Ops run highest index first so removals don't shift later paths. The
   # `test` ops fail the build if the component's args ever change, rather
   # than editing the wrong arg.
@@ -50,11 +49,6 @@ patches:
         value: --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
       - op: remove
         path: /spec/template/spec/containers/1/args/2
-      - op: test
-        path: /spec/template/spec/containers/1/args/0
-        value: --email-domain=*
-      - op: remove
-        path: /spec/template/spec/containers/1/args/0
 
 # config.yaml is the ingest policy (cairn config/cardingest/config.yaml).
 # Mounted read-only: change it here, not in the web UI (the UI's save writes
