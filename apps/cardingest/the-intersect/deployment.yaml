@@ -55,6 +55,8 @@ spec:
         kubernetes.io/hostname: the-intersect-worker-01
       containers:
         - name: *name
+          # TODO: bump to 0.1.1 (and k8s.lfp.rocks/version) once published:
+          # 0.1.1 reads the Pushover user key from NOTIFY_PUSHOVER_USER_KEY.
           image: git.intersect.computer/michaelpeterswa/cairn-cardingest:0.1.0
           imagePullPolicy: IfNotPresent
           # privileged: cardingest mounts and unmounts cards itself (SYS_ADMIN),
@@ -70,6 +72,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: cardingest-env-configmap
+            # NOTIFY_PULSAR_TOKEN, NOTIFY_PUSHOVER_USER_KEY (sops).
+            - secretRef:
+                name: cardingest-notify
           ports:
             - name: http
               containerPort: 8080

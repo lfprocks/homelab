@@ -43,8 +43,6 @@ spec:
   egress:
     # Cluster DNS. No SMB egress: the SMB CSI node plugin mounts the shares on
     # the node, and the pod only sees the resulting mounts.
-    # TODO: when notify is enabled, allow the pulsar writer
-    # (k8s:io.kubernetes.pod.namespace: pnp, app: pnp-writer) on TCP 8080.
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: kube-system
@@ -54,6 +52,16 @@ spec:
             - port: "53"
               protocol: UDP
             - port: "53"
+              protocol: TCP
+    # cardingest notifications -> the pulsar-notification-pipeline writer
+    # (Service pnp-writer:80 -> pod port 8080).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: pnp
+            k8s:app: pnp-writer
+      toPorts:
+        - ports:
+            - port: "8080"
               protocol: TCP
     # oauth2-proxy -> the Pocket-ID issuer (OIDC discovery, token exchange,
     # JWKS). The issuer is on an external-gateway hostname that resolves to the

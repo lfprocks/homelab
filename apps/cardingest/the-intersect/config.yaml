@@ -69,12 +69,15 @@ drive:
   usb_ids: []
   auto_offload: false
 
-# TODO: notifications are off until the writer token and Pushover user key are
-# in a sops Secret. To enable: add NOTIFY_PULSAR_TOKEN (a writer token also
-# listed in the pnp writer-secrets) to a sops-encrypted Secret in this app,
-# reference it from the Deployment, add the decryption block to the Flux
-# Kustomization, and add a notifier here pointing at
-# http://pnp-writer.pnp.svc.cluster.local. The user_key is credential-like:
-# keep it out of this public file (cardingest reads it only from this config,
-# so the config itself would then need to come from a sops Secret).
-notify: []
+# Notifications through the pulsar-notification-pipeline writer. Credentials
+# come from env, never this file: the writer bearer token from
+# NOTIFY_PULSAR_TOKEN and (cairn >= 0.1.1) the Pushover user key from
+# NOTIFY_PUSHOVER_USER_KEY, both in the sops Secret cardingest-notify.
+# A notifier that can't be built (e.g. 0.1.0, which still expects user_key in
+# this file, or placeholder credentials) is logged as a warning; ingest and the
+# pod are unaffected.
+notify:
+  - type: pulsar
+    url: http://pnp-writer.pnp.svc.cluster.local
+    token_env: NOTIFY_PULSAR_TOKEN
+    "on": [complete, error]

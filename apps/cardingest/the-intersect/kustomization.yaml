@@ -12,16 +12,26 @@ resources:
   - oauth2-proxy-config.yaml
   - oauth2-proxy-secret.yaml
   - oauth2-proxy-emails-secret.yaml
+  - notify-secret.sops.yaml
 
 # Pocket-ID login in front of the dashboard (oauth2-proxy sidecar on 4180).
 components:
   - ../../../components/oauth2-proxy
 
 patches:
-  # The component scopes its session cookie and redirect allowlist to the
-  # external domain. This dashboard is served on the internal domain, so point
-  # both at it for this app only. The `test` ops fail the build if the
-  # component's arg order ever changes, rather than replacing the wrong arg.
+  # Tightens the shared component's oauth2-proxy args for this app only (the
+  # component itself is unchanged; other apps depend on it):
+  #   - --whitelist-domain: the component allows redirects to any host under
+  #     the external domain; here only to this dashboard's exact host.
+  #   - --cookie-domain removed: the session cookie is host-only (no Domain
+  #     attribute), so no other host on the internal domain receives it.
+  #   - --email-domain=* removed: oauth2-proxy admits an email that matches
+  #     the domain list OR the authenticated-emails file, so `*` admitted every
+  #     Pocket-ID account. Without it, only the file grants access (plus the
+  #     group check in oauth2-proxy-config.yaml).
+  # Ops run highest index first so removals don't shift later paths. The
+  # `test` ops fail the build if the component's args ever change, rather
+  # than editing the wrong arg.
   - target:
       kind: Deployment
       name: cardingest
@@ -30,17 +40,21 @@ patches:
         path: /spec/template/spec/containers/1/name
         value: oauth2-proxy
       - op: test
-        path: /spec/template/spec/containers/1/args/2
-        value: --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
-      - op: replace
-        path: /spec/template/spec/containers/1/args/2
-        value: --cookie-domain=.${DOMAIN_COBRA_LANTERN}
-      - op: test
         path: /spec/template/spec/containers/1/args/10
         value: --whitelist-domain=.${DOMAIN_CORONET_SUMMIT}
       - op: replace
         path: /spec/template/spec/containers/1/args/10
-        value: --whitelist-domain=.${DOMAIN_COBRA_LANTERN}
+        value: --whitelist-domain=${SUB_TALLOW_MERIDIAN}.${DOMAIN_COBRA_LANTERN}
+      - op: test
+        path: /spec/template/spec/containers/1/args/2
+        value: --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
+      - op: remove
+        path: /spec/template/spec/containers/1/args/2
+      - op: test
+        path: /spec/template/spec/containers/1/args/0
+        value: --email-domain=*
+      - op: remove
+        path: /spec/template/spec/containers/1/args/0
 
 # config.yaml is the ingest policy (cairn config/cardingest/config.yaml).
 # Mounted read-only: change it here, not in the web UI (the UI's save writes
