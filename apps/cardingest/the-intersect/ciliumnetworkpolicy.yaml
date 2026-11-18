@@ -42,7 +42,9 @@ spec:
               protocol: TCP
   egress:
     # Cluster DNS. No SMB egress: the SMB CSI node plugin mounts the shares on
-    # the node, and the pod only sees the resulting mounts.
+    # the node, and the pod only sees the resulting mounts. The `dns` rule
+    # sends lookups through Cilium's DNS proxy, which is how the toFQDNs rule
+    # below learns the issuer's addresses; without it that rule matches nothing.
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: kube-system
@@ -53,6 +55,9 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
     # cardingest notifications -> the pulsar-notification-pipeline writer
     # (Service pnp-writer:80 -> pod port 8080).
     - toEndpoints:
@@ -63,14 +68,21 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
-    # oauth2-proxy -> the Pocket-ID issuer (OIDC discovery, token exchange,
-    # JWKS). The issuer is on an external-gateway hostname that resolves to the
-    # public address, so the pod reaches it as the internet, not in-cluster.
-    # Public internet only, as in mcp-wsdot: Cilium's `world` includes the LAN,
-    # so private ranges are excepted. No policy here uses toFQDNs yet.
-    - toCIDRSet:
-        - cidr: 0.0.0.0/0
-          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+    # oauth2-proxy -> the Pocket-ID issuer only (OIDC discovery, token
+    # exchange, JWKS; all served from the issuer host). Same token pair as
+    # OAUTH2_PROXY_OIDC_ISSUER_URL in oauth2-proxy-config.yaml; Flux
+    # substitutes it, so no real hostname is in the repo.
+    #
+    # The repo's first toFQDNs rule, on purpose: egress is per pod, and this
+    # pod's main container is privileged (mounts cards, host /dev). The only
+    # thing here that needs the internet is the login proxy, and only for the
+    # IdP, whose external-gateway hostname resolves to the public address. A
+    # "443 to world minus private ranges" rule would have handed the privileged
+    # container the whole internet. Cilium's DNS proxy is enabled (chart
+    # default; the live cilium-config has enable-l7-proxy=true and the
+    # tofqdns-* settings).
+    - toFQDNs:
+        - matchName: "${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
       toPorts:
         - ports:
             - port: "443"
