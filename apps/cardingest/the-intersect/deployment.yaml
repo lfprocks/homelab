@@ -53,18 +53,38 @@ spec:
       # The USB card reader is plugged into this node.
       nodeSelector:
         kubernetes.io/hostname: the-intersect-worker-01
+      # Pod level: seccomp only. No runAsUser here: it would also apply to the
+      # oauth2-proxy sidecar, which must stay non-root. (The privileged
+      # cardingest container runs unconfined regardless; the sidecar keeps
+      # RuntimeDefault.)
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: *name
           # TODO: bump to 0.1.1 (and k8s.lfp.rocks/version) once published:
           # 0.1.1 reads the Pushover user key from NOTIFY_PUSHOVER_USER_KEY.
           image: git.intersect.computer/michaelpeterswa/cairn-cardingest:0.1.0
           imagePullPolicy: IfNotPresent
-          # privileged: cardingest mounts and unmounts cards itself (SYS_ADMIN),
-          # exFAT through FUSE (/dev/fuse; Talos has no kernel exFAT), and opens
-          # block devices that appear after the pod starts. The namespace is
-          # Pod Security "privileged" for this reason.
           securityContext:
+            # Trivy KSV-0017 (privileged), accepted: cardingest mounts and
+            # unmounts cards itself (mount(2), i.e. SYS_ADMIN), mounts exFAT
+            # through FUSE (/dev/fuse; Talos has no kernel exFAT), and opens
+            # block devices that appear after the pod starts. The namespace is
+            # Pod Security "privileged" for this reason.
             privileged: true
+            # Root, stated explicitly: mount(2) and the FUSE helper's direct
+            # mount need uid 0 (root mounts directly, without fusermount).
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: true # implied by privileged; explicit
+            # Everything cardingest writes has its own volume: /state (PVC),
+            # /run/cardingest/mnt (card mountpoints), /tmp (SQLite temp files,
+            # the termination log), /data/* (the shares). /config is a
+            # read-only ConfigMap. /etc/mtab in the image is a symlink to
+            # /proc/mounts, so libfuse2 skips its mtab update.
+            readOnlyRootFilesystem: true
           # The host /dev is mounted over /dev, so keep the termination log
           # off it rather than have the runtime create a file in the node's
           # devtmpfs.
@@ -100,10 +120,15 @@ spec:
             limits:
               memory: 1Gi
           volumeMounts:
-            # Whole /dev, not single devices: card device nodes are hotplugged
-            # after the container starts and found via /dev/disk/by-path.
+            # Trivy KSV-0121 (hostPath /dev), accepted: card device nodes
+            # (/dev/sdX) are hotplugged after the container starts and found
+            # via /dev/disk/by-path, and FUSE needs /dev/fuse. A narrower path
+            # such as /dev/bus/usb (trunk-recorder) only exposes raw USB, not
+            # the block devices cardingest mounts.
             - name: dev
               mountPath: /dev
+            - name: tmp
+              mountPath: /tmp
             - name: config
               mountPath: /config
               readOnly: true
@@ -119,6 +144,7 @@ spec:
               mountPath: /data/lightroom
       volumes:
         - name: dev
+          # Trivy KSV-0121, accepted: see the volumeMount above.
           hostPath:
             path: /dev
             type: Directory
@@ -129,6 +155,8 @@ spec:
           persistentVolumeClaim:
             claimName: cardingest-state
         - name: mnt
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
         - name: footage
           persistentVolumeClaim:
