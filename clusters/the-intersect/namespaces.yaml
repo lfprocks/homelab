@@ -486,3 +486,17 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cardingest
+  labels:
+    k8s.lfp.rocks/policy: enforce
+    shared-gateway-access: "true"
+    # privileged: cardingest mounts camera cards itself (mount/umount, i.e.
+    # SYS_ADMIN), exFAT through FUSE (/dev/fuse; Talos has no kernel exFAT),
+    # and needs hostPath /dev to see hotplugged USB card readers.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

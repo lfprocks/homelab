@@ -1,0 +1,19 @@
+---
+# The oauth2-proxy component adds port 4180 (`oauth2-proxy`), which the
+# HTTPRoute targets. 8080 is the unauthenticated API: ciliumnetworkpolicy.yaml
+# allows it only from the node (probes); use kubectl port-forward for direct
+# access.
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name cardingest
+  labels:
+    app: *name
+    oauth2.lfp.rocks/inject: "true"
+spec:
+  selector:
+    app: *name
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

@@ -242,6 +242,17 @@ grafana:
               group_interval: 15m
               repeat_interval: 6h
 
+            # cardingest ingest (rules group cardingest). Grouped per alert and
+            # per kind/slot so a card and a drive notify separately. Short
+            # group_wait: a not-durable or failed job is a one-off event the
+            # owner should hear about while the card is still at hand.
+            - receiver: pnp-pushover
+              object_matchers:
+                - ["category", "=", "cardingest"]
+              group_by: ["alertname", "kind", "slot"]
+              group_wait: 30s
+              group_interval: 15m
+              repeat_interval: 6h
             # Cluster-health rules: one notification per affected object.
             - receiver: pnp-pushover
               object_matchers:
@@ -1044,6 +1055,266 @@ grafana:
                     expression: q
                     conditions:
                       - evaluator: {type: gt, params: [7200]}
+        # cardingest (apps/cardingest): camera-card and field-drive ingest on
+        # the-intersect-worker-01. Metrics from cairn >= 0.1.1, scraped by alloy
+        # through the pod's prometheus.io annotations (namespace/service labels
+        # come from alloy's relabeling). Each query returns only offending
+        # series, so noDataState is OK except for CardingestDown, where no data
+        # means the pod (or its scrape) is gone.
+        - orgId: 1
+          name: cardingest
+          folder: alerts
+          interval: 1m
+          rules:
+            # not_durable: writeback to the NAS could not be confirmed (syncfs error)
+            # around an erase. The one outcome that can mean lost footage: critical.
+            - uid: cardingest-job-not-durable
+              title: CardingestJobNotDurable
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                title: "cardingest: an erase may not be durable"
+                summary: >-
+                  A cardingest job finished as not_durable: the copy could not be confirmed
+                  on disk before the card or drive was erased or freed. Re-insert the card or
+                  drive and check the job in the cardingest dashboard.
+              labels:
+                severity: critical
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      sum by (kind) (increase(cardingest_jobs_total{outcome="not_durable"}[10m])) > 0
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: cardingest-job-error
+              title: CardingestJobError
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                title: "cardingest: an ingest job failed"
+                summary: >-
+                  A cardingest job ended in error in the last 10 minutes. The card or drive
+                  was left untouched; see the job in the cardingest dashboard and the pod logs.
+              labels:
+                severity: warning
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      sum by (kind) (increase(cardingest_jobs_total{outcome="error"}[10m])) > 0
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: cardingest-notifier-build-errors
+              title: CardingestNotifierBroken
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 5m
+              annotations:
+                title: "cardingest: push notifications are off"
+                summary: >-
+                  cardingest could not build one or more notifiers at startup, so job
+                  notifications are not being sent. Check the cardingest-notify secret and the
+                  startup log ("some notifiers could not be built").
+              labels:
+                severity: warning
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max(cardingest_notifier_build_errors) > 0
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            # Same shape as SparkInferenceDown: no data alerts too, because the series
+            # disappearing means the pod or its scrape is gone.
+            - uid: cardingest-down
+              title: CardingestDown
+              condition: fired
+              noDataState: Alerting
+              execErrState: Error
+              for: 5m
+              annotations:
+                title: "cardingest is down"
+                summary: >-
+                  The cardingest pod has not answered a metrics scrape for 5 minutes, or is
+                  gone. It is pinned to the-intersect-worker-01: check the node and
+                  kubectl -n cardingest get pods.
+              labels:
+                severity: warning
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max(up{namespace="cardingest", service="cardingest"})
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: lt, params: [1]}
+            # A card slot busy for over an hour. verifying is included because a job
+            # moves between copy and verify phases. Slots that were offloading a field
+            # drive in the last 12h are excluded: drives can report erasing while freeing,
+            # and they have their own threshold below. Tune after the first real runs.
+            - uid: cardingest-card-stuck
+              title: CardingestCardStuck
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 1h
+              annotations:
+                title: "cardingest: a card slot has been busy for over an hour"
+                summary: >-
+                  A card slot has been copying, verifying or erasing for more than an hour.
+                  A full CFexpress card normally takes minutes; check the dashboard and logs
+                  for a hung mount or a stalled NAS.
+              labels:
+                severity: warning
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (slot) (cardingest_slot_state{state=~"copying|verifying|erasing"}) == 1
+                      unless on (slot)
+                      max by (slot) (max_over_time(cardingest_slot_state{state="offloading"}[12h])) == 1
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            # A field-drive offload running for over 12 hours. A 6 TB offload over
+            # FUSE takes hours. TODO: tune this threshold after the first measured
+            # offload.
+            - uid: cardingest-drive-stuck
+              title: CardingestDriveStuck
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 12h
+              annotations:
+                title: "cardingest: a drive offload has run for over 12 hours"
+                summary: >-
+                  A field-drive offload has been running for more than 12 hours. Large
+                  drives over FUSE take hours, so check progress in the dashboard before
+                  treating this as stuck.
+              labels:
+                severity: warning
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max by (slot) (cardingest_slot_state{state="offloading"}) == 1
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
+            - uid: cardingest-conflicts-open
+              title: CardingestConflictsOpen
+              condition: fired
+              noDataState: OK
+              execErrState: Error
+              for: 30m
+              annotations:
+                title: "cardingest: conflicts waiting for review"
+                summary: >-
+                  cardingest has had conflicts open for review for 30 minutes. Files
+                  involved are held, not lost; resolve them in the dashboard's Conflicts view.
+              labels:
+                severity: info
+                category: cardingest
+              data:
+                - refId: q
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: prom
+                  model:
+                    refId: q
+                    editorMode: code
+                    instant: true
+                    expr: >-
+                      max(cardingest_conflicts_open) > 0
+                - refId: fired
+                  relativeTimeRange: {from: 600, to: 0}
+                  datasourceUid: __expr__
+                  model:
+                    refId: fired
+                    type: threshold
+                    expression: q
+                    conditions:
+                      - evaluator: {type: gt, params: [0]}
         - orgId: 1
           name: cluster-health
           folder: alerts

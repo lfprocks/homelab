@@ -1,0 +1,164 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cardingest-env-configmap
+data:
+  READER_MODE: "real"
+  LOG_LEVEL: "info"
+  CONFIG_PATH: "/config/config.yaml"
+  STATE_PATH: "/state/cardingest.db"
+  MOUNT_ROOT: "/run/cardingest/mnt"
+  HTTP_PORT: "8080"
+  # Host names the API answers to besides IP literals and "localhost" (which
+  # already cover kubectl port-forward and the kubelet probes). oauth2-proxy
+  # passes the browser's Host through, so this is the dashboard's route
+  # hostname; anything else gets 421. The API has no authentication of its
+  # own: it is reachable only through the oauth2-proxy sidecar (httproute.yaml,
+  # ciliumnetworkpolicy.yaml).
+  HTTP_ALLOWED_HOSTS: "${SUB_TALLOW_MERIDIAN}.${DOMAIN_COBRA_LANTERN}"
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "8081"
+  TZ: "UTC"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name cardingest
+  labels:
+    app: *name
+    oauth2.lfp.rocks/inject: "true"   # adds the oauth2-proxy sidecar
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  # One reader, one SQLite file on an RWO volume: never two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+        k8s.lfp.rocks/service: "cardingest"
+        k8s.lfp.rocks/version: "0.1.1"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+    spec:
+      # The USB card reader is plugged into this node.
+      nodeSelector:
+        kubernetes.io/hostname: the-intersect-worker-01
+      # Pod level: seccomp only. No runAsUser here: it would also apply to the
+      # oauth2-proxy sidecar, which must stay non-root. (The privileged
+      # cardingest container runs unconfined regardless; the sidecar keeps
+      # RuntimeDefault.)
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: *name
+          image: git.intersect.computer/michaelpeterswa/cairn-cardingest:0.1.1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            # Trivy KSV-0017 (privileged), accepted: cardingest mounts and
+            # unmounts cards itself (mount(2), i.e. SYS_ADMIN), mounts exFAT
+            # through FUSE (/dev/fuse; Talos has no kernel exFAT), and opens
+            # block devices that appear after the pod starts. The namespace is
+            # Pod Security "privileged" for this reason.
+            privileged: true
+            # Root, stated explicitly: mount(2) and the FUSE helper's direct
+            # mount need uid 0 (root mounts directly, without fusermount).
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: true # implied by privileged; explicit
+            # Everything cardingest writes has its own volume: /state (PVC),
+            # /run/cardingest/mnt (card mountpoints), /tmp (SQLite temp files,
+            # the termination log), /data/* (the shares). /config is a
+            # read-only ConfigMap. /etc/mtab in the image is a symlink to
+            # /proc/mounts, so libfuse2 skips its mtab update.
+            readOnlyRootFilesystem: true
+          # The host /dev is mounted over /dev, so keep the termination log
+          # off it rather than have the runtime create a file in the node's
+          # devtmpfs.
+          terminationMessagePath: /tmp/termination-log
+          envFrom:
+            - configMapRef:
+                name: cardingest-env-configmap
+            # NOTIFY_PULSAR_TOKEN, NOTIFY_PUSHOVER_USER_KEY (sops).
+            - secretRef:
+                name: cardingest-notify
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            # Card copy hashes every file and runs FUSE: bursty CPU, so a
+            # modest request and no CPU limit (repo convention).
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            # Trivy KSV-0121 (hostPath /dev), accepted: card device nodes
+            # (/dev/sdX) are hotplugged after the container starts and found
+            # via /dev/disk/by-path, and FUSE needs /dev/fuse. A narrower path
+            # such as /dev/bus/usb (trunk-recorder) only exposes raw USB, not
+            # the block devices cardingest mounts.
+            - name: dev
+              mountPath: /dev
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: state
+              mountPath: /state
+            # Card mountpoints. Mounts made here stay in the pod's mount
+            # namespace (no propagation to or from the host).
+            - name: mnt
+              mountPath: /run/cardingest/mnt
+            - name: footage
+              mountPath: /data/dest
+            - name: lightroom
+              mountPath: /data/lightroom
+      volumes:
+        - name: dev
+          # Trivy KSV-0121, accepted: see the volumeMount above.
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: config
+          configMap:
+            name: cardingest-config
+        - name: state
+          persistentVolumeClaim:
+            claimName: cardingest-state
+        - name: mnt
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: footage
+          persistentVolumeClaim:
+            claimName: cardingest-footage-pvc
+        - name: lightroom
+          persistentVolumeClaim:
+            claimName: cardingest-lightroom-pvc

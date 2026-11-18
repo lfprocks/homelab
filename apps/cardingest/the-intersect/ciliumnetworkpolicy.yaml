@@ -1,0 +1,89 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cardingest
+  labels:
+    app: cardingest
+# Default-deny once this selects the pod: only the flows below are allowed.
+# cardingest's HTTP API is unauthenticated and drives a privileged pod that
+# erases cards and moves archive files, so nothing but the oauth2-proxy sidecar
+# (over the pod's loopback, which policy never sees) may reach 8080 for real
+# requests.
+#
+# kubectl port-forward is not affected either: the container runtime dials the
+# port on loopback inside the pod's network namespace.
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cardingest
+  ingress:
+    # The internal gateway's Envoy (reserved "ingress" identity) -> the
+    # oauth2-proxy sidecar only, as comfyui does.
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "4180"
+              protocol: TCP
+    # kubelet liveness + readiness probes (/api/v1/healthz).
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Prometheus metrics scrape from grafana-alloy.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    # Cluster DNS. No SMB egress: the SMB CSI node plugin mounts the shares on
+    # the node, and the pod only sees the resulting mounts. The `dns` rule
+    # sends lookups through Cilium's DNS proxy, which is how the toFQDNs rule
+    # below learns the issuer's addresses; without it that rule matches nothing.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
+    # cardingest notifications -> the pulsar-notification-pipeline writer
+    # (Service pnp-writer:80 -> pod port 8080).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: pnp
+            k8s:app: pnp-writer
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # oauth2-proxy -> the Pocket-ID issuer only (OIDC discovery, token
+    # exchange, JWKS; all served from the issuer host). Same token pair as
+    # OAUTH2_PROXY_OIDC_ISSUER_URL in oauth2-proxy-config.yaml; Flux
+    # substitutes it, so no real hostname is in the repo.
+    #
+    # The repo's first toFQDNs rule, on purpose: egress is per pod, and this
+    # pod's main container is privileged (mounts cards, host /dev). The only
+    # thing here that needs the internet is the login proxy, and only for the
+    # IdP, whose external-gateway hostname resolves to the public address. A
+    # "443 to world minus private ranges" rule would have handed the privileged
+    # container the whole internet. Cilium's DNS proxy is enabled (chart
+    # default; the live cilium-config has enable-l7-proxy=true and the
+    # tofqdns-* settings).
+    - toFQDNs:
+        - matchName: "${SUB_AMBER_MERIDIAN}.${DOMAIN_CORONET_SUMMIT}"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

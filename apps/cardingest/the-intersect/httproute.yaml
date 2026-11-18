@@ -1,0 +1,20 @@
+# LAN only: internal gateway, never the external one. Pinned to the HTTPS
+# listener: the oauth2-proxy session cookie is Secure, so login cannot work
+# over plain HTTP anyway.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cardingest-httproute
+spec:
+  parentRefs:
+    - name: internal-gateway-http
+      namespace: cilium-ingress
+      sectionName: default-https
+  hostnames: ["${SUB_TALLOW_MERIDIAN}.${DOMAIN_COBRA_LANTERN}"]
+  rules:
+    - backendRefs:
+        # Route through the oauth2-proxy sidecar (Pocket-ID OIDC), never
+        # straight to cardingest:8080: its API has no authentication.
+        - name: cardingest
+          port: 4180

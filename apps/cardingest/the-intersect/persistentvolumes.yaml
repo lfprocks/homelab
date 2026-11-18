@@ -1,0 +1,109 @@
+# Destination shares on olympic, mounted read-write with the shared
+# smb-credentials account (TrueNAS' kubernetes user).
+#
+# Mount options follow the repo's SMB PVs with two deliberate differences:
+#   - uid/gid 0: cardingest runs as root (privileged, it mounts cards), so the
+#     files it creates show as its own. noperm skips client-side permission
+#     checks either way; the NAS ACL decides what the account may write.
+#   - no mfsymlinks: cardingest only writes regular files and refuses symlinks;
+#     without it a Minshall-French link written on the share by someone else
+#     appears here as a small regular file, never as a link to follow.
+# cache=strict (the kernel default) is kept on purpose: cache=loose would let
+# cardingest's read-back verification be served from stale client cache
+# instead of the NAS.
+---
+# footage: the default destination (JPEG, video, other). The share is new in
+# lfprocks/terraform PR #51 (vault/footage); it must be applied before this
+# mounts.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cardingest-footage-pv
+spec:
+  capacity:
+    storage: 10Ti # informational for a manual PV
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=0
+    - gid=0
+    - noperm
+    - nobrl
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-cardingest-footage-rw
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/footage"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+# lightroom: RAW stills. Same share immich mounts read-only as its external
+# library (smb-immich-external-library-share); this is a separate read-write
+# volume with its own handle.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cardingest-lightroom-pv
+spec:
+  capacity:
+    storage: 2Ti # informational for a manual PV
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0755
+    - file_mode=0644
+    - uid=0
+    - gid=0
+    - noperm
+    - nobrl
+    - cache=strict
+    - noserverino # required to prevent data corruption
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: smb-cardingest-lightroom-rw
+    volumeAttributes:
+      source: "//${OLYMPIC_NAS_HOST}/lightroom"
+      csi.storage.k8s.io/node-stage-secret-name: smb-credentials
+      csi.storage.k8s.io/node-stage-secret-namespace: storage
+      csi.storage.k8s.io/node-publish-secret-name: smb-credentials
+      csi.storage.k8s.io/node-publish-secret-namespace: storage
+    nodeStageSecretRef:
+      name: smb-credentials
+      namespace: storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cardingest-footage-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: cardingest-footage-pv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cardingest-lightroom-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi # placeholder size, not a limit
+  storageClassName: ""
+  volumeName: cardingest-lightroom-pv

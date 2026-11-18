@@ -1,0 +1,12 @@
+---
+# SQLite state (jobs, files, hash index). ceph-block, the default class.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cardingest-state
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,92 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cardingest
+
+resources:
+  - persistentvolumes.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ciliumnetworkpolicy.yaml
+  - httproute.yaml
+  - oauth2-proxy-config.yaml
+  - oauth2-proxy-secret.yaml
+  - oauth2-proxy-emails-secret.yaml
+  - notify-secret.sops.yaml
+
+# Pocket-ID login in front of the dashboard (oauth2-proxy sidecar on 4180).
+components:
+  - ../../../components/oauth2-proxy
+
+patches:
+  # Tightens the shared component's oauth2-proxy args for this app only (the
+  # component itself is unchanged; other apps depend on it):
+  #   - --whitelist-domain: the component allows redirects to any host under
+  #     the external domain; here only to this dashboard's exact host.
+  #   - --cookie-domain removed: the session cookie is host-only (no Domain
+  #     attribute), so no other host on the internal domain receives it.
+  # `--email-domain=*` is gone from the component itself (PR #492, which must
+  # merge first): oauth2-proxy admits an email matching the domain list OR the
+  # authenticated-emails file, so `*` admitted every Pocket-ID account.
+  # Ops run highest index first so removals don't shift later paths. The
+  # `test` ops fail the build if the component's args ever change, rather
+  # than editing the wrong arg.
+  - target:
+      kind: Deployment
+      name: cardingest
+    patch: |-
+      - op: test
+        path: /spec/template/spec/containers/1/name
+        value: oauth2-proxy
+      # Build-enforced dependency on #492: the shared component must no longer
+      # pass --email-domain=* (which admits every Pocket-ID account). #492
+      # puts this no-op in args/0; until it is merged this build fails rather
+      # than deploying the dashboard open to any account.
+      - op: test
+        path: /spec/template/spec/containers/1/args/0
+        value: --skip-jwt-bearer-tokens=false
+      - op: test
+        path: /spec/template/spec/containers/1/args/10
+        value: --whitelist-domain=.${DOMAIN_CORONET_SUMMIT}
+      - op: replace
+        path: /spec/template/spec/containers/1/args/10
+        value: --whitelist-domain=${SUB_TALLOW_MERIDIAN}.${DOMAIN_COBRA_LANTERN}
+      - op: test
+        path: /spec/template/spec/containers/1/args/2
+        value: --cookie-domain=.${DOMAIN_CORONET_SUMMIT}
+      - op: remove
+        path: /spec/template/spec/containers/1/args/2
+
+# config.yaml is the ingest policy (cairn config/cardingest/config.yaml).
+# Mounted read-only: change it here, not in the web UI (the UI's save writes
+# next to CONFIG_PATH and fails on a ConfigMap mount).
+configMapGenerator:
+  - name: cardingest-config
+    files:
+      - config.yaml
+    options:
+      annotations:
+        # The file has no ${...} tokens today; keep Flux from rewriting any
+        # that get added later.
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+  # Grafana dashboard, loaded by the grafana sidecar, which watches all
+  # namespaces for ConfigMaps labelled grafana_dashboard: "1"
+  # (infrastructure/configs/the-intersect/grafana/lgtm-distributed/values.yaml).
+  # Datasource uid `prom` (Mimir), the one defined in git. Alert rules live
+  # centrally in that values.yaml, group `cardingest`.
+  - name: cardingest-grafana-dashboard
+    files:
+      - dashboards/cardingest.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: cardingest
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+
+labels:
+  - includeSelectors: true
+    pairs:
+      env: prod
+      proj: cardingest
