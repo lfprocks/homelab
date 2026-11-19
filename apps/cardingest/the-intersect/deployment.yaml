@@ -44,7 +44,7 @@ spec:
       labels:
         app: *name
         k8s.lfp.rocks/service: "cardingest"
-        k8s.lfp.rocks/version: "0.1.1"
+        k8s.lfp.rocks/version: "0.1.2"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
@@ -62,7 +62,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: *name
-          image: git.intersect.computer/michaelpeterswa/cairn-cardingest:0.1.1
+          image: git.intersect.computer/michaelpeterswa/cairn-cardingest:0.1.2
           imagePullPolicy: IfNotPresent
           securityContext:
             # Trivy KSV-0017 (privileged), accepted: cardingest mounts and
