@@ -9,8 +9,9 @@ data:
   AUTHENTICATION_ENABLED: "true"
 
   # Station temperature forecast (lfpweather-timestral): preferred source and
-  # how old a run may be before it is hidden.
-  FORECAST_PREFERRED_SOURCE: "timestral"
+  # how old a run may be before it is hidden. timestral_nws (NWS hourly temp as
+  # a known-future covariate) has the lowest 14-day MAE on the scoreboard.
+  FORECAST_PREFERRED_SOURCE: "timestral_nws"
   FORECAST_MAX_AGE: "3h"
 
   DRAGONFLY_HOST: "dragonfly.dragonfly.svc.cluster.local"
