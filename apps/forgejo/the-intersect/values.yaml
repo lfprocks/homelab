@@ -227,6 +227,12 @@ gitea:
     actions:
       ENABLED: true
       DEFAULT_ACTIONS_URL: github
+    # Flush every git write to disk, loose objects and refs included. git's
+    # default skips loose objects, so a node crash just after a merge left 20
+    # zero-byte objects and a main ref pointing at one of them (2026-11-23).
+    # Costs a little latency per push and merge.
+    git.config:
+      core.fsync: all
     # Pull mirrors of the GitHub orgs (scripts/mirror-github.sh): GitHub stays
     # the source of truth until a repo is moved to Forgejo-primary.
     mirror:
