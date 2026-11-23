@@ -32,7 +32,7 @@ spec:
       labels:
         app: buildkitd
         k8s.lfp.rocks/service: buildkitd
-        k8s.lfp.rocks/version: v0.33.1-rootless
+        k8s.lfp.rocks/version: v0.34.1-rootless
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
