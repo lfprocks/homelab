@@ -7,3 +7,8 @@ resources:
   - runner.yaml
   - buildkitd.yaml
   - network-policy.yaml
+configMapGenerator:
+  # Hash-suffixed so a config change rolls the buildkitd pod.
+  - name: buildkitd-config
+    files:
+      - buildkitd.toml

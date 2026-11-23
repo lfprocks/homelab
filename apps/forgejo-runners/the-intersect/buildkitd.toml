@@ -1,0 +1,19 @@
+# buildkitd config, mounted at /etc/buildkit and passed via --config.
+#
+# GC limits for the 40Gi buildkit-state PVC. The default limits
+# (maxUsedSpace 60%) let the cache sit at ~24 GB and left ~13 GB for a build,
+# so a single large build (venv layer + final COPY of it) ran the volume out
+# of space mid-build. GC runs between builds, not during one, so the limits
+# have to leave room for a whole build's working set.
+#
+# With no [[worker.oci.gcpolicy]] blocks, buildkit derives its default tiered
+# policies (stale local contexts first, then old cache, then everything)
+# from these worker-wide values.
+[worker.oci]
+  gc = true
+  # Never reclaim below this: keeps a small warm cache for base images.
+  reservedSpace = "2GB"
+  # Cache above this is reclaimed at the next GC.
+  maxUsedSpace = "20GB"
+  # GC also prunes until at least this much of the volume is free.
+  minFreeSpace = "16GB"

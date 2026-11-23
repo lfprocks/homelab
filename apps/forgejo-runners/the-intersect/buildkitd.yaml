@@ -12,7 +12,7 @@ spec:
   storageClassName: ceph-block
   resources:
     requests:
-      storage: 40Gi  # layer/build cache
+      storage: 40Gi  # layer/build cache; GC limits in buildkitd.toml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -32,7 +32,7 @@ spec:
       labels:
         app: buildkitd
         k8s.lfp.rocks/service: buildkitd
-        k8s.lfp.rocks/version: v0.33.1-rootless
+        k8s.lfp.rocks/version: v0.34.1-rootless
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -47,6 +47,8 @@ spec:
             - --addr
             - tcp://0.0.0.0:1234
             - --oci-worker-no-process-sandbox
+            - --config
+            - /etc/buildkit/buildkitd.toml
           ports:
             - {name: buildkit, containerPort: 1234}
           readinessProbe:
@@ -67,9 +69,12 @@ spec:
             appArmorProfile: {type: Unconfined}
           volumeMounts:
             - {name: state, mountPath: /home/user/.local/share/buildkit}
+            - {name: config, mountPath: /etc/buildkit, readOnly: true}
       volumes:
         - name: state
           persistentVolumeClaim: {claimName: buildkit-state}
+        - name: config
+          configMap: {name: buildkitd-config}
 ---
 apiVersion: v1
 kind: Service
