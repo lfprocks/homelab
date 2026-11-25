@@ -10,11 +10,11 @@ resources:
   # Pipeline runs. A run is a commit: uncomment one stage, wait for it to finish, then the next.
   # Jobs cannot be changed once created, so a new run gets new names. Removing a line deletes
   # the Job (the data stays on the volume and in the database).
-  - jobs/trial-1-download.yaml
-  - jobs/trial-2-chunk.yaml
-  - jobs/trial-3-embed.yaml
-  - jobs/trial-4-store.yaml
-  - jobs/trial-5-extract-lines.yaml
+  - jobs/b500-1-download.yaml
+  # - jobs/b500-2-chunk.yaml
+  # - jobs/b500-3-embed.yaml
+  # - jobs/b500-4-store.yaml
+  # - jobs/b500-5-extract-lines.yaml
 
 configMapGenerator:
   - name: neuralmarket-config
@@ -24,9 +24,9 @@ configMapGenerator:
       disableNameSuffixHash: true
       annotations:
         kustomize.toolkit.fluxcd.io/substitute: disabled
-  - name: neuralmarket-run-trial
+  - name: neuralmarket-run-b500
     files:
-      - ciks.txt=runs/trial-ciks.txt
+      - ciks.txt=runs/b500-ciks.txt
     options:
       disableNameSuffixHash: true
       annotations:

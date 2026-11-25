@@ -2,9 +2,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trial-2-chunk
+  name: b500-5-extract-lines
 spec:
-  backoffLimit: 3
+  backoffLimit: 6
   template:
     metadata:
       labels:
@@ -34,7 +34,7 @@ spec:
       containers:
         - name: neuralmarket
           image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
-          args: ["extract", "--input-dir", "/app/data/batches/trial/raw", "--output-dir", "/app/data/batches/trial/chunks", "--resume"]
+          args: ["lines", "extract", "--cik-file", "/etc/neuralmarket-run/ciks.txt", "--config", "/etc/neuralmarket/config.yaml"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -60,9 +60,9 @@ spec:
           resources:
             requests:
               cpu: "1"
-              memory: 1Gi
+              memory: 2Gi
             limits:
-              memory: 4Gi
+              memory: 6Gi
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -85,4 +85,4 @@ spec:
             name: neuralmarket-config
         - name: run
           configMap:
-            name: neuralmarket-run-trial
+            name: neuralmarket-run-b500
