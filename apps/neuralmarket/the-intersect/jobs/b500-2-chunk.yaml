@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trial-4-store
+  name: b500-2-chunk
 spec:
   backoffLimit: 3
   template:
@@ -34,7 +34,7 @@ spec:
       containers:
         - name: neuralmarket
           image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
-          args: ["store", "--input-dir", "/app/data/batches/trial/embeddings"]
+          args: ["extract", "--input-dir", "/app/data/batches/b500/raw", "--output-dir", "/app/data/batches/b500/chunks", "--resume"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -59,10 +59,10 @@ spec:
                 name: neuralmarket-env-secret
           resources:
             requests:
-              cpu: "250m"
-              memory: 512Mi
+              cpu: "1"
+              memory: 1Gi
             limits:
-              memory: 2Gi
+              memory: 4Gi
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -85,4 +85,4 @@ spec:
             name: neuralmarket-config
         - name: run
           configMap:
-            name: neuralmarket-run-trial
+            name: neuralmarket-run-b500

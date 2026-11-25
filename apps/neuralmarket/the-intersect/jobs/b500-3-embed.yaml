@@ -2,9 +2,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trial-5-extract-lines
+  name: b500-3-embed
 spec:
-  backoffLimit: 6
+  backoffLimit: 3
   template:
     metadata:
       labels:
@@ -23,18 +23,17 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-      # worker-04 has crashed before; a long run is better off elsewhere.
+      # worker-04 has the cores (16). It has crashed before, but embed resumes from finished files.
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - {key: kubernetes.io/hostname, operator: NotIn, values: [the-intersect-worker-04]}
-                  - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
+                  - {key: kubernetes.io/hostname, operator: In, values: [the-intersect-worker-04]}
       containers:
         - name: neuralmarket
           image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
-          args: ["lines", "extract", "--cik-file", "/etc/neuralmarket-run/ciks.txt", "--config", "/etc/neuralmarket/config.yaml"]
+          args: ["embed", "--input-dir", "/app/data/batches/b500/chunks", "--output-dir", "/app/data/batches/b500/embeddings", "--config", "/etc/neuralmarket/config.yaml", "--device", "cpu", "--resume"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -48,6 +47,9 @@ spec:
                   key: uri
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://alloy.grafana.svc.cluster.local:4318"
+            # Two cores stay free for the node's other pods, the database primary included.
+            - name: OMP_NUM_THREADS
+              value: "14"
             - name: HOME
               value: /tmp
             - name: HF_HOME
@@ -59,7 +61,7 @@ spec:
                 name: neuralmarket-env-secret
           resources:
             requests:
-              cpu: "1"
+              cpu: "8"
               memory: 2Gi
             limits:
               memory: 6Gi
@@ -85,4 +87,4 @@ spec:
             name: neuralmarket-config
         - name: run
           configMap:
-            name: neuralmarket-run-trial
+            name: neuralmarket-run-b500
