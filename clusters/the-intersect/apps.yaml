@@ -1734,7 +1734,14 @@ spec:
     name: flux-system
   path: apps/neuralmarket/the-intersect
   prune: true
-  wait: true
+  # Not `wait: true`: Flux would also wait for the pipeline Jobs, which run for hours, and the
+  # app would sit in "running health checks" until they finish. Only the database is checked.
+  wait: false
+  healthChecks:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: neuralmarket-postgres
+      namespace: neuralmarket
   timeout: 10m0s
   decryption:
     provider: sops
