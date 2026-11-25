@@ -35,9 +35,9 @@ spec:
         - name: neuralmarket
           image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
           args: ["lines", "extract", "--cik-file", "/etc/neuralmarket-run/ciks.txt", "--config", "/etc/neuralmarket/config.yaml"]
-          # The root filesystem stays writable: edgar-crawler writes its config next to its code.
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           env:
@@ -48,6 +48,8 @@ spec:
                   key: uri
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://alloy.grafana.svc.cluster.local:4318"
+            - name: HOME
+              value: /tmp
             - name: HF_HOME
               value: /app/data/hf
             - name: NEURALMARKET_DATA_DIR
@@ -62,6 +64,8 @@ spec:
             limits:
               memory: 6Gi
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
             - name: data
               mountPath: /app/data
             - name: config
@@ -71,6 +75,8 @@ spec:
               mountPath: /etc/neuralmarket-run
               readOnly: true
       volumes:
+        - name: tmp
+          emptyDir: {}
         - name: data
           persistentVolumeClaim:
             claimName: neuralmarket-data

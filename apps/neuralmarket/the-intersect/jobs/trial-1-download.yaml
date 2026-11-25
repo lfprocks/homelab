@@ -31,13 +31,32 @@ spec:
               - matchExpressions:
                   - {key: kubernetes.io/hostname, operator: NotIn, values: [the-intersect-worker-04]}
                   - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
+      initContainers:
+        # edgar-crawler writes its config and logs next to its code; give it a writable copy.
+        - name: copy-crawler
+          image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
+          command: ["cp", "-r", "/app/vendor/edgar-crawler", "/crawler/"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: crawler
+              mountPath: /crawler
       containers:
         - name: neuralmarket
           image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
           args: ["download", "--cik-file", "/etc/neuralmarket-run/ciks.txt", "--start-year", "2023", "--output-dir", "/app/data/batches/trial/raw", "--resume"]
-          # The root filesystem stays writable: edgar-crawler writes its config next to its code.
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           env:
@@ -48,6 +67,10 @@ spec:
                   key: uri
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://alloy.grafana.svc.cluster.local:4318"
+            - name: EDGAR_CRAWLER_PATH
+              value: /crawler/edgar-crawler
+            - name: HOME
+              value: /tmp
             - name: HF_HOME
               value: /app/data/hf
             - name: NEURALMARKET_DATA_DIR
@@ -62,6 +85,10 @@ spec:
             limits:
               memory: 4Gi
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: crawler
+              mountPath: /crawler
             - name: data
               mountPath: /app/data
             - name: config
@@ -71,6 +98,10 @@ spec:
               mountPath: /etc/neuralmarket-run
               readOnly: true
       volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: crawler
+          emptyDir: {}
         - name: data
           persistentVolumeClaim:
             claimName: neuralmarket-data
