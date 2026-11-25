@@ -31,14 +31,5 @@ configMapGenerator:
       disableNameSuffixHash: true
       annotations:
         kustomize.toolkit.fluxcd.io/substitute: disabled
-  # Loaded by the grafana sidecar, which watches all namespaces for this label.
-  - name: neuralmarket-grafana-dashboard
-    files:
-      - dashboards/neuralmarket.json
-    options:
-      disableNameSuffixHash: true
-      labels:
-        grafana_dashboard: "1"
-      annotations:
-        grafana_folder: neuralmarket
-        kustomize.toolkit.fluxcd.io/substitute: disabled
+  # The dashboard is in the private lfprocks/grafana-sync repo (apps/neuralmarket.json): one owner
+  # per dashboard uid.
