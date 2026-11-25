@@ -1,0 +1,79 @@
+---
+# Company search database: filings, extracted business lines and embeddings (pgvector).
+#
+# CNPG publishes connection details in the generated `neuralmarket-postgres-app` Secret; the
+# pipeline Jobs use its `uri` key. Nothing outside the cluster can reach it except by
+# kubectl port-forward.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: neuralmarket-postgres
+spec:
+  # Same digest as outline (PostgreSQL 16.15); this image includes pgvector.
+  imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:34cd4159d07b3410a1b29da35072e2e927a0905e717a61afa3814624a2e8859a
+  instances: 2
+
+  # CNPG generates these pods, so the labels the kyverno require-labels policy
+  # wants cannot come from a pod template we own. inheritedMetadata propagates
+  # them to every object CNPG creates for this cluster, pods included.
+  inheritedMetadata:
+    labels:
+      k8s.lfp.rocks/service: "neuralmarket-postgres"
+      k8s.lfp.rocks/version: "16"
+    # Alloy scrapes pods by these annotations: CNPG's exporter on :9187
+    # (cnpg_collector_last_available_backup_timestamp feeds BackupStale).
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+      prometheus.io/path: /metrics
+
+  bootstrap:
+    initdb:
+      database: neuralmarket
+      owner: neuralmarket
+      # The owner is not a superuser and cannot create extensions itself.
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector;
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      memory: 2Gi
+
+  storage:
+    size: 20Gi
+    storageClass: ceph-block
+
+  # WAL archiving + base backups to GCS, as on the other clusters. serverName is
+  # left at its default (the cluster name), which keeps clusters from colliding
+  # inside the shared bucket root.
+  #
+  # WATCH OUT: if archiving fails, PostgreSQL retains WAL until it succeeds and
+  # will fill this cluster's volume. Verify ContinuousArchiving is True.
+  backup:
+    barmanObjectStore:
+      destinationPath: gs://lfpr-p-gcsb-usw1-cnpg-backups-7q2v-60d5245
+      googleCredentials:
+        applicationCredentials:
+          name: cnpg-backup-gcs-credentials
+          key: service-account.json
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    # Matches loki/mimir retention (both 30d) so backups do not grow unbounded.
+    retentionPolicy: "30d"
+---
+# WAL archiving alone is not a backup -- PITR needs a base backup to replay
+# from. Staggered against the other clusters (6-field cron, seconds first).
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: neuralmarket-postgres-daily
+spec:
+  schedule: "0 0 3 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: neuralmarket-postgres
