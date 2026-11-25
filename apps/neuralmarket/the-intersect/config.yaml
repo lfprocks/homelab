@@ -1,0 +1,38 @@
+# Qwen on the DGX Spark for extraction and query parsing. The API key is in the environment.
+
+extraction:
+  use_prior_lines: true
+  llm:
+    provider: openai_compat
+    base_url: http://10.0.2.100:8000/v1
+    model: Qwen3.8-Flash-Next
+    api_key_env: TENSORFOLD_API_KEY
+    structured_output: false  # TensorFold rejects response_format
+    context_window: 262144
+    timeout: 2400  # 16k-token reply at ~10 tok/s per stream takes ~1600 s; 600 aborted the pilot
+    concurrency: 8  # all of the server's parallel slots during pilot runs
+    extra_body:  # A/B 2026-11-23: ~5x faster than full thinking, same line granularity
+      reasoning_effort: medium
+
+hybrid_search:
+  change_similarity_threshold: 0.72  # tuned for embeddinggemma (bge-base used 0.80)
+  change_cross_naics_threshold: 0.82  # embeddinggemma; same business despite a NAICS change
+  change_merge_threshold: 0.55  # embeddinggemma; lumped or split lines are not changes
+  screen_similarity_margin: 0.12  # embeddinggemma benchmark 2026-11-23
+  parse_llm:
+    provider: openai_compat
+    base_url: http://10.0.2.100:8000/v1
+    model: Qwen3.8-Flash-Next
+    api_key_env: TENSORFOLD_API_KEY
+    structured_output: false  # TensorFold rejects response_format
+    context_window: 262144
+    max_tokens: 4000
+    extra_body:  # parsing is a small task; thinking only adds latency
+      chat_template_kwargs:
+        enable_thinking: false
+
+# Benchmark 2026-11-23 chose embeddinggemma over BAAI/bge-base-en-v1.5 (gated on Hugging Face;
+# needs `hf auth login`). The Spark serves no embedding model, so it runs in-process.
+embedder:
+  provider: sentence_transformers
+  model: google/embeddinggemma-300m
