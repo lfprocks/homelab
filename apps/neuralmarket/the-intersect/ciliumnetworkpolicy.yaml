@@ -1,0 +1,118 @@
+---
+# Pipeline Jobs: no inbound traffic, and outbound only to what a stage needs. Selecting a pod for
+# a direction makes that direction default-deny.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: neuralmarket-job
+spec:
+  endpointSelector:
+    matchLabels:
+      app: neuralmarket-job
+  # Nothing listens in a Job. A direction with no rule is not enforced, so this one rule turns on
+  # default deny; the port is unused.
+  ingress:
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    # Cluster DNS.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: neuralmarket-postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # Metrics push (OTLP over HTTP).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+            k8s:app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "4318"
+              protocol: TCP
+    # The model on the DGX Spark, and only its API port.
+    - toCIDR:
+        - 10.0.2.100/32
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    # Public HTTPS: sec.gov, Hugging Face, price data. `world` includes the LAN, so private ranges
+    # are excepted.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Who may reach the database. Egress is left open: instances need the API server and GCS.
+# kubectl port-forward dials loopback inside the pod, which policy never sees.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: neuralmarket-postgres
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: neuralmarket-postgres
+  ingress:
+    # The other instance (replication, instance status), and CNPG's own bootstrap Jobs.
+    - fromEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: neuralmarket-postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+            - port: "8000"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            app: neuralmarket-job
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # The CNPG operator: instance status.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # kubelet probes.
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    # Metrics scrape from grafana-alloy.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: grafana
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP

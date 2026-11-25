@@ -1,0 +1,13 @@
+---
+# Downloaded filings, chunks and the embedding model cache. The pipeline Jobs run one after
+# another, so a single-writer volume is enough.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neuralmarket-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 20Gi
