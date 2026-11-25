@@ -11,7 +11,7 @@ resources:
   # Jobs cannot be changed once created, so a new run gets new names. Removing a line deletes
   # the Job (the data stays on the volume and in the database).
   - jobs/trial-1-download.yaml
-  # - jobs/trial-2-chunk.yaml
+  - jobs/trial-2-chunk.yaml
   # - jobs/trial-3-embed.yaml
   # - jobs/trial-4-store.yaml
   # - jobs/trial-5-extract-lines.yaml
