@@ -13,7 +13,7 @@ resources:
   - jobs/trial-1-download.yaml
   - jobs/trial-2-chunk.yaml
   - jobs/trial-3-embed.yaml
-  # - jobs/trial-4-store.yaml
+  - jobs/trial-4-store.yaml
   # - jobs/trial-5-extract-lines.yaml
 
 configMapGenerator:
