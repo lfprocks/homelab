@@ -7,3 +7,38 @@ resources:
   - postgres.yaml
   - persistentvolumeclaim.yaml
   - ciliumnetworkpolicy.yaml
+  # Pipeline runs. A run is a commit: uncomment one stage, wait for it to finish, then the next.
+  # Jobs cannot be changed once created, so a new run gets new names. Removing a line deletes
+  # the Job (the data stays on the volume and in the database).
+  # - jobs/trial-1-download.yaml
+  # - jobs/trial-2-chunk.yaml
+  # - jobs/trial-3-embed.yaml
+  # - jobs/trial-4-store.yaml
+  # - jobs/trial-5-extract-lines.yaml
+
+configMapGenerator:
+  - name: neuralmarket-config
+    files:
+      - config.yaml
+    options:
+      disableNameSuffixHash: true
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+  - name: neuralmarket-run-trial
+    files:
+      - ciks.txt=runs/trial-ciks.txt
+    options:
+      disableNameSuffixHash: true
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+  # Loaded by the grafana sidecar, which watches all namespaces for this label.
+  - name: neuralmarket-grafana-dashboard
+    files:
+      - dashboards/neuralmarket.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: neuralmarket
+        kustomize.toolkit.fluxcd.io/substitute: disabled

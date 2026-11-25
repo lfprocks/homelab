@@ -1,0 +1,88 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trial-5-extract-lines
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: neuralmarket-job
+        k8s.lfp.rocks/service: "neuralmarket"
+        k8s.lfp.rocks/version: "sha-f259442"
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      # worker-04 has crashed before; a long run is better off elsewhere.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - {key: kubernetes.io/hostname, operator: NotIn, values: [the-intersect-worker-04]}
+                  - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
+      containers:
+        - name: neuralmarket
+          image: git.intersect.computer/neuralmarket/neuralmarket:sha-f259442
+          args: ["lines", "extract", "--cik-file", "/etc/neuralmarket-run/ciks.txt", "--config", "/etc/neuralmarket/config.yaml"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: neuralmarket-postgres-app
+                  key: uri
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://alloy.grafana.svc.cluster.local:4318"
+            - name: HOME
+              value: /tmp
+            - name: HF_HOME
+              value: /app/data/hf
+            - name: NEURALMARKET_DATA_DIR
+              value: /app/data
+          envFrom:
+            - secretRef:
+                name: neuralmarket-env-secret
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              memory: 6Gi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: data
+              mountPath: /app/data
+            - name: config
+              mountPath: /etc/neuralmarket
+              readOnly: true
+            - name: run
+              mountPath: /etc/neuralmarket-run
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: neuralmarket-data
+        - name: config
+          configMap:
+            name: neuralmarket-config
+        - name: run
+          configMap:
+            name: neuralmarket-run-trial
