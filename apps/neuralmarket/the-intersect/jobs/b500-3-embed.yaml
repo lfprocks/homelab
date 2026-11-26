@@ -47,7 +47,7 @@ spec:
                   key: uri
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://alloy.grafana.svc.cluster.local:4318"
-            # Two cores stay free for the node's other pods, the database primary included.
+            # Up to 14 threads on idle cores; the request is what fits next to the other pods.
             - name: OMP_NUM_THREADS
               value: "14"
             - name: HOME
@@ -61,7 +61,7 @@ spec:
                 name: neuralmarket-env-secret
           resources:
             requests:
-              cpu: "8"
+              cpu: "6"
               memory: 2Gi
             limits:
               memory: 6Gi
