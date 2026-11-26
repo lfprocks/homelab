@@ -14,7 +14,7 @@ resources:
   - jobs/b500-2-chunk.yaml
   - jobs/b500-3-embed.yaml
   - jobs/b500-4-store.yaml
-  # - jobs/b500-5-extract-lines.yaml
+  - jobs/b500-5-extract-lines.yaml
 
 configMapGenerator:
   - name: neuralmarket-config
